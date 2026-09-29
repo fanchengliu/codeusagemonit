@@ -43,11 +43,20 @@ namespace CodeUsageMonit {
             c.WindowLeft = Coordinate(c.WindowLeft); c.WindowTop = Coordinate(c.WindowTop);
             c.CompactLeft = Coordinate(c.CompactLeft); c.CompactTop = Coordinate(c.CompactTop);
             if (c.Layouts == null) c.Layouts = new Dictionary<string, PanelPlacement>();
+            if (c.UsageRanges == null) c.UsageRanges = new Dictionary<string, UsageRangeChoice>();
+            if (c.LayoutStyleVersion < 8) {
+                foreach (string size in new[] { "small", "medium", "large" }) {
+                    PanelPlacement p; if (!c.Layouts.TryGetValue(size, out p) || p == null) continue;
+                    double oldWidth = size == "small" ? 260 : 420, oldHeight = size == "large" ? 540 : 320;
+                    if (Math.Abs(p.Width - oldWidth * c.UiScale) < 1 && Math.Abs(p.Height - oldHeight * c.UiScale) < 1) { Size defaults = DefaultSize(size); p.Width = defaults.Width * c.UiScale; p.Height = defaults.Height * c.UiScale; }
+                }
+                c.LayoutStyleVersion = 8;
+            }
             foreach (string size in new[] { "small", "medium", "large", "full" }) {
                 PanelPlacement p;
                 if (!c.Layouts.TryGetValue(size, out p) || p == null) continue;
                 Size min = Minimum(size), defaults = DefaultSize(size);
-                p.Width = Bound(p.Width, min.Width, defaults.Width); p.Height = Bound(p.Height, min.Height, defaults.Height);
+                p.Width = Bound(p.Width, min.Width * c.UiScale, defaults.Width * c.UiScale); p.Height = Bound(p.Height, min.Height * c.UiScale, defaults.Height * c.UiScale);
                 p.Left = Coordinate(p.Left); p.Top = Coordinate(p.Top);
             }
             if (c.UiVersion < 2) { c.UiVersion = 2; c.AlwaysOnTop = false; c.HideOnDeactivate = false; c.PinWindow = false; c.WindowWidth = 420; c.WindowHeight = 790; }
@@ -55,8 +64,8 @@ namespace CodeUsageMonit {
         private static bool Finite(double v) { return !Double.IsNaN(v) && !Double.IsInfinity(v); }
         private static double? Coordinate(double? v) { return v.HasValue && !Finite(v.Value) ? null : v; }
         private static double Bound(double v, double minimum, double fallback) { return Finite(v) ? Math.Max(minimum, Math.Min(4096, v)) : fallback; }
-        public static Size DefaultSize(string size) { return size == "small" ? new Size(260, 320) : size == "medium" ? new Size(420, 320) : size == "large" ? new Size(420, 540) : new Size(420, 790); }
-        public static Size Minimum(string size) { return size == "small" ? new Size(220, 240) : size == "medium" ? new Size(320, 240) : size == "large" ? new Size(320, 320) : new Size(360, 460); }
+        public static Size DefaultSize(string size) { return size == "small" ? new Size(172, 172) : size == "medium" ? new Size(360, 176) : size == "large" ? new Size(360, 390) : new Size(420, 790); }
+        public static Size Minimum(string size) { return size == "small" ? new Size(172, 172) : size == "medium" ? new Size(320, 176) : size == "large" ? new Size(320, 300) : new Size(360, 460); }
         public void SetDisplayMode(string size) {
             geometryTimer.Stop(); Capture(); restored = false; mode = size;
             SetScale(config.UiScale, false); Restore(); window.Topmost = config.AlwaysOnTop;
@@ -72,8 +81,8 @@ namespace CodeUsageMonit {
             var monitor = Forms.Screen.FromPoint(Forms.Cursor.Position);
             double dpi; using (var g = System.Drawing.Graphics.FromHwnd(IntPtr.Zero)) dpi = g.DpiX / 96;
             var area = monitor.WorkingArea;
-            window.Width = Math.Max(window.MinWidth, Math.Min(Bound(p.Width, min.Width, defaults.Width), area.Width / dpi - 24));
-            window.Height = Math.Max(window.MinHeight, Math.Min(Bound(p.Height, min.Height, defaults.Height), area.Height / dpi - 24));
+            window.Width = Math.Max(window.MinWidth, Math.Min(Bound(p.Width, min.Width * config.UiScale, defaults.Width * config.UiScale), area.Width / dpi - 24));
+            window.Height = Math.Max(window.MinHeight, Math.Min(Bound(p.Height, min.Height * config.UiScale, defaults.Height * config.UiScale), area.Height / dpi - 24));
             double left = p.Left ?? area.Right / dpi - window.Width - 16, top = p.Top ?? area.Bottom / dpi - window.Height - 16;
             bool onScreen = false;
             foreach (var screen in Forms.Screen.AllScreens) { var a = screen.WorkingArea; if (left + 80 > a.Left / dpi && left < a.Right / dpi - 80 && top + 45 > a.Top / dpi && top < a.Bottom / dpi - 45) { onScreen = true; break; } }

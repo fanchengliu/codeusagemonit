@@ -281,6 +281,12 @@ namespace CodeUsageMonit {
                 var result = HistoryService.MergeProvider(old, next, "pi", "2026-01-01", "2026-01-02");
                 Require(Object.ReferenceEquals(result.Days.Single(d => d.Agent == "codex"), other) && result.Days.Where(d => d.Agent == "pi").Sum(d => d.Tokens) == 130);
             });
+            PeriodTests.Add(test);
+            test("Restored compact defaults migrate once while custom and zoomed geometry remain", () => {
+                var c = new AppConfig { UiVersion = 2 }; c.Layouts["small"] = new PanelPlacement { Width = 260, Height = 320 }; c.Layouts["medium"] = new PanelPlacement { Width = 405, Height = 285 };
+                WindowFrame.Normalize(c); Require(c.Layouts["small"].Width == 172 && c.Layouts["small"].Height == 172 && c.Layouts["medium"].Width == 405);
+                c.UiScale = .8; c.Layouts["small"].Width = 150; c.Layouts["small"].Height = 150; WindowFrame.Normalize(c); Require(c.Layouts["small"].Width == 150 && c.LayoutStyleVersion == 8);
+            });
             Directory.CreateDirectory(Path.Combine(Store.Root, "verification"));
             File.WriteAllText(Path.Combine(Store.Root, "verification", "tests.json"), J.Serializer().Serialize(new { passed = passed.Count, failed = failed.Count, checks = passed, errors = failed }));
             return failed.Count == 0 ? 0 : 1;

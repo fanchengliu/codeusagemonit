@@ -25,6 +25,7 @@ namespace CodeUsageMonit {
         // Claude: message.id:requestId → hour, for de-duplication across resumed sessions.
         public Dictionary<string, string> Seen = new Dictionary<string, string>();
         private List<HourUsage> entries;
+        public void InvalidateEntries() { entries = null; }
         public bool Covers(DateTime utc) { DateTime from; return Parse(CoveredFrom, out from) && from <= utc; }
         public List<HourUsage> Entries() {
             if (entries != null) return entries;
@@ -62,12 +63,13 @@ namespace CodeUsageMonit {
     // Incremental JSONL reader shared by the Codex and Claude indexes.
     public static class LogReader {
         public const int HorizonDays = 31, RetainDays = 33;
-        public static LogIndex Scan(LogIndex index, IEnumerable<string> paths, Func<FileInfo, string> keyOf, DateTime nowUtc, Func<LogIndex, LogFile, Stream, long, long> read) {
+        public static LogIndex Scan(LogIndex index, IEnumerable<string> paths, Func<FileInfo, string> keyOf, DateTime nowUtc, Func<LogIndex, LogFile, Stream, long, long> read, int horizonDays = HorizonDays) {
             if (index == null || index.Version != LogIndex.CurrentVersion) index = new LogIndex();
-            DateTime horizon = nowUtc.AddDays(-HorizonDays), updated;
+            horizonDays = Math.Max(HorizonDays, Math.Min(370, horizonDays)); int retain = Math.Max(RetainDays, horizonDays + 2);
+            DateTime horizon = nowUtc.AddDays(-horizonDays), updated;
             // Any file changed since the previous scan has a write time after it. If that
             // scan is older than the horizon, changes may have been missed: start over.
-            bool continuous = LogIndex.Parse(index.Updated, out updated) && updated >= horizon && index.Covers(nowUtc);
+            bool continuous = LogIndex.Parse(index.Updated, out updated) && updated >= horizon && index.Covers(horizon);
             if (!continuous) { index = new LogIndex(); index.CoveredFrom = horizon.ToString("o"); }
             var byName = new Dictionary<string, LogFile>(StringComparer.OrdinalIgnoreCase);
             foreach (LogFile file in index.Files) byName[file.Name] = file;
@@ -89,12 +91,13 @@ namespace CodeUsageMonit {
             }
             // Deleted session files keep their counted hours, so usage does not shrink
             // when a client prunes old threads.
-            string cutoff = nowUtc.AddDays(-RetainDays).ToString("yyyyMMddHH", CultureInfo.InvariantCulture);
+            string cutoff = nowUtc.AddDays(-retain).ToString("yyyyMMddHH", CultureInfo.InvariantCulture);
             foreach (LogFile file in index.Files) foreach (string key in file.Hours.Keys.Where(k => String.CompareOrdinal(k, cutoff) < 0).ToList()) file.Hours.Remove(key);
             index.Files.RemoveAll(f => f.Hours.Count == 0 && !seen.Contains(f.Name));
             foreach (string key in index.Seen.Where(p => String.CompareOrdinal(p.Value, cutoff) < 0).Select(p => p.Key).ToList()) index.Seen.Remove(key);
-            DateTime covered; if (LogIndex.Parse(index.CoveredFrom, out covered) && covered < nowUtc.AddDays(-RetainDays)) index.CoveredFrom = nowUtc.AddDays(-RetainDays).ToString("o");
+            DateTime covered; if (LogIndex.Parse(index.CoveredFrom, out covered) && covered < nowUtc.AddDays(-retain)) index.CoveredFrom = nowUtc.AddDays(-retain).ToString("o");
             index.Updated = nowUtc.ToString("o");
+            index.InvalidateEntries();
             return index;
         }
         public static IEnumerable<string> Files(string folder) {
@@ -147,11 +150,11 @@ namespace CodeUsageMonit {
         public const string Official = "openai";
         private const int MaxLine = 1 << 20;
         private static readonly byte[][] Needles = { Encoding.ASCII.GetBytes("\"token_count\""), Encoding.ASCII.GetBytes("\"session_meta\""), Encoding.ASCII.GetBytes("\"turn_context\"") };
-        public static LogIndex Scan(LogIndex index, DateTime nowUtc) {
+        public static LogIndex Scan(LogIndex index, DateTime nowUtc, int horizonDays = LogReader.HorizonDays) {
             string home = ProviderService.CodexHome();
             var paths = LogReader.Files(Path.Combine(home, "sessions")).Concat(LogReader.Files(Path.Combine(home, "archived_sessions")));
             // Keyed by file name: archiving moves a rollout file without renaming it.
-            return LogReader.Scan(index, paths, info => info.Name, nowUtc, (idx, state, stream, offset) => Read(state, stream, offset));
+            return LogReader.Scan(index, paths, info => info.Name, nowUtc, (idx, state, stream, offset) => Read(state, stream, offset), horizonDays);
         }
         public static long Read(LogFile state, Stream stream, long offset) {
             return LogReader.Read(stream, offset, MaxLine, (bytes, length) => Needles.Any(n => LogReader.Contains(bytes, length, n)), line => Consume(state, line));
@@ -188,9 +191,9 @@ namespace CodeUsageMonit {
             string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             return new[] { Path.Combine(home, ".claude"), Path.Combine(home, ".config", "claude") };
         }
-        public static LogIndex Scan(LogIndex index, DateTime nowUtc) {
+        public static LogIndex Scan(LogIndex index, DateTime nowUtc, int horizonDays = LogReader.HorizonDays) {
             var paths = ConfigDirs().SelectMany(dir => LogReader.Files(Path.Combine(dir, "projects"))).ToList();
-            return LogReader.Scan(index, paths, info => info.FullName.ToLowerInvariant(), nowUtc, (idx, state, stream, offset) => Read(idx, state, stream, offset));
+            return LogReader.Scan(index, paths, info => info.FullName.ToLowerInvariant(), nowUtc, (idx, state, stream, offset) => Read(idx, state, stream, offset), horizonDays);
         }
         public static long Read(LogIndex index, LogFile state, Stream stream, long offset) {
             return LogReader.Read(stream, offset, MaxLine, (bytes, length) => LogReader.Contains(bytes, length, Usage) && LogReader.Contains(bytes, length, Assistant), line => Consume(index, state, line));

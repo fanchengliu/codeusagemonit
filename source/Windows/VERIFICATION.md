@@ -1,8 +1,15 @@
-# Verification — Windows 0.7
+# Verification — Windows 0.8
 
-Validated on Windows 11 Pro x64 ([redacted]), 2026-09-29.
+Validated on Windows 11 Pro x64 ([redacted]), 2026-09-30.
 
-## 0.7 current release
+## 0.8 current release
+
+- **59 self-tests pass.** New range fixtures cover local midnight versus a rolling day, a fixed start with follow-now, invalid/reversed/future/old input, weighted hour boundaries, scanned current-hour prefixes, exclusive end boundaries, missing histories, conservative daily-only selection, fractional-time-zone midnight pricing, wider historical scan coverage and index-cache invalidation.
+- **22 offline WPF integration checks pass.** New checks exercise the calendar in all layouts, five preset buttons, actual day-cell selection, HH:mm edits, confirm/cancel validation, independent per-provider persistence and follow-now. They also measure equal progress-track widths with mixed refresh/connect states and verify distinct small/medium/large summary structures with icon navigation. Existing resize, geometry, connection, settings, refresh and privacy regressions remain covered. A synthetic history executable also verifies one scan per confirmation, coalescing of obsolete queued requests and acceptance of the latest range; no real user logs are read by this check.
+- Inspected screenshots include calendar selection, small/medium/large summaries, aligned overviews, settings and connection pages. Synthetic account data is used; no real login or credential submission is part of these UI checks. WPF screenshots validate layout, not composited backdrop appearance.
+- Period totals explicitly retain their source granularity. These checks do not claim minute-accurate source records, actual billing amounts, or recovery of logs missing from the computer.
+
+## 0.7 previous release
 
 - **48 self-tests pass**, including Acrylic migration from Mica while retaining alpha/geometry and local-only provider refresh that preserves unrelated providers' history.
 - **15 offline WPF integration checks pass**: full-panel context menu switches layouts; all four native HWNDs/layout states return left/right/bottom resize hit codes; per-layout custom geometry survives switching; small/medium/large overview and detail navigation retain geometry; platform dropdowns and 7/30-day filters work; styled connection buttons open forms at the current size; region/key drafts survive refresh; every layout opens one separate Settings window without changing the monitor; Acrylic transparency previews revert on cancel and persist on save; unrelated settings saves do not undo a layout changed while Settings was open; single refresh stays independent; ready accounts can reconnect; summaries remain provider-specific; old refresh results are rejected; mock CLI quoting and cold saved-geometry startup work.
