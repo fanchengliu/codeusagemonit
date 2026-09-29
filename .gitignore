@@ -1,0 +1,21 @@
+# Runtime data and diagnostics may contain personal account information.
+data/
+verification/
+dist/
+*.key
+*.log
+auth.json
+settings.json
+quota-cache.json
+
+# Locally built executables. The licensed statistics tool and portable ZIP are intentional.
+/codeusagemonit.exe
+/codeusage.exe
+/UiRegression.exe
+/Panel.xaml
+/app.ico
+bin/
+obj/
+.vs/
+.DS_Store
+Thumbs.db
