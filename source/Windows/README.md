@@ -1,18 +1,18 @@
-# codeusagemonit for Windows — 0.6
+# codeusagemonit for Windows — 0.7
 
 A single-tray Windows monitor for eleven built-in providers and custom JSON APIs. The interface and selected provider logic are adapted from CodexBar under MIT licenses.
 
 ## Window and appearance
 
-- One visual system in `Panel.xaml`: smoked-glass surface over DWM Acrylic/Mica, neutral ink, one cool accent (`#5CC8E0`), provider colours only in data. Cards, switches, segmented controls, text fields, slider, scrollbar and tooltips are all styled there.
+- One visual system in `Panel.xaml`: smoked glass over DWM Acrylic, neutral ink, one cool accent (`#5CC8E0`), provider colours in data. Cards, switches, segmented controls, text fields, sliders, scrollbars and tooltips share the same styles.
 - The provider strip lists enabled providers and wraps to two rows when needed; providers needing attention get an amber dot.
 - Quota rows keep the user's segmented meter (24 cells, 2 px gaps, remaining fraction in the provider colour, warm colour below 10 %).
-- Settings open as a page inside the panel (not a system-styled dialog). Changes apply on Save; Esc/back cancels, and the material choice previews live.
+- Settings open in a separate, resizable singleton window. The monitor keeps its layout and geometry and continues updating. Save applies changes; Esc/native close/cancel discard drafts and restore the saved transparency.
 - Drag the title area to move the panel; drag any edge/corner to resize. Placement, size and Ctrl+wheel scale (80–140 %) persist.
 - Always-on-top is off by default and independent from the keep-open/auto-hide pin.
 - The tray icon is a multi-size 32-bit ICO; the tray menu uses a dark renderer.
-- Materials: Acrylic or Mica. The transparency slider runs from 0 to 100: 0 makes the smoke layer fully opaque, 100 removes that layer while retaining the Windows backdrop. Old `solid` settings migrate to Acrylic at 0 transparency. Unsupported Windows versions use an opaque fallback.
-- Overview chart filters replace only the chart/totals region. Account cards and quota meters retain their visual instances. Each account card has its own quota refresh button; the header button and F5 refresh all enabled accounts. Pi has no remote account quota.
+- Acrylic is the only material. The transparency slider runs from 0 to 100: 0 makes the smoke layer fully opaque, 100 removes the layer while retaining the Windows backdrop. Old `solid` settings migrate to Acrylic at 0 transparency; old Mica preserves its transparency. Unsupported Windows versions use an opaque fallback.
+- Full overview chart filters replace only the chart/totals region, preserving account cards and quota meters. Each account has independent refresh; Pi refreshes its own local history. F5 refreshes the compact platform being viewed; Ctrl+F5 refreshes all. A provider's action menu offers details, copy and reconnection.
 
 ## Account and history details
 
@@ -28,9 +28,9 @@ Pricing comes from ccusage's offline table, which includes cache discounts and l
 
 ## Four mutually exclusive display sizes
 
-`Compact.cs` renders small (172×172), medium (360×176) or large (360×390) content in the same window as the full, resizable panel. Select exactly one size from Settings, the tray menu, or the window context menu. Dimensions are logical pixels at 100% zoom. Compact placement and full-panel geometry persist separately; older multi-widget settings are ignored.
+`Compact.cs` provides three information-density presets in the same monitor window: small (260×320), medium (420×320), large (420×540), plus the full panel (420×790). All four have native resize edges. Each layout's custom geometry persists independently in `AppConfig.Layouts`; legacy full-panel geometry is retained. Defaults are logical pixels at 100% zoom. The full panel's context menu is available throughout its background, not just the title strip.
 
-Compact sizes stay behind work windows unless always-on-top is enabled. Drag blank areas to move them. Icons/dots select a provider; the wheel over the header cycles providers. Large also offers an overview with aggregate history and a scrollable list of every enabled provider. The wheel over its body scrolls content. A connection link opens the full panel for accounts needing attention, including expired accounts with cached readings. Settings temporarily use the full panel and return to the saved size on close.
+Compact layouts are normal interactive windows, with optional always-on-top. Every preset has an overview, a platform picker, single-platform refresh, a 7/30-day range, clickable quota/detail navigation, copy feedback and button-based account controls. Connection forms stay inside the current window with scrolling at small widths; API-key/region drafts survive refreshes. Back/Esc returns to the previous compact page. Settings use a separate window without switching the monitor to full. Full and compact backgrounds share one Acrylic transparency preference.
 
 ## Command line
 

@@ -10,32 +10,42 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
 namespace CodeUsageMonit {
-    // Settings are a page inside the panel (same surface, cards and controls), not a
-    // separate system-styled dialog. Changes apply only on Save; Esc/back cancels.
+    // Settings have their own window; editing never changes the monitor's geometry.
     public sealed partial class MonitorPanel {
         private FrameworkElement settingsView;
+        private Window settingsWindow;
+        private Border settingsSurface;
+        private Grid settingsContentHost;
+        private TextBlock settingsTitle;
+        private Button settingsBack;
         private static readonly int[] RefreshSteps = { 1, 2, 3, 5, 10, 15, 20, 30, 45, 60 };
 
-        // From a compact size, settings open in the full panel; closing them returns to the
-        // saved display size (CloseSettings).
         private void OpenSettings() {
-            if (settingsView != null) { window.Activate(); return; }
-            if (IsCompact) ApplyDisplaySize("full");
+            if (settingsWindow != null) { if (settingsWindow.WindowState == WindowState.Minimized) settingsWindow.WindowState = WindowState.Normal; settingsWindow.Activate(); return; }
             settingsView = BuildSettings();
-            settingsHost.Children.Clear(); settingsHost.Children.Add(settingsView);
-            settingsHost.Visibility = Visibility.Visible; bodyScroll.Visibility = Visibility.Collapsed; tabHost.Visibility = Visibility.Collapsed;
-            backButton.Visibility = Visibility.Visible; logo.Visibility = Visibility.Collapsed; titleText.Text = "设置";
-            settingsButton.Foreground = AccentBrush;
-            UpdateStatus();
+            settingsContentHost = new Grid(); settingsContentHost.Children.Add(settingsView);
+            var layout = new Grid(); layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); layout.RowDefinitions.Add(new RowDefinition());
+            var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(14, 10, 14, 5) };
+            settingsBack = IconAction("", "返回设置", BackFromSettings); settingsBack.Visibility = Visibility.Collapsed; head.Children.Add(settingsBack);
+            settingsTitle = Label("偏好设置", 18, Ink); settingsTitle.FontWeight = FontWeights.SemiBold; settingsTitle.VerticalAlignment = VerticalAlignment.Center; head.Children.Add(settingsTitle); layout.Children.Add(head);
+            Grid.SetRow(settingsContentHost, 1); layout.Children.Add(settingsContentHost);
+            settingsSurface = new Border { Child = layout, Background = Brush("#FF15171B") };
+            settingsWindow = new Window { Title = "设置 · codeusagemonit", Width = 550, Height = Math.Min(760, SystemParameters.WorkArea.Height - 30), MinWidth = 460, MinHeight = 500, Content = settingsSurface, Background = Brushes.Transparent, Foreground = Ink, Resources = window.Resources, FontFamily = window.FontFamily, FontSize = 12, ResizeMode = ResizeMode.CanResize, ShowInTaskbar = true, ShowActivated = !demo, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            settingsWindow.SourceInitialized += delegate { PreviewTransparency(config.SurfaceOpacity); };
+            settingsWindow.KeyDown += delegate(object sender, System.Windows.Input.KeyEventArgs e) { if (e.Key == System.Windows.Input.Key.Escape) { BackFromSettings(); e.Handled = true; } };
+            settingsWindow.Closed += delegate {
+                settingsWindow = null; settingsSurface = null; settingsContentHost = null; settingsView = null; customEditor = null; customList = null;
+                frame.ApplyMaterial(); settingsButton.ClearValue(Control.ForegroundProperty); Render();
+            };
+            settingsButton.Foreground = AccentBrush; settingsWindow.Show();
+            if (!demo) settingsWindow.Activate();
         }
         private void CloseSettings() {
-            if (settingsView == null) return;
-            frame.ApplyMaterial(); // drop an unsaved material / transparency preview
-            settingsHost.Children.Clear(); settingsView = null; customEditor = null; customList = null;
-            settingsHost.Visibility = Visibility.Collapsed; bodyScroll.Visibility = Visibility.Visible; tabHost.Visibility = Visibility.Visible;
-            backButton.Visibility = Visibility.Collapsed; logo.Visibility = Visibility.Visible; titleText.Text = "codeusagemonit";
-            settingsButton.ClearValue(Control.ForegroundProperty);
-            if (activeSize != config.DisplaySize) ApplyDisplaySize(config.DisplaySize); else Render();
+            if (settingsWindow != null) settingsWindow.Close();
+        }
+        private void PreviewTransparency(double opacity) {
+            frame.ApplyMaterial("acrylic", opacity);
+            if (settingsWindow != null) WindowFrame.ApplyBackdrop(settingsWindow, settingsSurface, "acrylic", opacity);
         }
         private FrameworkElement BuildSettings() {
             var root = new Grid();
@@ -66,32 +76,26 @@ namespace CodeUsageMonit {
             // Window
             content.Children.Add(SectionTitle("窗口"));
             var windowCard = new StackPanel();
-            // One window, four sizes: small / medium / large sit on the desktop; full is the panel.
-            string displaySize = config.DisplaySize;
+            string displaySize = config.DisplaySize, originalDisplaySize = config.DisplaySize;
             var sizeRow = Row();
             AddRow(sizeRow, FieldLabel("显示尺寸", null), Segmented(DisplaySizes.Select(s => new[] { s, SizeName(s) }).ToArray(), displaySize, code => displaySize = code));
             windowCard.Children.Add(sizeRow);
-            windowCard.Children.Add(Hint("四选一。小 / 中 / 大可拖动；右键切换尺寸。", 7));
+            windowCard.Children.Add(Hint("四种布局都能拖边缘调大小，并分别记忆位置和宽高。", 7));
             windowCard.Children.Add(Separator());
-            CheckBox onTop = SwitchRow("置于其他窗口上方", "默认关闭；关闭时小 / 中 / 大尺寸位于桌面层", config.AlwaysOnTop);
+            CheckBox onTop = SwitchRow("置于其他窗口上方", "默认关闭；单击窗口可正常操作", config.AlwaysOnTop);
             CheckBox autoHide = SwitchRow("点击其他窗口时自动收起", "仅完整面板；标题栏的图钉按钮也可以切换", config.HideOnDeactivate);
             windowCard.Children.Add(onTop); windowCard.Children.Add(Separator()); windowCard.Children.Add(autoHide); windowCard.Children.Add(Separator());
             // Transparency is shown as 0–100 (0 = opaque); the config keeps the surface alpha.
-            string material = config.Material; double transparency = Math.Round((1 - config.SurfaceOpacity) * 100);
+            double transparency = Math.Round((1 - config.SurfaceOpacity) * 100);
             var transparencyValue = Label(transparency.ToString("0") + "%", 12, InkDim); Tabular(transparencyValue);
             var transparencySlider = new Slider { Minimum = 0, Maximum = 100, Value = transparency, SmallChange = 1, LargeChange = 10, Margin = new Thickness(0, 8, 0, 0) };
             System.Windows.Automation.AutomationProperties.SetName(transparencySlider, "背景透明度");
-            var materialRow = Row();
-            AddRow(materialRow, FieldLabel("背景材质", null), Segmented(new[] { new[] { "acrylic", "毛玻璃" }, new[] { "mica", "Mica" } }, material, code => {
-                material = code; frame.ApplyMaterial(code, 1 - transparency / 100);
-            }));
-            windowCard.Children.Add(materialRow);
             var transparencyRow = Row(); transparencyRow.Margin = new Thickness(0, 12, 0, 0);
-            AddRow(transparencyRow, FieldLabel("背景透明度", "0 为不透明，越高越通透"), transparencyValue);
+            AddRow(transparencyRow, FieldLabel("毛玻璃透明度", "0 为不透明，越高越通透"), transparencyValue);
             windowCard.Children.Add(transparencyRow); windowCard.Children.Add(transparencySlider);
             transparencySlider.ValueChanged += delegate {
                 transparency = Math.Round(transparencySlider.Value); transparencyValue.Text = transparency.ToString("0") + "%";
-                frame.ApplyMaterial(material, 1 - transparency / 100);
+                PreviewTransparency(1 - transparency / 100);
             };
             windowCard.Children.Add(Separator());
             var zoomRow = Row(); var zoomValue = Label((config.UiScale * 100).ToString("0") + "%", 12, InkDim); Tabular(zoomValue);
@@ -197,8 +201,8 @@ namespace CodeUsageMonit {
                     config.Proxy = proxyValue; config.RefreshMinutes = minutes; config.HideAccounts = hidden.IsChecked == true;
                     config.Enabled = ProviderCatalog.All.Where(id => choices.ContainsKey(id) ? choices[id].IsChecked == true : config.Enabled.Contains(id)).ToArray();
                     config.KimiRegion = kimiRegion; config.ZaiRegion = zaiRegion;
-                    config.AlwaysOnTop = onTop.IsChecked == true; config.HideOnDeactivate = autoHide.IsChecked == true; config.Material = material; config.SurfaceOpacity = WindowFrame.ClampOpacity(1 - transparency / 100);
-                    config.DisplaySize = displaySize; // applied by CloseSettings below
+                    config.AlwaysOnTop = onTop.IsChecked == true; config.HideOnDeactivate = autoHide.IsChecked == true; config.Material = "acrylic"; config.SurfaceOpacity = WindowFrame.ClampOpacity(1 - transparency / 100);
+                    if (displaySize != originalDisplaySize) SetDisplaySize(displaySize);
                     bool thirdPartyOn = thirdPartySwitch.IsChecked == true && !config.ShowThirdParty; config.ShowThirdParty = thirdPartySwitch.IsChecked == true;
                     foreach (KeyField field in keyFields) {
                         if (demo) break;
@@ -281,6 +285,7 @@ namespace CodeUsageMonit {
             device.Children.Add(Hint("在浏览器里输入下面的代码并授权：", 0)); device.Children.Add(code); device.Children.Add(open); device.Children.Add(cancel);
             stack.Children.Add(device);
             bool cancelled = false; ProviderService.DeviceLogin pending = null;
+            stack.Unloaded += delegate { cancelled = true; };
             open.Click += delegate {
                 if (pending == null) return;
                 try { Clipboard.SetText(pending.UserCode); } catch { }
@@ -293,12 +298,14 @@ namespace CodeUsageMonit {
                 try {
                     using (var service = new ProviderService(config)) {
                         pending = await service.StartCopilotLogin();
+                        if (cancelled) return;
                         code.Text = pending.UserCode; device.Visibility = Visibility.Visible; status.Text = "等待你在 GitHub 上授权…";
                         DateTime until = DateTime.UtcNow.AddSeconds(pending.ExpiresIn);
                         while (!cancelled && DateTime.UtcNow < until) {
                             await Task.Delay(TimeSpan.FromSeconds(Math.Max(5, pending.Interval)));
                             if (cancelled) break;
                             string token = await service.PollCopilotLogin(pending);
+                            if (cancelled || quitting) return;
                             if (token == null) continue;
                             Store.SetProviderKey("copilot", token); states["copilot"] = new ProviderState { Id = "copilot" };
                             device.Visibility = Visibility.Collapsed; status.Text = "登录成功。保存设置并启用 Copilot 后即可显示额度。"; logout.Visibility = Visibility.Visible; login.Content = "重新登录";
@@ -340,7 +347,7 @@ namespace CodeUsageMonit {
         private void BackFromSettings() { if (customEditor != null) CloseCustomEditor(); else CloseSettings(); }
         private void CloseCustomEditor() {
             if (customEditor == null) return;
-            customEditor = null; settingsHost.Children.Clear(); settingsHost.Children.Add(settingsView); titleText.Text = "设置"; RenderCustomList();
+            customEditor = null; settingsContentHost.Children.Clear(); settingsContentHost.Children.Add(settingsView); settingsTitle.Text = "偏好设置"; settingsBack.Visibility = Visibility.Collapsed; RenderCustomList();
         }
         private void OpenCustomEditor(CustomProvider existing) {
             var root = new Grid();
@@ -431,7 +438,7 @@ namespace CodeUsageMonit {
                 CloseCustomEditor();
             };
             customEditor = root;
-            settingsHost.Children.Clear(); settingsHost.Children.Add(root); titleText.Text = "自定义平台";
+            settingsContentHost.Children.Clear(); settingsContentHost.Children.Add(root); settingsTitle.Text = "自定义平台"; settingsBack.Visibility = Visibility.Visible;
         }
     }
 }

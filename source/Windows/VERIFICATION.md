@@ -1,8 +1,15 @@
-# Verification — Windows 0.6
+# Verification — Windows 0.7
 
 Validated on Windows 11 Pro x64 ([redacted]), 2026-09-29.
 
-## 0.6 current release
+## 0.7 current release
+
+- **48 self-tests pass**, including Acrylic migration from Mica while retaining alpha/geometry and local-only provider refresh that preserves unrelated providers' history.
+- **15 offline WPF integration checks pass**: full-panel context menu switches layouts; all four native HWNDs/layout states return left/right/bottom resize hit codes; per-layout custom geometry survives switching; small/medium/large overview and detail navigation retain geometry; platform dropdowns and 7/30-day filters work; styled connection buttons open forms at the current size; region/key drafts survive refresh; every layout opens one separate Settings window without changing the monitor; Acrylic transparency previews revert on cancel and persist on save; unrelated settings saves do not undo a layout changed while Settings was open; single refresh stays independent; ready accounts can reconnect; summaries remain provider-specific; old refresh results are rejected; mock CLI quoting and cold saved-geometry startup work.
+- Native geometry comparisons allow less than one logical pixel of DPI rounding (host at 125%). Layout screenshots use WPF rendering, so they do not validate desktop compositing or actual remote-account authorization.
+- Screenshots inspected: all compact overviews, provider detail pages, connection forms, small API-key forms, full overview and the standalone Settings window. Tests do not move the user's mouse, submit real keys, or start real login flows.
+
+## 0.6 previous release
 
 - Both x64 executables compile with the installed .NET Framework C# compiler. **46 self-tests passed**, including migration of old opaque/multi-widget settings, valid display modes, invalid geometry, and the complete transparency range.
 - **11 offline WPF integration checks passed** (`verify-regression.ps1`, synthetic accounts): chart filter clicks preserve every provider-card and meter instance; one-provider busy state is independent; overlapping fetch generations reject older results; all four sizes use the same HWND at 80/100/140% scale; large overview exposes every enabled provider in a scrollable list; compact placement survives opening/cancelling Settings; cached expired accounts keep their connect link in every compact size; API-key/region drafts survive renders; Settings offer only Acrylic/Mica and preserve cancel/save semantics at both transparency endpoints; a mock `.cmd` launcher in a path with spaces receives `login` correctly; cold compact startup restores saved zoom.
