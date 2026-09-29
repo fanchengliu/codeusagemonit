@@ -27,7 +27,7 @@ namespace CodeUsageMonit {
         // the half-typed key; Render() waits until the box loses focus.
         private bool EditingKey() {
             var focused = Keyboard.FocusedElement as DependencyObject;
-            return focused is PasswordBox && bodyScroll.IsAncestorOf(focused);
+            return focused is PasswordBox && (bodyScroll.IsAncestorOf(focused) || compactRoot.IsAncestorOf(focused));
         }
         private void KeyBoxLostFocus(object sender, KeyboardFocusChangedEventArgs e) {
             // Focus moving to a button in the panel: its click renders; rebuilding now would
@@ -48,7 +48,7 @@ namespace CodeUsageMonit {
             return panel;
         }
         private Button ConnectButton(string text, bool primary) {
-            return new Button { Style = Styled(primary ? "PrimaryButton" : "SecondaryButton"), Content = text, Margin = new Thickness(0, 0, 8, 0) };
+            return new Button { Style = Styled(primary ? "PrimaryButton" : "SecondaryButton"), Content = text, Margin = new Thickness(0, 0, 8, 8) };
         }
         private Button CheckButton(string id) {
             var check = ConnectButton("我已登录，刷新", false);
@@ -69,7 +69,8 @@ namespace CodeUsageMonit {
                 panel.Children.Add(row);
             }
             var line = new Grid();
-            line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            if (IsCompact) { line.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); line.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); }
+            else { line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); }
             var box = new PasswordBox { IsEnabled = !demo, VerticalAlignment = VerticalAlignment.Center, ToolTip = state.Status == "expired" ? "粘贴新的 API Key" : "粘贴 API Key" };
             System.Windows.Automation.AutomationProperties.SetName(box, ProviderCatalog.Name(id) + " API Key");
             string draft; if (keyDrafts.TryGetValue(id, out draft)) box.Password = draft;
@@ -80,7 +81,9 @@ namespace CodeUsageMonit {
             var save = new Button { Style = Styled("PrimaryButton"), Content = "保存并连接", IsEnabled = !demo, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
             System.Windows.Automation.AutomationProperties.SetName(save, ProviderCatalog.Name(id) + " 保存并连接");
             save.Click += delegate { SaveKeyFromCard(id, box.Password); };
-            Grid.SetColumn(save, 1); line.Children.Add(save);
+            if (IsCompact) { Grid.SetRow(save, 1); save.Margin = new Thickness(0, 8, 0, 0); save.HorizontalAlignment = HorizontalAlignment.Left; }
+            else Grid.SetColumn(save, 1);
+            line.Children.Add(save);
             panel.Children.Add(line);
             panel.Children.Add(Hint(demo ? "演示模式不读取或保存密钥。" : env.Length > 0 ? "正在使用环境变量 " + env + "（优先于这里保存的密钥）。" : "以 Windows DPAPI 加密保存在本机 data 目录，只有当前 Windows 用户能解密。", 6));
         }
@@ -255,11 +258,12 @@ namespace CodeUsageMonit {
         // ── Custom providers ──────────────────────────────────────────────
         private void CustomConnect(StackPanel panel, string id) {
             var row = ButtonRow();
-            var edit = ConnectButton("编辑接口与密钥", true);
+            CustomProvider definition;
+            if (ProviderCatalog.Custom.TryGetValue(id, out definition) && definition.Auth != "none") KeyConnect(panel, states[id]);
+            var edit = ConnectButton("编辑接口定义", false);
             edit.IsEnabled = !demo;
             edit.Click += delegate {
                 CustomProvider provider; if (!ProviderCatalog.Custom.TryGetValue(id, out provider)) return;
-                if (IsCompact) ApplyDisplaySize("full");
                 OpenSettings(); OpenCustomEditor(provider);
             };
             var retry = ConnectButton("重试", false);

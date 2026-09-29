@@ -267,6 +267,20 @@ namespace CodeUsageMonit {
                 var bad = new AppConfig { UiVersion = 2, DisplaySize = "widget", CompactLeft = Double.NaN, CompactTop = Double.PositiveInfinity };
                 WindowFrame.Normalize(bad); Require(bad.DisplaySize == "full" && !bad.CompactLeft.HasValue && !bad.CompactTop.HasValue);
             });
+            test("Mica migrates to acrylic without changing transparency or layout geometry", () => {
+                var c = new AppConfig { UiVersion = 2, Material = "mica", SurfaceOpacity = .35, DisplaySize = "small" };
+                c.Layouts["small"] = new PanelPlacement { Width = 310, Height = 430, Left = 90, Top = 80 };
+                WindowFrame.Normalize(c); Require(c.Material == "acrylic" && c.SurfaceOpacity == .35 && c.Layouts["small"].Width == 310 && c.Layouts["small"].Top == 80);
+                c.Layouts["medium"] = new PanelPlacement { Width = Double.NaN, Height = Double.PositiveInfinity, Left = Double.NaN };
+                WindowFrame.Normalize(c); Require(c.Layouts["medium"].Width == WindowFrame.DefaultSize("medium").Width && !c.Layouts["medium"].Left.HasValue);
+            });
+            test("Local provider refresh preserves other providers and retained past totals", () => {
+                var other = new DayUsage { Agent = "codex", Day = "2026-01-02", Tokens = 70 };
+                var old = new UsageHistory { Zone = "test", Days = new List<DayUsage> { other, new DayUsage { Agent = "pi", Day = "2026-01-01", Tokens = 100 } } };
+                var next = new UsageHistory { Zone = "test", Days = new List<DayUsage> { new DayUsage { Agent = "codex", Day = "2026-01-02", Tokens = 999 }, new DayUsage { Agent = "pi", Day = "2026-01-01", Tokens = 20 }, new DayUsage { Agent = "pi", Day = "2026-01-02", Tokens = 30 } } };
+                var result = HistoryService.MergeProvider(old, next, "pi", "2026-01-01", "2026-01-02");
+                Require(Object.ReferenceEquals(result.Days.Single(d => d.Agent == "codex"), other) && result.Days.Where(d => d.Agent == "pi").Sum(d => d.Tokens) == 130);
+            });
             Directory.CreateDirectory(Path.Combine(Store.Root, "verification"));
             File.WriteAllText(Path.Combine(Store.Root, "verification", "tests.json"), J.Serializer().Serialize(new { passed = passed.Count, failed = failed.Count, checks = passed, errors = failed }));
             return failed.Count == 0 ? 0 : 1;

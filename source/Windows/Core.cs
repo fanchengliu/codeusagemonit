@@ -47,6 +47,10 @@ namespace CodeUsageMonit {
         public string Updated = "", Error = "", Zone = "";
         public List<DayUsage> Days = new List<DayUsage>();
     }
+    public sealed class PanelPlacement {
+        public double Width, Height;
+        public double? Left, Top;
+    }
     public sealed class AppConfig {
         public string Proxy = "auto";
         public int RefreshMinutes = 5;
@@ -69,9 +73,10 @@ namespace CodeUsageMonit {
         // Provider shown by the compact sizes ("overview" is available in large).
         public string CompactProvider = "overview";
         public double? CompactLeft, CompactTop;
+        public Dictionary<string, PanelPlacement> Layouts = new Dictionary<string, PanelPlacement>();
     }
     public static class AppInfo {
-        public const string ShortVersion = "0.6";
+        public const string ShortVersion = "0.7";
         public const string UserAgent = "codeusagemonit/" + ShortVersion;
     }
     public static class ProviderCatalog {
@@ -578,6 +583,14 @@ namespace CodeUsageMonit {
             }
         }
         public static string DayKey(DateTime day) { return day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture); }
+        // A local-only card refresh replaces just that provider, preserving all other rows.
+        public static UsageHistory MergeProvider(UsageHistory previous, UsageHistory next, string id, string oldest, string today) {
+            if (previous.Days.Count > 0 && previous.Zone != next.Zone) throw new ArgumentException("Windows 时区已变化，请使用刷新全部更新本机历史。");
+            var oldAgent = new UsageHistory { Zone = previous.Zone, Days = previous.Days.Where(d => d.Agent == id).ToList() };
+            var newAgent = new UsageHistory { Zone = next.Zone, Days = next.Days.Where(d => d.Agent == id).ToList() };
+            var merged = Merge(oldAgent, newAgent, oldest, today);
+            return new UsageHistory { Zone = next.Zone, Updated = previous.Updated, Error = "", Days = previous.Days.Where(d => d.Agent != id).Concat(merged.Days).ToList() };
+        }
         // Codex/Claude may delete or prune old session files; ccusage rescans files and
         // then loses those rows. Past days therefore keep the largest total ever observed.
         // Today is always replaced (it is still growing), and a time-zone change resets.

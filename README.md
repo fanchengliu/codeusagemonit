@@ -6,18 +6,19 @@
 
 ## 下载与运行
 
-**[下载 Windows x64 便携版 0.6.0](downloads/codeusagemonit-0.6.0-win-x64.zip?raw=true)** · [SHA-256](downloads/codeusagemonit-0.6.0-win-x64.zip.sha256)
+**[下载 Windows x64 便携版 0.7.0](downloads/codeusagemonit-0.7.0-win-x64.zip?raw=true)** · [SHA-256](downloads/codeusagemonit-0.7.0-win-x64.zip.sha256)
 
-完整解压到可写目录，双击 `codeusagemonit.exe`。程序会在同级 `data` 目录保存设置和缓存。需要 Windows x64 和 .NET Framework 4.8；原生毛玻璃 / Mica 效果适用于支持系统背景材质的 Windows 11，其他系统回退为实色背景。
+完整解压到可写目录，双击 `codeusagemonit.exe`。程序会在同级 `data` 目录保存设置和缓存。需要 Windows x64 和 .NET Framework 4.8；原生毛玻璃适用于支持系统背景材质的 Windows 11，其他系统回退为实色背景。
 
 ## 功能
 
 - **11 个内置平台**：Codex、Claude Code、Cursor、Antigravity、DeepSeek、Grok、GitHub Copilot、Kimi Code、OpenCode、ZCode、Pi。另可配置自己的 HTTP JSON 用量接口。
-- **四种互斥尺寸**：小、中、大、完整，共用同一窗口；大尺寸支持概览。完整面板可拖动和调整宽高，默认不置顶。
+- **四种可调布局**：小、中、大、完整，共用一个主窗口；四种布局都有概览，可拖动和调整宽高，并分别记住位置与大小，默认不置顶。
 - **分段额度条**：显示服务商实际返回的剩余额度、重置倒计时、用量节奏及支持的平台信息。缺失的数据保持未知。
-- **独立刷新与连接**：账户额度卡可单独刷新；卡片内可填写密钥、进行 GitHub 设备码登录或打开原应用登录。
+- **就地操作**：切换平台、独立刷新、点击额度看明细、7／30 天筛选、复制用量；连接按钮在当前布局内打开登录或密钥表单，保持窗口大小。
+- **独立设置窗口**：设置单独弹出，主面板继续更新；取消或关闭可恢复透明度预览。
 - **本机历史**：30 天图表可按平台筛选；金额为 API 等价估算，不是订阅账单。Pi 仅有本机历史，DeepSeek 显示余额。
-- **Windows 外观**：毛玻璃和 Mica，背景透明度 0–100（0 为不透明），界面缩放 80–140%。
+- **Windows 外观**：仅毛玻璃，背景透明度 0–100（0 为不透明），界面缩放 80–140%。
 - **命令行**：附带 `codeusage.exe`，支持缓存查询、实时额度、本地费用、第三方接口用量和 JSON 输出。
 
 | 完整概览 | 大尺寸概览 |
@@ -46,7 +47,7 @@
 & .\source\Windows\package.ps1
 ```
 
-0.6.0 已通过 46 项自检和 11 项离线 WPF 界面回归，并验证便携包内源码可重新编译。界面测试使用模拟账号，未逐个平台执行真实账号授权。详细范围见 [验证记录](source/Windows/VERIFICATION.md)。
+0.7.0 已通过 48 项自检和 15 项离线 WPF 界面回归。验证包括原生边框命中测试、四布局尺寸记忆、就地连接和独立设置窗口。界面测试使用模拟账号，未逐个平台执行真实账号授权。详细范围见 [验证记录](source/Windows/VERIFICATION.md)。
 
 ## 隐私与限制
 

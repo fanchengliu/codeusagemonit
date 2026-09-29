@@ -23,7 +23,7 @@ using Drawing = System.Drawing;
 
 [assembly: AssemblyTitle("codeusagemonit")]
 [assembly: AssemblyDescription("A single-tray Windows usage monitor, adapted from CodexBar")]
-[assembly: AssemblyVersion("0.6.0.0")]
+[assembly: AssemblyVersion("0.7.0.0")]
 namespace CodeUsageMonit {
     public static class Program {
         private static Mutex mutex;
@@ -118,7 +118,7 @@ namespace CodeUsageMonit {
             if (demo) SeedDemo(); else BuildThirdParty();
             LoadIcons();
             ((Button)window.FindName("HideButton")).Click += delegate { window.Hide(); };
-            settingsButton.Click += delegate { if (settingsView == null) OpenSettings(); else CloseSettings(); };
+            settingsButton.Click += delegate { OpenSettings(); };
             backButton.Click += delegate { BackFromSettings(); };
             refreshButton.Click += async delegate { await Refresh(); };
             pinButton.Click += delegate { config.HideOnDeactivate = !config.HideOnDeactivate; SaveConfig(); UpdatePin(); };
@@ -129,12 +129,11 @@ namespace CodeUsageMonit {
                 if (config.HideOnDeactivate && settingsView == null && !IsCompact) { lastAutoHide = DateTime.UtcNow; window.Hide(); }
             };
             window.PreviewMouseWheel += delegate(object sender, MouseWheelEventArgs e) {
-                if ((Keyboard.Modifiers & ModifierKeys.Control) != 0) { frame.SetScale(config.UiScale + (e.Delta > 0 ? .05 : -.05), true); if (IsCompact) frame.SetCompact(true, CompactDimensions(activeSize)); UpdateScaleLabel(); e.Handled = true; }
-                else if (IsCompact && (compactScroll == null || !(e.OriginalSource is DependencyObject) || !compactScroll.IsAncestorOf((DependencyObject)e.OriginalSource))) { CycleCompact(e.Delta < 0 ? 1 : -1); e.Handled = true; }
+                if ((Keyboard.Modifiers & ModifierKeys.Control) != 0) { frame.SetScale(config.UiScale + (e.Delta > 0 ? .05 : -.05), true); UpdateScaleLabel(); e.Handled = true; }
             };
             window.KeyDown += delegate(object sender, KeyEventArgs e) {
-                if (e.Key == Key.Escape) { if (settingsView != null) BackFromSettings(); else window.Hide(); e.Handled = true; }
-                if (e.Key == Key.F5) { var ignored = Refresh(); }
+                if (e.Key == Key.Escape) { if (IsCompact && (compactPage != "summary" || config.CompactProvider != "overview")) CompactBack(); else window.Hide(); e.Handled = true; }
+                if (e.Key == Key.F5) { if (IsCompact && config.CompactProvider != "overview" && (Keyboard.Modifiers & ModifierKeys.Control) == 0) { var ignored = RefreshOne(config.CompactProvider); } else { var ignored = Refresh(); } e.Handled = true; }
             };
             tray = new Forms.NotifyIcon { Text = "codeusagemonit · 正在读取", Icon = new Drawing.Icon(System.IO.Path.Combine(Store.Root, "app.ico"), Forms.SystemInformation.SmallIconSize), Visible = true };
             tray.MouseClick += delegate(object sender, Forms.MouseEventArgs e) { if (e.Button == Forms.MouseButtons.Left) app.Dispatcher.BeginInvoke(new Action(ToggleFromTray)); };
@@ -142,9 +141,9 @@ namespace CodeUsageMonit {
             refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(config.RefreshMinutes) }; refreshTimer.Tick += async delegate { await Refresh(); };
             clockTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) }; clockTimer.Tick += delegate { if (window.IsVisible && !refreshing) Render(); };
             if (demo) ((FrameworkElement)window.FindName("DemoBadge")).Visibility = Visibility.Visible;
-            // Compact sizes: drag from anywhere, right-click for sizes; the panel title has the same menu.
+            // Unhandled background clicks drag; buttons, inputs, and scrollbars keep their own input.
             compactRoot.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { if (e.ButtonState == MouseButtonState.Pressed) { try { window.DragMove(); } catch (InvalidOperationException) { } } };
-            compactRoot.ContextMenu = SizeMenu(); ((FrameworkElement)window.FindName("TitleArea")).ContextMenu = SizeMenu();
+            window.ContextMenu = SizeMenu();
             UpdatePin();
             if (config.DisplaySize != "full") ApplyDisplaySize(config.DisplaySize); else Render();
         }
@@ -282,7 +281,7 @@ namespace CodeUsageMonit {
             if (demo) return;
             try { thirdParty = ThirdPartyReport.Build(codexLogs, claudeLogs, endpointLog, history, DateTime.UtcNow, TimeZoneInfo.Local); } catch { thirdParty = new ThirdPartySummary(); }
         }
-        public void Reveal() { if (!window.IsVisible) { if (!IsCompact) frame.Restore(); window.Show(); if (frame.PinnedToDesktop) frame.SendToBottom(); } if (!frame.PinnedToDesktop) window.Activate(); Render(); }
+        public void Reveal() { if (!window.IsVisible) { frame.Restore(); window.Show(); } if (!demo) window.Activate(); Render(); }
         private void UpdatePin() {
             window.Topmost = config.AlwaysOnTop;
             bool keepOpen = !config.HideOnDeactivate;
@@ -332,7 +331,16 @@ namespace CodeUsageMonit {
             int serial = BeginFetch(id); singleFetchSerial[id] = serial;
             refreshingIds.Add(id); Render();
             try {
-                using (var service = new ProviderService(config)) { ProviderState result = await Task.Run(() => service.Fetch(id)); if (Latest(id, serial)) Accept(id, result); }
+                if (ProviderCatalog.LocalOnly(id)) {
+                    UsageHistory next = await HistoryService.Read();
+                    if (Latest(id, serial)) {
+                        if (next.Error.Length > 0) statusNote = next.Error;
+                        else {
+                            history = HistoryService.MergeProvider(history, next, id, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today));
+                            Store.Write("history.json", history); states[id] = new ProviderState { Id = id, Status = "ready", LastSuccess = DateTime.UtcNow.ToString("o"), Message = "本机历史已更新" };
+                        }
+                    }
+                } else using (var service = new ProviderService(config)) { ProviderState result = await Task.Run(() => service.Fetch(id)); if (Latest(id, serial)) Accept(id, result); }
                 Store.Write("quota-cache.json", states.Values.ToList()); UpdateTray();
             } catch (Exception e) { statusNote = e is ArgumentException ? e.Message : ProviderCatalog.Name(id) + " 刷新未完成"; }
             finally {
@@ -383,7 +391,7 @@ namespace CodeUsageMonit {
         }
         private bool StartupEnabled() { using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) return key != null && key.GetValue("codeusagemonit") != null; }
         private void SetStartup(bool enabled) { using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) { if (enabled) key.SetValue("codeusagemonit", "\"" + System.IO.Path.Combine(Store.Root, "codeusagemonit.exe") + "\" --background"); else key.DeleteValue("codeusagemonit", false); } }
-        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; tray.Visible = false; window.Close(); app.Shutdown(); }
-        public void Dispose() { quitting = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
+        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; CloseSettings(); tray.Visible = false; window.Close(); app.Shutdown(); }
+        public void Dispose() { quitting = true; CloseSettings(); if (copilotFlow != null) copilotFlow.Cancelled = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
     }
 }

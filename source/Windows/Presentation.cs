@@ -46,10 +46,9 @@ namespace CodeUsageMonit {
         private void Render() {
             if (quitting) return;
             UpdateStatus();
-            if (IsCompact) { RenderCompact(); return; }
-            if (settingsView != null) return;
             if (EditingKey()) { renderDeferred = true; return; }
             renderDeferred = false;
+            if (IsCompact) { RenderCompact(); return; }
             RenderTabs(); UpdateScaleLabel();
             double offset = bodyScroll.VerticalOffset;
             body.Children.Clear();
@@ -238,30 +237,33 @@ namespace CodeUsageMonit {
                 // Not connected / login expired: connect right here. Other errors (network,
                 // proxy, rate limit) usually pass on a retry, so connecting is one click away.
                 if (state.Status == "error") stack.Children.Add(ReconnectToggle(state.Id));
-                if (state.Status == "setup" || state.Status == "expired" || (state.Status == "error" && connectionDetails.Contains(state.Id))) stack.Children.Add(ConnectPanel(state));
+            }
+            if (state.Status == "setup" || state.Status == "expired" || connectionDetails.Contains(state.Id)) {
+                stack.Children.Add(ConnectPanel(state));
+                if (state.Status == "ready") stack.Children.Add(ReconnectToggle(state.Id));
             }
         }
         private UIElement ReconnectToggle(string id) {
             bool open = connectionDetails.Contains(id);
-            var toggle = new Button { Style = Styled("LinkButton"), Content = open ? "收起连接选项" : "重新连接…", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 6, 0, 0) };
+            var toggle = new Button { Style = Styled("SecondaryButton"), Content = open ? "收起连接选项" : "重新连接", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
             toggle.Click += delegate { if (!connectionDetails.Add(id)) connectionDetails.Remove(id); Render(); };
             return toggle;
         }
         // The card / detail header with the provider's own refresh button at the right.
         private UIElement WithRefresh(UIElement header, string id) {
-            if (ProviderCatalog.LocalOnly(id)) return header;
             var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.Children.Add(header);
             Button refresh = ProviderRefreshButton(id, 28); refresh.Margin = new Thickness(4, -4, -8, -4); refresh.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(refresh, 1); grid.Children.Add(refresh);
+            var more = ProviderActionsButton(id); more.Margin = new Thickness(6, -4, -8, -4); Grid.SetColumn(more, 2); grid.Children.Add(more);
             return grid;
         }
         // Per-provider refresh: spins while that provider (or a full refresh) is in flight.
         private Button ProviderRefreshButton(string id, double size) {
             string name = ProviderCatalog.Name(id);
             bool busy = refreshing || refreshingIds.Contains(id);
-            Button button = SpinButton(size, busy, busy ? "正在刷新 " + name + "…" : "只刷新 " + name);
+            Button button = SpinButton(size, busy, busy ? "正在刷新 " + name + "…" : "只刷新 " + name + (ProviderCatalog.LocalOnly(id) ? " 本机历史" : " 额度"));
             System.Windows.Automation.AutomationProperties.SetName(button, "刷新 " + name);
             button.Click += delegate(object sender, RoutedEventArgs e) { e.Handled = true; if (!refreshing && !refreshingIds.Contains(id)) { var ignored = RefreshOne(id); } };
             return button;
@@ -474,15 +476,15 @@ namespace CodeUsageMonit {
             wrapper.Children.Add(Axis());
             return wrapper;
         }
-        private UIElement StackedChart(List<DayUsage> days) {
+        private UIElement StackedChart(List<DayUsage> days, int dayCount = 30) {
             var wrapper = new StackPanel { Margin = new Thickness(0, 12, 0, 0) };
             List<string> order = ProviderCatalog.Ids.Where(id => days.Any(d => d.Agent == id)).ToList();
-            var series = Enumerable.Range(0, 30).Select(i => DateTime.Today.AddDays(i - 29)).Select(date => {
+            var series = Enumerable.Range(0, dayCount).Select(i => DateTime.Today.AddDays(i + 1 - dayCount)).Select(date => {
                 string key = HistoryService.DayKey(date);
                 return new { Date = date, Parts = order.Select(id => new { Id = id, Cost = days.Where(x => x.Day == key && x.Agent == id && x.CostKnown).Sum(x => x.Cost) }).ToList() };
             }).ToList();
             double max = Math.Max(.01, series.Max(d => d.Parts.Sum(p => p.Cost)));
-            var columns = new UniformGrid { Columns = 30, Height = 36 };
+            var columns = new UniformGrid { Columns = dayCount, Height = 36 };
             foreach (var item in series) {
                 double total = item.Parts.Sum(p => p.Cost);
                 var tip = item.Date.ToString("M月d日 ddd", CultureInfo.GetCultureInfo("zh-CN")) + " · " + Usd(total) + String.Concat(item.Parts.Where(p => p.Cost > 0).Select(p => "\n" + ProviderCatalog.Name(p.Id) + "  " + Usd(p.Cost)));
@@ -493,12 +495,12 @@ namespace CodeUsageMonit {
                 column.Children.Add(stackBar); columns.Children.Add(column);
             }
             wrapper.Children.Add(columns);
-            wrapper.Children.Add(Axis());
+            wrapper.Children.Add(Axis(dayCount));
             return wrapper;
         }
-        private static UIElement Axis() {
+        private static UIElement Axis(int dayCount = 30) {
             var axis = Row(); axis.Margin = new Thickness(0, 4, 0, 0);
-            AddRow(axis, Label(DateTime.Today.AddDays(-29).ToString("M/d"), 9.5, InkFaint), Label("今天", 9.5, InkFaint));
+            AddRow(axis, Label(DateTime.Today.AddDays(1 - dayCount).ToString("M/d"), 9.5, InkFaint), Label("今天", 9.5, InkFaint));
             return axis;
         }
 
