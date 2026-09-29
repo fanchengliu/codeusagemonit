@@ -23,7 +23,7 @@ using Drawing = System.Drawing;
 
 [assembly: AssemblyTitle("codeusagemonit")]
 [assembly: AssemblyDescription("A single-tray Windows usage monitor, adapted from CodexBar")]
-[assembly: AssemblyVersion("0.7.0.0")]
+[assembly: AssemblyVersion("0.8.0.0")]
 namespace CodeUsageMonit {
     public static class Program {
         private static Mutex mutex;
@@ -126,12 +126,13 @@ namespace CodeUsageMonit {
             window.Deactivated += delegate {
                 lastDeactivated = DateTime.UtcNow;
                 // Never auto-hide while settings are open: the user may be copying an API key.
-                if (config.HideOnDeactivate && settingsView == null && !IsCompact) { lastAutoHide = DateTime.UtcNow; window.Hide(); }
+                if (config.HideOnDeactivate && settingsView == null && !RangePickerOpen && !IsCompact) { lastAutoHide = DateTime.UtcNow; window.Hide(); }
             };
             window.PreviewMouseWheel += delegate(object sender, MouseWheelEventArgs e) {
                 if ((Keyboard.Modifiers & ModifierKeys.Control) != 0) { frame.SetScale(config.UiScale + (e.Delta > 0 ? .05 : -.05), true); UpdateScaleLabel(); e.Handled = true; }
             };
             window.KeyDown += delegate(object sender, KeyEventArgs e) {
+                if (e.Key == Key.Escape && RangePickerOpen) { CloseRangePicker(); e.Handled = true; return; }
                 if (e.Key == Key.Escape) { if (IsCompact && (compactPage != "summary" || config.CompactProvider != "overview")) CompactBack(); else window.Hide(); e.Handled = true; }
                 if (e.Key == Key.F5) { if (IsCompact && config.CompactProvider != "overview" && (Keyboard.Modifiers & ModifierKeys.Control) == 0) { var ignored = RefreshOne(config.CompactProvider); } else { var ignored = Refresh(); } e.Handled = true; }
             };
@@ -391,7 +392,7 @@ namespace CodeUsageMonit {
         }
         private bool StartupEnabled() { using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) return key != null && key.GetValue("codeusagemonit") != null; }
         private void SetStartup(bool enabled) { using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) { if (enabled) key.SetValue("codeusagemonit", "\"" + System.IO.Path.Combine(Store.Root, "codeusagemonit.exe") + "\" --background"); else key.DeleteValue("codeusagemonit", false); } }
-        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; CloseSettings(); tray.Visible = false; window.Close(); app.Shutdown(); }
-        public void Dispose() { quitting = true; CloseSettings(); if (copilotFlow != null) copilotFlow.Cancelled = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
+        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; CloseRangePicker(); CloseSettings(); tray.Visible = false; window.Close(); app.Shutdown(); }
+        public void Dispose() { quitting = true; CloseRangePicker(); CloseSettings(); if (copilotFlow != null) copilotFlow.Cancelled = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
     }
 }

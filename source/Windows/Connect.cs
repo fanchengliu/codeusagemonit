@@ -48,7 +48,8 @@ namespace CodeUsageMonit {
             return panel;
         }
         private Button ConnectButton(string text, bool primary) {
-            return new Button { Style = Styled(primary ? "PrimaryButton" : "SecondaryButton"), Content = text, Margin = new Thickness(0, 0, 8, 8) };
+            var button = new Button { Style = Styled(primary ? "PrimaryButton" : "SecondaryButton"), Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, MaxWidth = IsCompact && activeSize == "small" ? Math.Max(110, window.Width / config.UiScale - 50) : Double.PositiveInfinity, Margin = new Thickness(0, 0, 8, 8) };
+            System.Windows.Automation.AutomationProperties.SetName(button, text); return button;
         }
         private Button CheckButton(string id) {
             var check = ConnectButton("我已登录，刷新", false);
@@ -65,7 +66,8 @@ namespace CodeUsageMonit {
                 string current; if (!regionDrafts.TryGetValue(id, out current)) current = id == "kimi" ? config.KimiRegion : config.ZaiRegion;
                 string[][] options = id == "kimi" ? new[] { new[] { "china", "国内" }, new[] { "international", "国际" } } : new[] { new[] { "china", "国内" }, new[] { "global", "国际" } };
                 var row = Row(); row.Margin = new Thickness(0, 0, 0, 8);
-                AddRow(row, Label("接口区域", 11.5, InkDim), Segmented(options, current, code => regionDrafts[id] = code));
+                if (IsCompact && activeSize == "small") { panel.Children.Add(Hint("接口区域", 5)); row.Children.Add(Segmented(options, current, code => regionDrafts[id] = code)); }
+                else AddRow(row, Label("接口区域", 11.5, InkDim), Segmented(options, current, code => regionDrafts[id] = code));
                 panel.Children.Add(row);
             }
             var line = new Grid();

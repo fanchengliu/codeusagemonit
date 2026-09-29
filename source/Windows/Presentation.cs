@@ -46,6 +46,7 @@ namespace CodeUsageMonit {
         private void Render() {
             if (quitting) return;
             UpdateStatus();
+            if (RangePickerOpen) return;
             if (EditingKey()) { renderDeferred = true; return; }
             renderDeferred = false;
             if (IsCompact) { RenderCompact(); return; }
@@ -110,19 +111,22 @@ namespace CodeUsageMonit {
             List<string> agents = ProviderCatalog.Ids.Where(id => all.Any(d => d.Agent == id)).ToList();
             if (heroFilter != "all" && !agents.Contains(heroFilter)) heroFilter = "all";
             bool single = heroFilter != "all";
-            List<DayUsage> days = single ? all.Where(d => d.Agent == heroFilter).ToList() : all;
+            string rangeId = single ? heroFilter : "overview"; PeriodUsage usage = RangeUsage(rangeId);
+            List<DayUsage> days = usage.Days;
             var head = Row();
             var copy = new Button { Style = Styled("IconButton"), Content = "", Width = 26, Height = 26, FontSize = 12, ToolTip = "复制用量概览", Margin = new Thickness(0, -5, -7, -5) };
             copy.Click += delegate { CopySummary(copy); };
-            AddRow(head, Label("近 30 天 · " + (single ? ProviderCatalog.Name(heroFilter) : "全部平台") + " · API 等价费用", 11, InkDim), copy); stack.Children.Add(head);
-            var amount = Label(days.Any(d => d.CostKnown) ? Money(days) : "—", 26, Ink);
+            var actions = new StackPanel { Orientation = Orientation.Horizontal }; actions.Children.Add(RangeButton(rangeId)); actions.Children.Add(copy);
+            AddRow(head, Label(single ? ProviderCatalog.Name(heroFilter) : "全部平台", 11, InkDim), actions); stack.Children.Add(head);
+            var amount = Label(PeriodCost(usage), 26, Ink);
             amount.FontWeight = FontWeights.SemiBold; amount.Margin = new Thickness(0, 1, 0, 0); Tabular(amount); stack.Children.Add(amount);
             string line;
             if (all.Count == 0) line = scanning ? "正在读取本地历史…" : history.Error.Length > 0 ? history.Error : "暂无本地历史记录";
-            else if (single) { string model = UsageDetails.MainModel(days); line = Compact(days.Sum(d => d.Tokens)) + " Token · 今日 " + TodayMoney(days) + (model.Length > 0 ? " · " + model : ""); }
-            else line = Compact(days.Sum(d => d.Tokens)) + " Token · 今日 " + TodayMoney(days) + " · " + agents.Count + " 个平台有记录";
+            else if (single) { string model = UsageDetails.MainModel(days); line = PeriodTokens(usage) + " Token" + (model.Length > 0 ? " · " + model : ""); }
+            else line = PeriodTokens(usage) + " Token · " + agents.Count + " 个平台有记录";
             var sub = Label(line, 11, InkDim); sub.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(sub);
-            if (days.Count > 0) stack.Children.Add(StackedChart(days));
+            stack.Children.Add(Hint(PeriodCaption(usage), 4));
+            stack.Children.Add(PeriodChart(usage, rangeId, 42));
             if (agents.Count > 1) {
                 // Filter chips double as the legend: click one to see only that platform.
                 var chips = new WrapPanel { Margin = new Thickness(-3, 8, 0, -4) };
@@ -130,7 +134,7 @@ namespace CodeUsageMonit {
                     string captured = key; bool active = heroFilter == key;
                     var content = new StackPanel { Orientation = Orientation.Horizontal };
                     if (key != "all") content.Children.Add(new Border { Width = 7, Height = 7, CornerRadius = new CornerRadius(2), Background = Brush(ProviderCatalog.Color(key)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
-                    var text = Label(key == "all" ? "全部" : ProviderCatalog.Name(key) + " " + Money(all.Where(d => d.Agent == key)), 10.5, active ? Ink : InkDim); Tabular(text);
+                    var text = Label(key == "all" ? "全部" : ProviderCatalog.Name(key), 10.5, active ? Ink : InkDim); Tabular(text);
                     content.Children.Add(text);
                     var chip = new Button { Content = content, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 4, 4), Background = Brush(active ? "#1CFFFFFF" : "#00FFFFFF"), BorderBrush = Brush(active ? "#30FFFFFF" : "#00FFFFFF"), BorderThickness = new Thickness(1), ToolTip = key == "all" ? "显示全部平台（按平台堆叠）" : "只看 " + ProviderCatalog.Name(key) };
                     System.Windows.Automation.AutomationProperties.SetName(chip, "图表：" + (key == "all" ? "全部" : ProviderCatalog.Name(key)));
@@ -139,8 +143,7 @@ namespace CodeUsageMonit {
                 }
                 stack.Children.Add(chips);
             }
-            var note = Label("本机会话日志 × 官方 API 价目估算，不是订阅账单 ⓘ", 10.5, InkFaint);
-            note.Margin = new Thickness(0, 10, 0, 0); note.ToolTip = PricingHint(); stack.Children.Add(note);
+            stack.Children.Add(PeriodNote(rangeId, usage));
             return stack;
         }
         private void CopySummary(Button source) {
@@ -166,12 +169,12 @@ namespace CodeUsageMonit {
             header.Click += delegate { SelectProvider(state.Id); };
             stack.Children.Add(WithRefresh(header, state.Id));
             AccountBody(stack, state, false);
-            List<DayUsage> days = history.Days.Where(d => d.Agent == state.Id).ToList();
-            if (days.Count > 0) {
+            PeriodUsage usage = RangeUsage(state.Id);
+            if (usage.HasData || config.UsageRanges.ContainsKey(state.Id)) {
                 stack.Children.Add(new Border { Height = 1, Background = Hairline, Margin = new Thickness(0, 14, 0, 10) });
                 var footer = Row();
-                var summary = Label("今日 " + TodayMoney(days) + " · 30 天 " + Money(days), 11, InkDim); Tabular(summary);
-                var tokens = Label(Compact(days.Sum(d => d.Tokens)) + " Token", 11, InkFaint); Tabular(tokens);
+                var summary = Label("所选时段 " + PeriodCost(usage), 11, InkDim); Tabular(summary);
+                var tokens = Label(PeriodTokens(usage) + " Token", 11, InkFaint); Tabular(tokens);
                 AddRow(footer, summary, tokens); stack.Children.Add(footer);
             }
             return Card(stack);
@@ -252,11 +255,12 @@ namespace CodeUsageMonit {
         // The card / detail header with the provider's own refresh button at the right.
         private UIElement WithRefresh(UIElement header, string id) {
             var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.Children.Add(header);
             Button refresh = ProviderRefreshButton(id, 28); refresh.Margin = new Thickness(4, -4, -8, -4); refresh.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(refresh, 1); grid.Children.Add(refresh);
-            var more = ProviderActionsButton(id); more.Margin = new Thickness(6, -4, -8, -4); Grid.SetColumn(more, 2); grid.Children.Add(more);
+            var range = RangeIcon(id); range.Margin = new Thickness(5, -4, 0, -4); Grid.SetColumn(range, 2); grid.Children.Add(range);
+            var more = ProviderActionsButton(id); more.Margin = new Thickness(0, -4, -8, -4); Grid.SetColumn(more, 3); grid.Children.Add(more);
             return grid;
         }
         // Per-provider refresh: spins while that provider (or a full refresh) is in flight.
@@ -354,6 +358,7 @@ namespace CodeUsageMonit {
             top.Children.Add(WithRefresh(Identity(state, true), state.Id));
             AccountBody(top, state, true);
             body.Children.Add(Card(top));
+            body.Children.Add(Card(PeriodBlock(state.Id, false)));
             List<DayUsage> days = history.Days.Where(d => d.Agent == state.Id).ToList();
             if (days.Count > 0) body.Children.Add(Card(UsageBlock(state, days)));
             else if (!ProviderCatalog.Custom.ContainsKey(state.Id)) {

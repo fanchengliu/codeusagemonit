@@ -15,7 +15,7 @@ namespace CodeUsageMonit {
         private Border compactRoot;
         private ScrollViewer compactScroll;
         private string activeSize = "full", compactPage = "summary", compactScrollKey = "";
-        private int compactDays = 30;
+
         private System.Windows.Threading.DispatcherTimer copyNoticeTimer;
         private string copyNotice = "";
         private bool IsCompact { get { return activeSize != "full"; } }
@@ -80,26 +80,34 @@ namespace CodeUsageMonit {
             if (quitting || !IsCompact) return;
             List<string> ids = CompactProviders(); string id = config.CompactProvider;
             if (!ids.Contains(id)) { id = "overview"; config.CompactProvider = id; compactPage = "summary"; }
-            string scrollKey = id + ":" + compactPage + ":" + compactDays;
+            if (id != "overview" && compactPage == "summary") {
+                compactScroll = null;
+                compactRoot.Child = activeSize == "small" ? SmallCard(states[id], ids) : activeSize == "medium" ? MediumCard(states[id], ids) : LargeCard(states[id], ids);
+                return;
+            }
+            string scrollKey = id + ":" + compactPage + ":" + RangeKey(RangeChoice(id));
             double offset = scrollKey == compactScrollKey && compactScroll != null ? compactScroll.VerticalOffset : 0;
             compactScrollKey = scrollKey;
             var root = new Grid { Margin = new Thickness(10, 6, 10, 7) };
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); root.RowDefinitions.Add(new RowDefinition()); root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.Children.Add(CompactToolbar(id));
+            var navigation = new StackPanel(); navigation.Children.Add(CompactToolbar(id));
+            if (activeSize != "small") navigation.Children.Add(CoinStrip(ids, id, activeSize == "medium" ? 9 : 12, false));
+            root.Children.Add(navigation);
             var content = new StackPanel { Margin = new Thickness(2, 8, 2, 5) };
             if (id == "overview") CompactOverview(content, ids.Where(x => x != "overview").ToList());
             else {
-                ProviderState state = states[id]; List<DayUsage> days = PeriodDays(id);
-                if (compactPage == "connect") {
+                ProviderState state = states[id];
+                if (compactPage == "period") content.Children.Add(PeriodBlock(id, false));
+                else if (compactPage == "connect") {
                     var heading = Label("连接 " + ProviderCatalog.Name(id), 15, Ink); heading.FontWeight = FontWeights.SemiBold; content.Children.Add(heading);
                     content.Children.Add(Hint(state.Status == "ready" ? "已连接。可以更新密钥或在原应用中切换账号。" : "完成登录后，只刷新这个平台即可。", 5));
                     content.Children.Add(ConnectPanel(state));
-                } else CompactProviderContent(content, state, days, compactPage == "details");
+                } else CompactProviderContent(content, state, compactPage == "details");
             }
             compactScroll = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(0, 0, 4, 0) };
             Grid.SetRow(compactScroll, 1); root.Children.Add(compactScroll);
             var foot = new Grid { Margin = new Thickness(2, 4, 2, 0), Background = Brushes.Transparent };
-            foot.Children.Add(Label(copyNotice.Length > 0 ? copyNotice : demo ? "演示数据 · 拖边缘调整大小" : "右键切换布局 · 拖边缘调整大小", 9.5, copyNotice.Length > 0 ? AccentBrush : InkFaint));
+            foot.Children.Add(activeSize == "small" && copyNotice.Length == 0 ? CoinStrip(ids, id, 13, true) : (UIElement)Label(copyNotice.Length > 0 ? copyNotice : demo ? "演示数据 · 拖边缘调整大小" : "右键切换布局 · 拖边缘调整大小", 9.5, copyNotice.Length > 0 ? AccentBrush : InkFaint));
             Grid.SetRow(foot, 2); root.Children.Add(foot);
             compactRoot.Child = root; compactScroll.ScrollToVerticalOffset(offset);
         }
@@ -109,15 +117,8 @@ namespace CodeUsageMonit {
             if (id != "overview") head.Children.Add(IconAction("", compactPage == "summary" ? "返回概览" : "返回平台", CompactBack));
             var titleContent = new Grid(); titleContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); titleContent.ColumnDefinitions.Add(new ColumnDefinition());
             var icon = Icon(id, 15); icon.Margin = new Thickness(0, 0, 7, 0); titleContent.Children.Add(icon);
-            var title = Label(ProviderCatalog.Name(id) + " ⌄", 12, Ink); title.FontWeight = FontWeights.SemiBold; Grid.SetColumn(title, 1); titleContent.Children.Add(title);
-            var pick = new Button { Content = titleContent, Padding = new Thickness(4, 4, 4, 4), HorizontalContentAlignment = HorizontalAlignment.Stretch, ToolTip = "切换平台" };
-            System.Windows.Automation.AutomationProperties.SetName(pick, "切换平台");
-            pick.Click += delegate {
-                var menu = new ContextMenu();
-                foreach (string provider in CompactProviders()) { string captured = provider; var option = new MenuItem { Header = ProviderCatalog.Name(provider), IsChecked = provider == id }; option.Click += delegate { SelectCompact(captured); }; menu.Items.Add(option); }
-                pick.ContextMenu = menu; menu.PlacementTarget = pick; menu.IsOpen = true;
-            };
-            Grid.SetColumn(pick, 1); head.Children.Add(pick);
+            var title = Label(ProviderCatalog.Name(id), 12, Ink); title.FontWeight = FontWeights.SemiBold; Grid.SetColumn(title, 1); titleContent.Children.Add(title);
+            Grid.SetColumn(titleContent, 1); head.Children.Add(titleContent);
             var actions = new StackPanel { Orientation = Orientation.Horizontal };
             actions.Children.Add(id == "overview" ? RefreshAllButton(26) : ProviderRefreshButton(id, 26));
             actions.Children.Add(IconAction("", "设置", OpenSettings));
@@ -125,27 +126,21 @@ namespace CodeUsageMonit {
             head.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { if (e.ButtonState == MouseButtonState.Pressed) { try { window.DragMove(); } catch (InvalidOperationException) { } } };
             return head;
         }
-        private List<DayUsage> PeriodDays(string id) {
-            string oldest = HistoryService.DayKey(DateTime.Today.AddDays(1 - compactDays));
-            return history.Days.Where(d => (id == "overview" ? config.Enabled.Contains(d.Agent) : d.Agent == id) && String.CompareOrdinal(d.Day, oldest) >= 0).ToList();
-        }
-        private FrameworkElement PeriodSelector() {
-            return Segmented(new[] { new[] { "7", "7 天" }, new[] { "30", "30 天" } }, compactDays.ToString(), value => { compactDays = Int32.Parse(value); Render(); });
-        }
         private void CompactOverview(StackPanel content, List<string> ids) {
-            var days = PeriodDays("overview");
-            var head = Row(); AddRow(head, Label("本机用量 · API 等价", 10.5, InkDim), PeriodSelector()); content.Children.Add(head);
-            content.Children.Add(BigValue(days.Any(d => d.CostKnown) ? Money(days) : "—", activeSize == "small" ? 25 : 29));
-            content.Children.Add(Hint(Compact(days.Sum(d => d.Tokens)) + " Token · 今日 " + TodayMoney(days), 3));
-            if (days.Count > 0) { if (activeSize == "small") { var chart = MiniChart(days, "overview", 24); chart.Margin = new Thickness(0, 8, 0, 0); content.Children.Add(chart); } else content.Children.Add(StackedChart(days, compactDays)); }
+            var usage = RangeUsage("overview");
+            var head = Row(); AddRow(head, Label("本机用量", 10.5, InkDim), activeSize == "small" ? (UIElement)RangeIcon("overview") : RangeButton("overview")); content.Children.Add(head);
+            content.Children.Add(BigValue(PeriodCost(usage), activeSize == "small" ? 22 : 29));
+            content.Children.Add(Hint(PeriodTokens(usage) + " Token · " + (RangeChoice("overview").Preset == "custom" ? "所选时段" : RangeChoice("overview").Preset), 3));
+            if (activeSize != "small") content.Children.Add(PeriodChart(usage, "overview", activeSize == "medium" ? 26 : 42));
             content.Children.Add(Separator());
             foreach (string id in ids) content.Children.Add(OverviewLine(id));
             int connected = ids.Count(id => states[id].Status == "ready");
             content.Children.Add(Hint(connected + " / " + ids.Count + " 已连接 · 点击平台查看详情", 7));
+            content.Children.Add(PeriodNote("overview", usage));
         }
         private FrameworkElement OverviewLine(string id) {
             ProviderState state = states[id]; var card = new Grid { Margin = new Thickness(0, 0, 0, 7) };
-            card.ColumnDefinitions.Add(new ColumnDefinition()); card.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            card.ColumnDefinitions.Add(new ColumnDefinition()); card.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(activeSize == "small" ? 44 : 54) });
             var inside = new Grid(); inside.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); inside.ColumnDefinitions.Add(new ColumnDefinition());
             var icon = Icon(id, 16); icon.Margin = new Thickness(0, 0, 9, 0); inside.Children.Add(icon);
             var lines = new StackPanel();
@@ -158,10 +153,10 @@ namespace CodeUsageMonit {
             System.Windows.Automation.AutomationProperties.SetName(open, "查看 " + ProviderCatalog.Name(id));
             open.Click += delegate { SelectCompact(id); }; card.Children.Add(open);
             Button action = NeedsConnect(state) ? ConnectionButton(id, true) : ProviderRefreshButton(id, 26);
-            action.Margin = new Thickness(5, 0, 0, 0); action.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(action, 1); card.Children.Add(action);
+            action.Margin = new Thickness(4, 0, 0, 0); action.HorizontalAlignment = HorizontalAlignment.Center; action.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(action, 1); card.Children.Add(action);
             return card;
         }
-        private void CompactProviderContent(StackPanel content, ProviderState state, List<DayUsage> days, bool details) {
+        private void CompactProviderContent(StackPanel content, ProviderState state, bool details) {
             string id = state.Id;
             var identity = Label(state.Plan.Length > 0 ? state.Plan : StatusWord(state), 11, InkDim); content.Children.Add(identity);
             if (state.Stale || NeedsConnect(state)) content.Children.Add(Hint(state.Stale ? "上次成功读数 · 请检查连接状态" : state.Message, 6));
@@ -177,19 +172,8 @@ namespace CodeUsageMonit {
             if (state.Quotas.Count == 0 && state.Balances.Count == 0) content.Children.Add(Hint(ProviderCatalog.LocalOnly(id) ? "本平台仅统计本机历史。" : state.Status == "loading" ? "正在读取…" : "暂未读取到账户额度。", 8));
             if (state.ResetCreditsAvailable.HasValue) content.Children.Add(Hint("限额重置额度 · " + state.ResetCreditsAvailable + " 次可用", 9));
             content.Children.Add(Separator());
-            var period = Row(); AddRow(period, Label(details ? "用量详情" : "本机历史", 12, Ink), PeriodSelector()); content.Children.Add(period);
-            var metrics = new UniformGrid { Columns = activeSize == "small" ? 2 : 3, Margin = new Thickness(0, 9, 0, 8) };
-            metrics.Children.Add(Metric("今日估算", TodayMoney(days))); metrics.Children.Add(Metric("近 " + compactDays + " 天", days.Count > 0 ? Money(days) : "—"));
-            if (activeSize != "small" || details) metrics.Children.Add(Metric("Token", Compact(days.Sum(d => d.Tokens))));
-            content.Children.Add(metrics);
-            if (days.Count > 0) { content.Children.Add(MiniChart(days, id, details || activeSize == "large" ? 54 : 34)); if (details) content.Children.Add(Hint("最常用模型 · " + UsageDetails.MainModel(days), 8)); }
-            else content.Children.Add(Hint("本机暂无该平台的历史记录。", 5));
-            if (details) {
-                foreach (DayUsage day in days.OrderByDescending(d => d.Day).Take(compactDays)) { var row = Row(); row.Margin = new Thickness(0, 8, 0, 0); AddRow(row, Label(day.Day, 10.5, InkDim), Label((day.CostKnown ? "$" + day.Cost.ToString("N2") : "未定价") + " · " + Compact(day.Tokens), 10.5, Ink)); content.Children.Add(row); }
-                string account = VisibleAccount(state); if (account.Length > 0) content.Children.Add(Hint(account, 12));
-            }
-            content.Children.Add(Hint("本机日志估算 · 不是订阅账单", 9));
-            if (state.LastSuccess.Length > 0) content.Children.Add(Hint("更新于 " + UpdatedAgo(state.LastSuccess), 5));
+            content.Children.Add(PeriodBlock(id, details));
+            if (details) { string account = VisibleAccount(state); if (account.Length > 0) content.Children.Add(Hint(account, 12)); }
         }
         private UIElement InteractiveQuota(Quota q, ProviderState state, bool clickable) {
             var stack = new StackPanel { Margin = new Thickness(0, 9, 0, 4) };
@@ -224,8 +208,8 @@ namespace CodeUsageMonit {
             foreach (var q in state.Quotas) text.AppendLine(q.Label + "剩余 " + q.Remaining.ToString("0.#") + "% · " + Countdown(q.ResetUtc));
             foreach (var b in state.Balances) text.AppendLine(b.Currency + " " + b.Amount.ToString("N2", CultureInfo.InvariantCulture));
             if (state.Stale || state.Status != "ready") text.AppendLine(StatusWord(state) + (state.Stale ? "（上次读数）" : ""));
-            var days = history.Days.Where(d => d.Agent == id).ToList();
-            text.AppendLine("近 30 天：" + (days.Count > 0 ? Money(days) : "—") + " · " + Compact(days.Sum(d => d.Tokens)) + " Token（API 等价估算，非订阅账单）"); return text.ToString();
+            var usage = RangeUsage(id);
+            text.AppendLine(PeriodCaption(usage)); text.AppendLine(PeriodCost(usage) + " · " + PeriodTokens(usage) + " Token（API 等价估算，非订阅账单）"); return text.ToString();
         }
         private void CopyProviderSummary(string id) {
             try { Clipboard.SetText(ProviderSummary(id)); copyNotice = "已复制 " + ProviderCatalog.Name(id) + " 用量"; } catch { copyNotice = "剪贴板被占用，请重试"; }
@@ -241,17 +225,14 @@ namespace CodeUsageMonit {
                 AddMenuAction(menu, "查看用量详情", () => { if (IsCompact) OpenCompactPage(id, "details"); else SelectProvider(id); });
                 AddMenuAction(menu, "复制本平台用量", () => CopyProviderSummary(id));
                 if (!ProviderCatalog.LocalOnly(id)) AddMenuAction(menu, "连接 / 更换账号", () => OpenProviderConnection(id));
+                AddMenuAction(menu, "时间范围…", () => OpenRangePicker(id, button));
+                AddMenuAction(menu, "返回概览", () => { if (IsCompact) SelectCompact("overview"); else SelectProvider("overview"); });
+                AddMenuAction(menu, "设置…", OpenSettings);
                 button.ContextMenu = menu; menu.PlacementTarget = button; menu.IsOpen = true;
             }; return button;
         }
         private static Quota Headline(ProviderState state) { return state.Quotas.OrderBy(q => q.Remaining).FirstOrDefault(); }
         private static TextBlock BigValue(string text, double size) { var t = Label(text, size, Ink); t.FontWeight = FontWeights.SemiBold; Tabular(t); t.Margin = new Thickness(0, 5, 0, 0); return t; }
         private static FrameworkElement Metric(string title, string value) { var s = new StackPanel { Margin = new Thickness(0, 0, 7, 8) }; s.Children.Add(Label(title, 10, InkFaint)); var t = Label(value, 14, Ink); t.FontWeight = FontWeights.SemiBold; Tabular(t); s.Children.Add(t); return s; }
-        private FrameworkElement MiniChart(List<DayUsage> days, string id, double height) {
-            var dates = Enumerable.Range(0, compactDays).Select(i => HistoryService.DayKey(DateTime.Today.AddDays(i + 1 - compactDays))).ToList();
-            var amounts = dates.Select(d => days.Where(x => x.Day == d && x.CostKnown).Sum(x => x.Cost)).ToList(); double max = Math.Max(.01, amounts.Max());
-            var chart = new UniformGrid { Columns = compactDays, Height = height };
-            for (int i = 0; i < compactDays; i++) { var cell = new Grid { Margin = new Thickness(.8, 0, .8, 0), ToolTip = dates[i] + " · $" + amounts[i].ToString("N2") }; cell.Children.Add(new Border { Height = amounts[i] > 0 ? Math.Max(2, height * amounts[i] / max) : 1, Background = Brush(ProviderCatalog.Color(id)), Opacity = amounts[i] > 0 ? .75 : .15, VerticalAlignment = VerticalAlignment.Bottom }); chart.Children.Add(cell); } return chart;
-        }
     }
 }

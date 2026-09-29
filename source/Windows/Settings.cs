@@ -89,9 +89,9 @@ namespace CodeUsageMonit {
             double transparency = Math.Round((1 - config.SurfaceOpacity) * 100);
             var transparencyValue = Label(transparency.ToString("0") + "%", 12, InkDim); Tabular(transparencyValue);
             var transparencySlider = new Slider { Minimum = 0, Maximum = 100, Value = transparency, SmallChange = 1, LargeChange = 10, Margin = new Thickness(0, 8, 0, 0) };
-            System.Windows.Automation.AutomationProperties.SetName(transparencySlider, "背景透明度");
+            System.Windows.Automation.AutomationProperties.SetName(transparencySlider, "界面透明度");
             var transparencyRow = Row(); transparencyRow.Margin = new Thickness(0, 12, 0, 0);
-            AddRow(transparencyRow, FieldLabel("毛玻璃透明度", "0 为不透明，越高越通透"), transparencyValue);
+            AddRow(transparencyRow, FieldLabel("界面透明度", "0 为不透明，越高越通透"), transparencyValue);
             windowCard.Children.Add(transparencyRow); windowCard.Children.Add(transparencySlider);
             transparencySlider.ValueChanged += delegate {
                 transparency = Math.Round(transparencySlider.Value); transparencyValue.Text = transparency.ToString("0") + "%";

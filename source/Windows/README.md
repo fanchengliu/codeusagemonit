@@ -1,4 +1,4 @@
-# codeusagemonit for Windows — 0.7
+# codeusagemonit for Windows — 0.8
 
 A single-tray Windows monitor for eleven built-in providers and custom JSON APIs. The interface and selected provider logic are adapted from CodexBar under MIT licenses.
 
@@ -28,9 +28,17 @@ Pricing comes from ccusage's offline table, which includes cache discounts and l
 
 ## Four mutually exclusive display sizes
 
-`Compact.cs` provides three information-density presets in the same monitor window: small (260×320), medium (420×320), large (420×540), plus the full panel (420×790). All four have native resize edges. Each layout's custom geometry persists independently in `AppConfig.Layouts`; legacy full-panel geometry is retained. Defaults are logical pixels at 100% zoom. The full panel's context menu is available throughout its background, not just the title strip.
+`Compact.cs` and `CompactCards.cs` provide distinct density presets in one monitor: small (172×172, headline and dots), medium (360×176, horizontal split with coin icons), large (360×390, full quota rows and history), plus full (420×790). All four have native resize edges and preserve custom geometry independently in `AppConfig.Layouts`. Existing user sizes are not reset on upgrade. Overview rows reserve one fixed-width action column so refresh and connection controls cannot change meter width.
 
-Compact layouts are normal interactive windows, with optional always-on-top. Every preset has an overview, a platform picker, single-platform refresh, a 7/30-day range, clickable quota/detail navigation, copy feedback and button-based account controls. Connection forms stay inside the current window with scrolling at small widths; API-key/region drafts survive refreshes. Back/Esc returns to the previous compact page. Settings use a separate window without switching the monitor to full. Full and compact backgrounds share one Acrylic transparency preference.
+Compact layouts are normal interactive windows, with optional always-on-top. Every preset has an overview, provider icons/dots, individual refresh, a calendar button, clickable details, copy feedback and account controls. Connection forms remain in place and preserve drafts. Applying a range in a small provider card opens its interval statistics at the same size. Settings use a separate window. The appearance control is named “界面透明度”.
+
+## Date and time ranges
+
+`UsagePeriod.cs` defines per-scope persisted range choices and pure aggregation. `PeriodView.cs` supplies the calendar popover and isolated asynchronous local reads. Presets are today (local midnight), or rolling 1/7/14/30 days; custom ranges have fixed start and optional moving end. Timestamp intervals are start-inclusive/end-exclusive. Choices are persisted in `AppConfig.UsageRanges`; presets with follow-now enabled roll forward, while a custom start stays fixed. The popover does not resize the monitor, defers background visual rebuilds, validates dates/times and applies only on confirmation.
+
+Confirming a range reads the selected dates through ccusage and builds Codex/Claude hourly indexes with an extended horizon when needed (up to the exposed 366-day date limit). Requests are serialized; only the latest selection for a scope is accepted. Range snapshots remain in memory, separate from the normal 30-day cache. Follow-now snapshots refresh at the configured interval while displayed. Empty/missing history is distinguished from known recorded zero use.
+
+Hourly boundary bins are weighted by their overlap with the selected interval and marked as estimates. The current hour is normalized to its scanned prefix, not a full future hour. Local midnight splits also support fractional-offset time zones. Costs use the corresponding local day's API-equivalent rate and stay estimates. Daily-only sources contribute complete dates (or the scanned prefix of today) wholly contained in the range; partial dates are excluded and identified. Account quota meters remain current readings rather than fabricated historical quota snapshots.
 
 ## Command line
 

@@ -74,9 +74,11 @@ namespace CodeUsageMonit {
         public string CompactProvider = "overview";
         public double? CompactLeft, CompactTop;
         public Dictionary<string, PanelPlacement> Layouts = new Dictionary<string, PanelPlacement>();
+        public int LayoutStyleVersion;
+        public Dictionary<string, UsageRangeChoice> UsageRanges = new Dictionary<string, UsageRangeChoice>();
     }
     public static class AppInfo {
-        public const string ShortVersion = "0.7";
+        public const string ShortVersion = "0.8";
         public const string UserAgent = "codeusagemonit/" + ShortVersion;
     }
     public static class ProviderCatalog {
@@ -569,11 +571,12 @@ namespace CodeUsageMonit {
         }
     }
     public static class HistoryService {
-        public static async Task<UsageHistory> Read() {
+        public static Task<UsageHistory> Read() { return ReadRange(DateTime.Today.AddDays(-29), DateTime.Today); }
+        public static async Task<UsageHistory> ReadRange(DateTime firstDay, DateTime lastDay) {
             string exe = Path.Combine(Store.Root, @"tools\ccusage.exe"); if (!File.Exists(exe)) return new UsageHistory { Error = "本地统计组件未安装" };
             // No --timezone: ccusage then groups days by the Windows time zone, which is
             // the same calendar DateTime.Today and the charts use.
-            var start = new ProcessStartInfo(exe, "daily --json --by-agent --offline --since " + DayKey(DateTime.Today.AddDays(-29)) + " --until " + DayKey(DateTime.Today)) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
+            var start = new ProcessStartInfo(exe, "daily --json --by-agent --offline --since " + DayKey(firstDay) + " --until " + DayKey(lastDay)) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
             using (var p = Process.Start(start)) {
                 Task<string> output = p.StandardOutput.ReadToEndAsync(); Task<string> error = p.StandardError.ReadToEndAsync(); bool exited = await Task.Run(() => p.WaitForExit(45000)).ConfigureAwait(false);
                 if (!exited) { try { p.Kill(); } catch { } return new UsageHistory { Error = "扫描本地记录超时，稍后再试" }; }

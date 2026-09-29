@@ -23,7 +23,7 @@ public static class UiRegression {
     static T Field<T>(string name) { return (T)typeof(MonitorPanel).GetField(name, Private).GetValue(panel); }
     static object Call(string name, params object[] args) { return typeof(MonitorPanel).GetMethod(name, Private).Invoke(panel, args); }
     static void Require(bool ok, string note) { if (!ok) throw new Exception(note); }
-    static void Check(string name, Action test) { try { test(); passed.Add(name); } catch (Exception e) { failed.Add(name + ": " + e.GetBaseException().Message); Call("CloseSettings"); } }
+    static void Check(string name, Action test) { try { test(); passed.Add(name); } catch (Exception e) { failed.Add(name + ": " + e.GetBaseException().Message); Call("CloseRangePicker"); Call("CloseSettings"); } }
     static void Pump() { var f = new DispatcherFrame(); app.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => f.Continue = false)); Dispatcher.PushFrame(f); window.UpdateLayout(); }
     static void Finish(Task task) { while (!task.IsCompleted) { Pump(); System.Threading.Thread.Sleep(10); } task.GetAwaiter().GetResult(); Pump(); }
     static IEnumerable<DependencyObject> Tree(DependencyObject root) { yield return root; for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++) foreach (var c in Tree(VisualTreeHelper.GetChild(root, i))) yield return c; }
@@ -32,9 +32,18 @@ public static class UiRegression {
     static Rect Bounds() { return new Rect(window.Left, window.Top, window.ActualWidth, window.ActualHeight); }
     static void SameBounds(Rect old) { Rect current = Bounds(); Require(Math.Abs(current.X - old.X) < 1 && Math.Abs(current.Y - old.Y) < 1 && Math.Abs(current.Width - old.Width) < 1 && Math.Abs(current.Height - old.Height) < 1, "monitor geometry changed: " + old + " -> " + current); }
     static void Shot(string name, Window targetWindow = null) {
-        Pump(); var target = (FrameworkElement)(targetWindow ?? window).Content; target.UpdateLayout();
+        ShotElement(name, (FrameworkElement)(targetWindow ?? window).Content);
+    }
+    static void ShotElement(string name, FrameworkElement target) {
+        Pump(); target.UpdateLayout();
         var bmp = new RenderTargetBitmap((int)Math.Ceiling(target.ActualWidth), (int)Math.Ceiling(target.ActualHeight), 96, 96, PixelFormats.Pbgra32); bmp.Render(target);
         var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bmp)); using (var file = File.Create(Path.Combine(Store.Root, "verification", name + ".png"))) png.Save(file);
+    }
+    static TextBox TimeBox(DependencyObject root, string name) { return Tree(root).OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == name); }
+    static void PickDate(DependencyObject root, DateTime date) {
+        string name = "选择日期 " + date.ToString("yyyy-MM-dd");
+        if (!Tree(root).OfType<ButtonBase>().Any(b => AutomationProperties.GetName(b) == name)) Click(Button("上个月", root));
+        Click(Button(name, root));
     }
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hwnd, int msg, IntPtr w, IntPtr l);
     static int Hit(Point logical) { Point p = window.PointToScreen(logical); long packed = ((long)(int)p.Y << 16) | ((long)(int)p.X & 65535); return (int)SendMessage(new WindowInteropHelper(window).Handle, 0x84, IntPtr.Zero, new IntPtr(packed)); }
@@ -63,20 +72,22 @@ public static class UiRegression {
                     Call("SetDisplaySize", size == "full" ? "small" : "full"); Call("SetDisplaySize", size); Pump(); SameBounds(bounds);
                     Require(app.Windows.Count == 1 && new WindowInteropHelper(window).Handle == hwnd, "extra main window");
                 }
+                Field<WindowFrame>("frame").SetScale(.8, false); Call("SetDisplaySize", "small"); window.Width = 150; window.Height = 150; Pump();
+                Call("SetDisplaySize", "full"); Call("SetDisplaySize", "small"); Pump(); Require(Math.Abs(window.ActualWidth - 150) < 1 && Math.Abs(window.ActualHeight - 150) < 1, "zoomed geometry changed");
+                Field<WindowFrame>("frame").SetScale(1, false);
             });
             Check("Small medium and large overview rows navigate in place and support 7/30 day filters", () => {
                 foreach (string size in new[] { "small", "medium", "large" }) {
                     Call("SetDisplaySize", size); Field<WindowFrame>("frame").ResetPosition(); Call("SelectCompact", "overview"); Pump(); Rect bounds = Bounds();
                     foreach (string id in config.Enabled) Require(Button("查看 " + ProviderCatalog.Name(id)) != null, "missing overview row");
-                    Click(Button("7 天")); Require(Field<int>("compactDays") == 7, "period failed"); Click(Button("30 天")); Shot(size + "-overview");
+                    Click(Button("概览 时间范围")); var popup = Field<Popup>("rangePopup"); Click(Button("快捷范围 7d", popup.Child)); Click(Button("确定时间范围", popup.Child)); Require(config.UsageRanges["overview"].Preset == "7d", "period failed"); Shot(size + "-overview");
                     Click(Button("查看 Codex")); SameBounds(bounds); Require(config.CompactProvider == "codex", "navigation failed");
                     Click(Button("查看 Codex 用量详情")); SameBounds(bounds); Require(Field<string>("compactPage") == "details", "details missing"); Shot(size + "-detail");
-                    Click(Button("返回平台")); Click(Button("返回概览")); SameBounds(bounds); Require(config.CompactProvider == "overview", "back failed");
+                    Click(Button("返回平台")); Click(Button("切换到 概览")); SameBounds(bounds); Require(config.CompactProvider == "overview", "back failed");
                 }
             });
-            Check("Compact platform menu switches providers without changing layout", () => {
-                Call("SetDisplaySize", "small"); Call("SelectCompact", "codex"); Rect bounds = Bounds(); var pick = (Button)Button("切换平台"); Click(pick);
-                var claude = pick.ContextMenu.Items.OfType<MenuItem>().First(m => Convert.ToString(m.Header) == "Claude"); pick.ContextMenu.IsOpen = false; claude.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+            Check("Coin icons switch providers without changing layout", () => {
+                Call("SetDisplaySize", "small"); Call("SelectCompact", "codex"); Rect bounds = Bounds(); Click(Button("切换到 Claude"));
                 Require(config.CompactProvider == "claude", "wrong selected provider"); SameBounds(bounds);
             });
             Check("Connecting from each compact size stays at that exact size and uses real buttons", () => {
@@ -111,11 +122,11 @@ public static class UiRegression {
             Check("Acrylic-only settings preview endpoints revert on close and persist on save", () => {
                 Call("SetDisplaySize", "medium"); Rect bounds = Bounds(); Call("OpenSettings"); Pump(); var settings = Field<Window>("settingsWindow"); var view = Field<FrameworkElement>("settingsView");
                 Require(!Tree(view).OfType<ButtonBase>().Any(b => Convert.ToString(b.Content) == "Mica"), "obsolete Mica option");
-                var slider = Tree(view).OfType<Slider>().Single(s => AutomationProperties.GetName(s) == "背景透明度"); Require(slider.Minimum == 0 && slider.Maximum == 100, "wrong transparency range");
+                var slider = Tree(view).OfType<Slider>().Single(s => AutomationProperties.GetName(s) == "界面透明度"); Require(slider.Minimum == 0 && slider.Maximum == 100, "wrong transparency range");
                 var surface = (Border)window.FindName("Surface"); slider.Value = 100; Pump(); Require(((SolidColorBrush)surface.Background).Color.A == 0, "100% endpoint failed");
                 slider.Value = 0; Pump(); Require(((SolidColorBrush)surface.Background).Color.A == 255, "0% endpoint failed"); slider.Value = 40; Pump(); Shot("settings", settings);
                 settings.Close(); Pump(); Require(config.SurfaceOpacity == 1 && ((SolidColorBrush)surface.Background).Color.A == 255, "close failed to revert"); SameBounds(bounds);
-                Call("OpenSettings"); view = Field<FrameworkElement>("settingsView"); Pump(); Tree(view).OfType<Slider>().Single(s => AutomationProperties.GetName(s) == "背景透明度").Value = 40;
+                Call("OpenSettings"); view = Field<FrameworkElement>("settingsView"); Pump(); Tree(view).OfType<Slider>().Single(s => AutomationProperties.GetName(s) == "界面透明度").Value = 40;
                 Click(Button("保存设置", view)); Require(config.Material == "acrylic" && config.SurfaceOpacity == .6 && config.DisplaySize == "medium", "save failed"); SameBounds(bounds);
             });
             Check("Changing layouts while settings are open is not undone by unrelated settings save", () => {
@@ -140,6 +151,80 @@ public static class UiRegression {
                 string dir = Path.Combine(Store.Root, "verification", "mock cli space"); Directory.CreateDirectory(dir); string path = Path.Combine(dir, "mock.cmd"); File.WriteAllText(path, "@echo off\r\necho arg=[%~1]\r\n");
                 var info = new System.Diagnostics.ProcessStartInfo("cmd.exe", MonitorPanel.CliArguments(path, "login", false)) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true };
                 using (var p = System.Diagnostics.Process.Start(info)) { string output = p.StandardOutput.ReadToEnd(); p.WaitForExit(); Require(p.ExitCode == 0 && output.Trim() == "arg=[login]", "quoted launch failed"); }
+            });
+            Check("Different presets retain square, landscape, and detailed provider designs", () => {
+                foreach (string size in new[] { "small", "medium", "large" }) {
+                    Call("SetDisplaySize", size); Field<WindowFrame>("frame").ResetPosition(); Call("SelectCompact", "claude"); Pump();
+                    var grids = Tree(Field<Border>("compactRoot")).OfType<UniformGrid>().ToList(); int cells = size == "small" ? 16 : size == "medium" ? 20 : 24;
+                    Require(grids.Count(g => g.Columns == cells && g.Height <= 8) == (size == "small" ? 1 : 2), "density not distinct " + size);
+                    Require(!Tree(window).OfType<ButtonBase>().Any(b => b.IsVisible && AutomationProperties.GetName(b) == "切换平台"), "wide picker remains"); Shot(size + "-summary");
+                }
+            });
+            Check("Overview progress tracks align despite mixed refresh and connect buttons", () => {
+                string original = states["claude"].Status; states["claude"].Status = "error";
+                foreach (string size in new[] { "small", "medium", "large" }) {
+                    Call("SetDisplaySize", size); Call("SelectCompact", "overview"); Pump();
+                    var codex = Tree(Button("查看 Codex")).OfType<UniformGrid>().Single(g => g.Columns == 20);
+                    var claude = Tree(Button("查看 Claude")).OfType<UniformGrid>().Single(g => g.Columns == 20);
+                    var cursor = Tree(Button("查看 Cursor")).OfType<UniformGrid>().Single(g => g.Columns == 20);
+                    Require(Math.Abs(codex.ActualWidth - claude.ActualWidth) < .1 && Math.Abs(codex.ActualWidth - cursor.ActualWidth) < .1, "unequal quota tracks " + size);
+                    Shot(size + "-aligned-overview");
+                }
+                states["claude"].Status = original;
+            });
+            Check("Calendar is available in all layouts with five presets and no monitor resize", () => {
+                foreach (string size in MonitorPanel.DisplaySizes) {
+                    Call("SetDisplaySize", size); if (size == "full") Call("SelectProvider", "codex"); else Call("SelectCompact", "codex"); Pump(); Rect bounds = Bounds();
+                    Click(Button("Codex 时间范围")); var popup = Field<Popup>("rangePopup"); Require(popup.IsOpen && app.Windows.Count == 1, "picker changed window count");
+                    foreach (string quick in UsagePeriod.Presets) Require(Button("快捷范围 " + quick, popup.Child) != null, "missing preset");
+                    Click(Button("快捷范围 14d", popup.Child)); SameBounds(bounds); Call("Render"); Require(Field<Popup>("rangePopup") == popup && popup.IsOpen, "background render closed picker");
+                    Click(Button("取消", popup.Child)); SameBounds(bounds);
+                }
+            });
+            Check("Calendar dates and HH:mm apply per provider and persist independently", () => {
+                Call("SetDisplaySize", "large"); Call("SelectCompact", "codex"); Rect bounds = Bounds(); Click(Button("Codex 时间范围"));
+                var popup = Field<Popup>("rangePopup"); var surface = (FrameworkElement)popup.Child;
+                Click(Button("快捷范围 today", surface)); Click(Button("开始日期", surface)); PickDate(surface, DateTime.Today.AddDays(-1)); TimeBox(surface, "开始时间").Text = "09:15";
+                Click(Button("结束日期", surface)); PickDate(surface, DateTime.Today.AddDays(-1)); TimeBox(surface, "结束时间").Text = "17:45";
+                Pump(); ShotElement("calendar-custom", surface); Click(Button("确定时间范围", surface));
+                var range = UsagePeriod.Resolve(config.UsageRanges["codex"], DateTime.UtcNow, TimeZoneInfo.Local);
+                Require(range.StartUtc.ToLocalTime() == DateTime.Today.AddDays(-1).AddHours(9).AddMinutes(15) && range.EndUtc.ToLocalTime() == DateTime.Today.AddDays(-1).AddHours(17).AddMinutes(45), "range mismatch");
+                Require(!config.UsageRanges.ContainsKey("claude") && Store.Read<AppConfig>("settings.json").UsageRanges["codex"].Preset == "custom", "scope or persistence failed"); SameBounds(bounds);
+            });
+            Check("Invalid calendar input stays open without changing saved statistics", () => {
+                string saved = J.Serializer().Serialize(config.UsageRanges["codex"]); Click(Button("Codex 时间范围")); var popup = Field<Popup>("rangePopup"); var child = popup.Child;
+                TimeBox(child, "结束时间").Text = "88:88"; Click(Button("确定时间范围", child)); Require(popup.IsOpen && Tree(child).OfType<TextBlock>().Any(t => t.Text.Contains("HH:mm")), "bad time accepted");
+                TimeBox(child, "结束时间").Text = "08:00"; Click(Button("确定时间范围", child)); Require(popup.IsOpen && Tree(child).OfType<TextBlock>().Any(t => t.Text.Contains("晚于")), "reversed time accepted");
+                Click(Button("取消", child)); Require(saved == J.Serializer().Serialize(config.UsageRanges["codex"]), "cancel changed range");
+            });
+            Check("Follow-now disables the fixed end time while keeping the chosen start", () => {
+                string start = config.UsageRanges["codex"].StartUtc; Click(Button("Codex 时间范围")); var popup = Field<Popup>("rangePopup");
+                Tree(popup.Child).OfType<CheckBox>().Single().IsChecked = true; Pump(); Require(!TimeBox(popup.Child, "结束时间").IsEnabled, "fixed end still editable"); Click(Button("确定时间范围", popup.Child));
+                Require(config.UsageRanges["codex"].FollowNow && config.UsageRanges["codex"].StartUtc == start, "following now moved start");
+            });
+            Check("Range reads execute once and only the latest queued interval is accepted", () => {
+                // Exercise the real asynchronous history process path with a local fixture.
+                // Pi takes no credential or hourly-log path; the data root remains demo-only.
+                string counter = Path.Combine(Store.Root, "tools", "fixture-calls.txt"); File.WriteAllText(counter, "");
+                var previous = config.UsageRanges; config.UsageRanges = new Dictionary<string, UsageRangeChoice>();
+                Call("SetDisplaySize", "small"); Call("SelectCompact", "pi");
+                typeof(MonitorPanel).GetField("demo", Private).SetValue(panel, false);
+                try {
+                    Call("ApplyUsageRange", "pi", new UsageRangeChoice { Preset = "today" });
+                    DateTime deadline = DateTime.UtcNow.AddSeconds(8);
+                    while (Field<HashSet<string>>("periodBusy").Contains("pi") && DateTime.UtcNow < deadline) { Pump(); System.Threading.Thread.Sleep(10); }
+                    Pump(); Require(File.ReadAllLines(counter).Length == 1 && !Field<HashSet<string>>("periodBusy").Contains("pi"), "duplicate range read");
+                    Call("ApplyUsageRange", "pi", new UsageRangeChoice { Preset = "1d" });
+                    Call("ApplyUsageRange", "pi", new UsageRangeChoice { Preset = "7d" });
+                    Call("ApplyUsageRange", "pi", new UsageRangeChoice { Preset = "14d" });
+                    deadline = DateTime.UtcNow.AddSeconds(8);
+                    while (Field<HashSet<string>>("periodBusy").Contains("pi") && DateTime.UtcNow < deadline) { Pump(); System.Threading.Thread.Sleep(10); }
+                    Pump(); var usage = (PeriodUsage)Call("RangeUsage", "pi");
+                    Require(File.ReadAllLines(counter).Length == 3 && !Field<HashSet<string>>("periodBusy").Contains("pi"), "obsolete queued read ran");
+                    var snapshot = ((System.Collections.IDictionary)Field<object>("periodSnapshots"))["pi"];
+                    Require(((string)snapshot.GetType().GetField("Key").GetValue(snapshot)).StartsWith("14d|") && ((UsageHistory)snapshot.GetType().GetField("History").GetValue(snapshot)).Days.Single().Day == DateTime.Today.AddDays(-14).ToString("yyyy-MM-dd"), "latest history result was not accepted");
+                    Require(usage.Period.StartUtc > DateTime.UtcNow.AddDays(-14).AddMinutes(-1) && usage.Period.StartUtc < DateTime.UtcNow.AddDays(-14).AddMinutes(1), "older range replaced selection");
+                } finally { typeof(MonitorPanel).GetField("demo", Private).SetValue(panel, true); config.UsageRanges = previous; }
             });
             Check("Saved custom compact geometry and zoom survive cold startup", () => {
                 panel.Dispose(); typeof(MonitorPanel).GetField("quitting", Private).SetValue(panel, true); window.Close();
