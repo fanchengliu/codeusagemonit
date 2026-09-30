@@ -235,13 +235,15 @@ namespace CodeUsageMonit {
             if (!config.Enabled.Contains(state.Id)) { stack.Children.Add(Notice("此平台已关闭，可在设置中启用。", false)); return; }
             if (ProviderCatalog.LocalOnly(state.Id)) { stack.Children.Add(Notice(ProviderCatalog.Help(state.Id), false)); return; }
             bool first = true;
-            foreach (var quota in state.Quotas.Take(detail ? 30 : 3)) {
+            // Cursor lists Grok Bot under the three plan meters, including on the overview card.
+            int preview = detail ? 30 : state.Id == "cursor" ? state.Quotas.Count : 3;
+            foreach (var quota in state.Quotas.Take(preview)) {
                 FrameworkElement row = QuotaRow(quota, state.Id, state.Stale);
                 if (first) { row.Margin = new Thickness(row.Margin.Left, 9, row.Margin.Right, 0); first = false; }
                 stack.Children.Add(row);
             }
-            if (!detail && state.Quotas.Count > 3) {
-                var more = new Button { Style = Styled("LinkButton"), Content = "查看其余 " + (state.Quotas.Count - 3) + " 项额度 ›", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 8, 0, 0) };
+            if (!detail && state.Quotas.Count > preview) {
+                var more = new Button { Style = Styled("LinkButton"), Content = "查看其余 " + (state.Quotas.Count - preview) + " 项额度 ›", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 8, 0, 0) };
                 more.Click += delegate { SelectProvider(state.Id); }; stack.Children.Add(more);
             }
             foreach (var balance in state.Balances) {
@@ -660,7 +662,7 @@ namespace CodeUsageMonit {
         private static string Money(IEnumerable<DayUsage> days) { var rows = days.Where(d => d.CostKnown).ToList(); return rows.Count == 0 ? "—" : Usd(rows.Sum(d => d.Cost)); }
         // A scanned history without a row for today means nothing was recorded today.
         private string TodayMoney(IEnumerable<DayUsage> days) { string today = Today(); var rows = days.Where(d => d.Day == today).ToList(); return rows.Count == 0 ? (history.Updated.Length > 0 ? "$0.00" : "—") : Money(rows); }
-        private static string WindowName(Quota quota) { return quota.Label.Contains("每周") ? "本周额度" : quota.Label.Contains("5 小时") ? "5 小时窗口" : "当前周期"; }
+        private static string WindowName(Quota quota) { return quota.Label == Parsers.CursorGrokLabel ? "Grok Bot 本周" : quota.Label.Contains("每周") ? "本周额度" : quota.Label.Contains("5 小时") ? "5 小时窗口" : "当前周期"; }
         private static string WindowMoney(WindowUsage usage) {
             if (usage == null || !usage.HasCost) return "—";
             return (usage.Exact ? "≈" : "≥") + Usd(usage.Cost);

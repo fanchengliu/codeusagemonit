@@ -37,6 +37,31 @@ namespace CodeUsageMonit {
                 Require(state.Plan == "Cursor Pro" && state.Quotas[0].WindowSeconds == 2592000);
                 var missing = Parsers.Cursor(J.Parse("{\"billingCycleEnd\":\"2026-01-31T00:00:00Z\",\"individualUsage\":{\"plan\":{\"totalPercentUsed\":20}}}")); Require(missing.Quotas[0].WindowSeconds == 0);
             });
+            test("Cursor Grok Bot weekly quota is appended after the plan meters", () => {
+                var s = Parsers.Cursor(J.Parse("{\"membershipType\":\"pro\",\"billingCycleStart\":\"2026-09-02T03:15:00.000Z\",\"billingCycleEnd\":\"2026-10-02T03:15:00.000Z\",\"individualUsage\":{\"plan\":{\"totalPercentUsed\":20.38,\"autoPercentUsed\":12.53,\"apiPercentUsed\":98.89}}}"));
+                Parsers.CursorGrokBot(s, J.Parse("{\"currentPeriodStart\":\"2026-09-24T03:13:20.873Z\",\"nextResetTimestampUtc\":\"2026-10-01T03:13:20.873Z\",\"usagePercent\":69.163729,\"hasNonZeroIncludedLimit\":true,\"hasAvailableUsage\":true}"));
+                Require(s.Quotas.Count == 4 && s.Quotas[0].Label == "套餐总量" && s.Quotas[1].Label == "Auto" && s.Quotas[2].Label == "API / 手动模型" && s.Quotas[3].Label == Parsers.CursorGrokLabel);
+                Require(Math.Abs(s.Quotas[3].Used - 69.163729) < 1e-4 && Math.Abs(s.Quotas[3].Remaining - 30.836271) < 1e-4);
+                Require(s.Quotas[3].ResetUtc.StartsWith("2026-10-01T03:13:20") && Math.Abs(s.Quotas[3].WindowSeconds - 604800) < 1);
+                Require(UsageDetails.Primary(s).Label == "套餐总量" && UsageDetails.MainWindow(s).Label == "套餐总量");
+                var noCycle = Parsers.Cursor(J.Parse("{\"individualUsage\":{\"plan\":{\"totalPercentUsed\":20,\"autoPercentUsed\":5,\"apiPercentUsed\":99}}}"));
+                Parsers.CursorGrokBot(noCycle, J.Parse("{\"usagePercent\":69.163729,\"hasNonZeroIncludedLimit\":true,\"currentPeriodStart\":\"2026-09-24T03:13:20.873Z\",\"nextResetTimestampUtc\":\"2026-10-01T03:13:20.873Z\"}"));
+                Require(UsageDetails.Primary(noCycle).Label == "套餐总量" && UsageDetails.MainWindow(noCycle) == null);
+            });
+            test("Cursor Grok Bot with a zero included limit adds no quota", () => {
+                var s = Parsers.Cursor(J.Parse("{\"individualUsage\":{\"plan\":{\"totalPercentUsed\":20,\"autoPercentUsed\":5,\"apiPercentUsed\":99}}}"));
+                Parsers.CursorGrokBot(s, J.Parse("{\"usagePercent\":69,\"hasNonZeroIncludedLimit\":false,\"hasAvailableUsage\":false,\"nextResetTimestampUtc\":\"2026-10-01T03:13:20.873Z\",\"currentPeriodStart\":\"2026-09-24T03:13:20.873Z\"}"));
+                Require(s.Quotas.Count == 3 && s.Quotas.All(q => q.Label != Parsers.CursorGrokLabel) && s.Quotas[0].Remaining == 80);
+            });
+            test("Cursor Grok Bot missing fields add no quota", () => {
+                var s = Parsers.Cursor(J.Parse("{\"individualUsage\":{\"plan\":{\"totalPercentUsed\":20}}}"));
+                Parsers.CursorGrokBot(s, null);
+                Parsers.CursorGrokBot(s, J.Parse("{}"));
+                Parsers.CursorGrokBot(s, J.Parse("{\"hasNonZeroIncludedLimit\":true,\"nextResetTimestampUtc\":\"2026-10-01T03:13:20.873Z\"}"));
+                Parsers.CursorGrokBot(s, J.Parse("{\"usagePercent\":69,\"nextResetTimestampUtc\":\"2026-10-01T03:13:20.873Z\"}"));
+                Parsers.CursorGrokBot(s, J.Parse("{\"hasNonZeroIncludedLimit\":true,\"usagePercent\":\"nope\"}"));
+                Require(s.Quotas.Count == 1 && s.Quotas[0].Label == "套餐总量" && s.Quotas[0].Remaining == 80);
+            });
             test("DeepSeek currencies are never summed or treated as percentages", () => {
                 var s = Parsers.DeepSeek(J.Parse("{\"balance_infos\":[{\"currency\":\"CNY\",\"total_balance\":\"12.34\"},{\"currency\":\"USD\",\"total_balance\":\"2.50\"}]}"));
                 Require(s.Quotas.Count == 0 && s.Balances.Count == 2 && s.Balances[0].Amount == 12.34);
