@@ -95,7 +95,7 @@ scoop install codeusagemonit
 irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps1 | iex
 ```
 
-脚本从 GitHub Releases 下载最新版并核对 SHA-256，装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，把 `codeusage` 加进用户 PATH，并创建开始菜单快捷方式。再运行一次就是升级。卸载时删除该目录，并从用户 PATH 中去掉它。
+脚本从 GitHub Releases 下载最新版并自动校验完整性，装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，把 `codeusage` 加进用户 PATH，并创建开始菜单快捷方式。再运行一次就是升级。卸载时删除该目录，并从用户 PATH 中去掉它。
 
 ### 免安装 zip
 
@@ -229,7 +229,7 @@ git clone https://github.com/fanchengliu/codeusagemonit.git
 cd codeusagemonit
 .\source\Windows\build.ps1               # 在仓库根目录生成 codeusagemonit.exe 和 codeusage.exe
 .\codeusagemonit.exe --self-test         # 运行自带测试
-.\source\Windows\build.ps1 -Installer    # 另外生成安装包、免安装 zip 和 SHA256SUMS.txt
+.\source\Windows\build.ps1 -Installer    # 另外生成安装包和免安装 zip
 ```
 
 `-Installer` 需要 [Inno Setup 6.3 或更新版本](https://jrsoftware.org/isdl.php)，简体中文语言文件已经放在仓库里。详见 [`source/Windows/installer/README.md`](./source/Windows/installer/README.md)。

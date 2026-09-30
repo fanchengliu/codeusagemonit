@@ -98,7 +98,7 @@ You get a Start menu shortcut and `codeusage` on your PATH. Update with `scoop u
 irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps1 | iex
 ```
 
-The script downloads the latest release from GitHub, checks its SHA-256, installs to `%LOCALAPPDATA%\Programs\codeusagemonit`, adds `codeusage` to your user PATH and creates a Start menu shortcut. Run it again to update. To uninstall, delete that folder and remove it from your user PATH.
+The script downloads the latest release from GitHub, verifies file integrity automatically, installs to `%LOCALAPPDATA%\Programs\codeusagemonit`, adds `codeusage` to your user PATH and creates a Start menu shortcut. Run it again to update. To uninstall, delete that folder and remove it from your user PATH.
 
 ### Portable zip
 
@@ -232,7 +232,7 @@ git clone https://github.com/fanchengliu/codeusagemonit.git
 cd codeusagemonit
 .\source\Windows\build.ps1               # builds codeusagemonit.exe and codeusage.exe in the repo root
 .\codeusagemonit.exe --self-test         # runs the built-in tests
-.\source\Windows\build.ps1 -Installer    # also builds the installer, portable zip and SHA256SUMS.txt
+.\source\Windows\build.ps1 -Installer    # also builds the installer and the portable zip
 ```
 
 `-Installer` needs [Inno Setup 6.3 or newer](https://jrsoftware.org/isdl.php); the Simplified Chinese language file is included in the repository. See [`source/Windows/installer/README.md`](./source/Windows/installer/README.md).
