@@ -26,6 +26,9 @@ const ja = {
 Object.assign(zh,{demoLight:'浅色配色示意 · 演示数据',layoutNoteLight:'所有尺寸均可拖动、缩放、切换平台。浅色为官网配色示意，1.1.0 原版界面见黑夜模式。',lightAlt:'浅色配色示意，非 1.1.0 原版主题'});
 Object.assign(en,{demoLight:'Light palette concept · Demo data',layoutNoteLight:'All sizes support moving, resizing and switching providers. The light palette is a website concept; dark mode shows the original 1.1.0 UI.',lightAlt:'Light palette concept, not a native 1.1.0 theme'});
 Object.assign(ja,{demoLight:'ライト配色イメージ · デモデータ',layoutNoteLight:'全サイズで移動・サイズ変更・サービス切り替えが可能。ライト配色はサイト用イメージです。1.1.0 の実画面はダーク表示で確認できます。',lightAlt:'ライト配色イメージ。1.1.0 の実際のテーマではありません'});
+Object.assign(zh,{layout_all:'悬停转正，点击放大。四种视图，各有侧重。',sizePreview:'点击查看此尺寸'});
+Object.assign(en,{layout_all:'Hover to bring a view forward. Click to take a closer look.',sizePreview:'Click to preview this size'});
+Object.assign(ja,{layout_all:'カーソルを合わせると正面に。クリックで詳しく表示。',sizePreview:'クリックしてこのサイズを表示'});
 const translations = {zh,en,ja};
 let language = 'zh', selectedLayout = 'all', selectedCommand = 'status';
 const commands = {status:'.\\codeusage.exe status --json',usage:'.\\codeusage.exe usage -p codex',cost:'.\\codeusage.exe cost --days 30 --refresh --json'};
@@ -39,6 +42,7 @@ function applyThemeAssets(){
  document.querySelectorAll('img[data-i18n-alt]').forEach(img=>{const key=img.dataset.i18nAlt.replace('Alt',''),name=key==='full'?'overview':key;img.src='assets/'+name+(light?'-light.jpg':'.png');img.alt=light?text(key)+' · '+text('lightAlt'):text(img.dataset.i18nAlt);});
  document.querySelector('.hero-caption').textContent=text(light?'demoLight':'demo');
  document.querySelector('[data-i18n="layoutNote"]').textContent=text(light?'layoutNoteLight':'layoutNote');
+ document.querySelectorAll('.size-lineup [data-size]').forEach(el=>el.setAttribute('aria-label',text(el.dataset.size)+' · '+text('sizePreview')));
 }
 function resolveTheme(){root.dataset.resolvedTheme=root.dataset.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):root.dataset.theme;document.querySelector('meta[name="theme-color"]').content=root.dataset.resolvedTheme==='dark'?'#0c0d0f':'#f5f5f7';applyThemeAssets();}
 document.getElementById('theme').value=root.dataset.theme;
@@ -61,7 +65,15 @@ function setLanguage(value){language=translations[value]?value:'zh';root.lang={z
 }
 document.getElementById('language').addEventListener('change',e=>setLanguage(e.target.value));
 function wireTabs(selector,select){const tabs=[...document.querySelectorAll(selector)];tabs.forEach((tab,index)=>{function activate(){tabs.forEach(t=>{t.setAttribute('aria-selected',String(t===tab));t.tabIndex=t===tab?0:-1;});select(tab);}tab.addEventListener('click',activate);tab.addEventListener('keydown',e=>{let next;if(e.key==='ArrowRight')next=(index+1)%tabs.length;else if(e.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;else if(e.key==='Home')next=0;else if(e.key==='End')next=tabs.length-1;if(next!==undefined){e.preventDefault();tabs[next].click();tabs[next].focus();}});});}
-wireTabs('button[data-layout]',tab=>{selectedLayout=tab.dataset.layout;const panel=document.getElementById('layout-panel');panel.dataset.layout=selectedLayout;panel.setAttribute('aria-labelledby',tab.id);document.querySelectorAll('[data-size]').forEach(el=>el.setAttribute('aria-hidden',String(selectedLayout!=='all'&&el.dataset.size!==selectedLayout)));updateDynamic();});
+wireTabs('button[data-layout]',tab=>{selectedLayout=tab.dataset.layout;const panel=document.getElementById('layout-panel');panel.dataset.layout=selectedLayout;panel.setAttribute('aria-labelledby',tab.id);document.querySelectorAll('[data-size]').forEach(el=>{const visible=selectedLayout==='all'||el.dataset.size===selectedLayout;el.setAttribute('aria-hidden',String(!visible));el.tabIndex=visible?0:-1;});updateDynamic();});
+document.querySelectorAll('.size-lineup [data-size]').forEach(figure=>{
+ figure.tabIndex=0;figure.setAttribute('role','button');figure.setAttribute('aria-controls','layout-panel');
+ const preview=()=>{if(selectedLayout==='all')document.getElementById('layout-description').textContent=text('layout_'+figure.dataset.size);};
+ const reset=()=>{document.getElementById('layout-description').textContent=text('layout_'+selectedLayout);};
+ figure.addEventListener('pointerenter',preview);figure.addEventListener('pointerleave',reset);figure.addEventListener('focus',preview);figure.addEventListener('blur',reset);
+ figure.addEventListener('click',()=>document.getElementById('tab-'+figure.dataset.size).click());
+ figure.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();figure.click();}});
+});
 wireTabs('button[data-command]',tab=>{selectedCommand=tab.dataset.command;document.getElementById('command-panel').setAttribute('aria-labelledby',tab.id);updateDynamic();});
 document.getElementById('copy-command').addEventListener('click',async()=>{const status=document.querySelector('.copy-status');try{await navigator.clipboard.writeText(commands[selectedCommand]);status.textContent=text('copied');}catch{status.textContent=text('copyFailed');}});
 const hero=document.getElementById('hero-stage'),motion=matchMedia('(prefers-reduced-motion: reduce)');

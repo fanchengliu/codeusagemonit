@@ -35,4 +35,23 @@
 .layout-stage[data-layout=large] [data-size=large]{width:37%;bottom:12%}
 .layout-stage[data-layout=full] [data-size=full]{width:29%;bottom:9%}
 @media(max-width:780px){.layout-stage{aspect-ratio:1.4}.layout-stage[data-layout=all] .size-lineup{gap:12px;padding:28px 16px 54px}.layout-stage[data-layout=all] .size-lineup:after{left:16px;right:16px;bottom:53px}.layout-stage[data-layout=all] .size-lineup figcaption{font-size:.875rem;top:calc(100% + 16px)}.layout-stage[data-layout=small] [data-size=small]{width:34%;bottom:25%}.layout-stage[data-layout=medium] [data-size=medium]{width:77%;bottom:24%}.layout-stage[data-layout=large] [data-size=large]{width:43%;bottom:12%}.layout-stage[data-layout=full] [data-size=full]{width:31%;bottom:10%}}
+/* Four windows in a gentle 3D queue; hover brings one window face-on. */
+.layout-stage{aspect-ratio:1.45;perspective:1400px}
+.layout-stage[data-layout=all] .size-lineup{display:block;padding:0;transform-style:preserve-3d;--full-width:27%}
+.layout-stage[data-layout=all] .size-lineup:after{display:none}
+.layout-stage[data-layout=all] .size-lineup [data-size]{position:absolute;left:var(--queue-x);bottom:var(--queue-floor);width:var(--queue-width);transform:translateX(-50%) rotateY(-24deg) rotateZ(-4deg);transform-origin:center bottom;transition:transform .5s cubic-bezier(.2,.8,.2,1),filter .4s,opacity .4s;filter:drop-shadow(18px 24px 18px #18273925);cursor:pointer;outline-offset:8px}
+.layout-stage[data-layout=all] [data-size=small]{--queue-x:16%;--queue-floor:30%;--queue-width:calc(var(--full-width)*.3583333);z-index:1}
+.layout-stage[data-layout=all] [data-size=medium]{--queue-x:35%;--queue-floor:24%;--queue-width:calc(var(--full-width)*.75);z-index:2}
+.layout-stage[data-layout=all] [data-size=large]{--queue-x:57%;--queue-floor:18%;--queue-width:calc(var(--full-width)*.75);z-index:3}
+.layout-stage[data-layout=all] [data-size=full]{--queue-x:79%;--queue-floor:12%;--queue-width:var(--full-width);z-index:4}
+.layout-stage[data-layout=all] .size-lineup [data-size]:is(:hover,:focus-visible){transform:translateX(-50%) translateY(-20px) translateZ(60px) rotateY(0) rotateZ(0) scale(1.04);filter:drop-shadow(0 30px 24px #18273930);opacity:1;z-index:10}
+.layout-stage[data-layout=all] .size-lineup:has([data-size]:hover) [data-size]:not(:hover){opacity:.55;filter:drop-shadow(12px 16px 14px #18273915)}
+.layout-stage[data-layout=all] .size-lineup [data-size]:focus-visible{outline:3px solid var(--accent);border-radius:10px}
+.size-lineup [role=button]{cursor:pointer}
+@media(max-width:780px){.layout-stage{aspect-ratio:1.24;perspective:900px}.layout-stage[data-layout=all] .size-lineup{--full-width:28%}.layout-stage[data-layout=all] [data-size=small]{--queue-x:14%;--queue-floor:31%}.layout-stage[data-layout=all] [data-size=medium]{--queue-x:34%;--queue-floor:25%}.layout-stage[data-layout=all] [data-size=large]{--queue-x:57%;--queue-floor:19%}.layout-stage[data-layout=all] [data-size=full]{--queue-x:80%;--queue-floor:13%}.layout-stage[data-layout=all] .size-lineup figcaption{font-size:.875rem;top:calc(100% + 14px)}.layout-stage[data-layout=all] .size-lineup [data-size]{transform:translateX(-50%) rotateY(-20deg) rotateZ(-3deg)}.layout-stage[data-layout=all] .size-lineup [data-size]:is(:hover,:focus-visible){transform:translateX(-50%) translateY(-10px) rotateY(0) rotateZ(0) scale(1.04)}}
+.layout-stage{perspective:none}
+.layout-stage[data-layout=all] .size-lineup{transform-style:flat}
+.layout-stage[data-layout=all] .size-lineup [data-size]{transform:perspective(1100px) translateX(-50%) rotateY(-24deg) rotateZ(-4deg)}
+.layout-stage[data-layout=all] .size-lineup [data-size]:is(:hover,:focus-visible){transform:perspective(1100px) translateX(-50%) translateY(-20px) translateZ(40px) rotateY(0) rotateZ(0) scale(1.04)}
+@media(max-width:780px){.layout-stage[data-layout=all] .size-lineup [data-size]{transform:perspective(900px) translateX(-50%) rotateY(-20deg) rotateZ(-3deg)}.layout-stage[data-layout=all] .size-lineup [data-size]:is(:hover,:focus-visible){transform:perspective(900px) translateX(-50%) translateY(-10px) rotateY(0) rotateZ(0) scale(1.04)}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}.hero-product{transform:none!important}}
