@@ -71,9 +71,9 @@
       <h1><span class="h1-line" data-i18n="heroA">额度还剩多少</span><span class="h1-line grad" data-i18n="heroB">抬眼就知道</span></h1>
       <p class="lead" data-i18n="heroLead">Codex、Claude、Cursor 等 11 个 AI 编程工具的剩余额度、重置时间、Token 用量和输出速度，都在 Windows 托盘的一个小窗口里。</p>
       <div class="cta-row">
-        <a class="btn btn-primary btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip">
+        <a class="btn btn-primary btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe">
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span data-i18n="download">下载 Windows 版</span>
+          <span data-i18n="download">下载安装程序</span>
         </a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/fanchengliu/codeusagemonit"><span data-i18n="source">查看源码</span></a>
       </div>
@@ -81,7 +81,7 @@
         <div class="quick-head"><span data-i18n="quickLabel">或者在终端里一行安装</span><button type="button" data-quick="scoop" aria-pressed="true">Scoop</button><button type="button" data-quick="ps" aria-pressed="false">PowerShell</button></div>
         <div class="quick-body"><pre id="quick-code"></pre><button type="button" class="copy-btn" id="quick-copy" aria-label="复制" title="复制"></button></div>
       </div>
-      <p class="hero-meta"><span data-i18n="heroMeta">v1.2.0 · Windows 10 / 11 · 免安装 · MIT 开源</span> · <a class="quick-more" href="#install" data-i18n="quickMore">更多安装方式 ↓</a></p>
+      <p class="hero-meta"><span data-i18n="heroMeta">v1.2.0 · Windows 10 / 11 · 安装程序 · MIT 开源</span> · <a class="quick-more" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip" data-i18n="downloadZip">免安装 zip</a> · <a class="quick-more" href="#install" data-i18n="quickMore">更多安装方式 ↓</a></p>
     </div>
 
     <div class="stage" id="stage">
@@ -243,7 +243,7 @@
     <div class="head reveal">
       <p class="eyebrow"><b>05</b><span data-i18n="eyInstall">安装与命令行</span></p>
       <h2><span data-i18n="cA">一行命令装好</span><span class="h2-dim" data-i18n="cB">终端里也是同一份数据</span></h2>
-      <p class="body" data-i18n="cLead">用 Scoop 或 PowerShell 一行安装，自动加入 PATH、创建开始菜单快捷方式。随附的 codeusage 命令和桌面版共用缓存与设置，额度条在终端里同样是 24 格，加 --json 就能接进脚本或状态栏。</p>
+      <p class="body" data-i18n="cLead">Scoop、PowerShell 或 setup.exe 都能安装，并加入 PATH、创建开始菜单快捷方式。随附的 codeusage 命令和桌面版共用缓存与设置，额度条在终端里同样是 24 格，加 --json 就能接进脚本或状态栏。</p>
     </div>
     <div class="install-grid">
       <div class="panel inst reveal">
@@ -291,8 +291,8 @@
       <h2><span data-i18n="fqA">常见问题</span></h2>
     </div>
     <div class="faq reveal">
-      <details><summary data-i18n="fq1">怎么安装？需要什么运行环境？</summary><p data-i18n="fa1">三种方式任选：Scoop、PowerShell 一行脚本，或下载 zip 解压到一个可写的文件夹（例如 D:\Tools）直接运行 codeusagemonit.exe。不需要安装程序、Node.js 或管理员权限，Windows 10 / 11 自带的 .NET Framework 4.8 就够了。</p></details>
-      <details><summary data-i18n="fq7">怎么升级和卸载？</summary><p data-i18n="fa7">Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit，数据放在 Scoop 的 persist 目录，升级不丢。PowerShell 脚本：再运行一次就是升级；卸载时删除 %LOCALAPPDATA%\Programs\codeusagemonit 并从用户 PATH 里去掉它。zip 版：用新版本覆盖旧文件即可，data 文件夹保留。</p></details>
+      <details><summary data-i18n="fq1">怎么安装？需要什么运行环境？</summary><p data-i18n="fa1">可以下载 setup.exe（可选目录和开始菜单，可选桌面快捷方式、开机启动和 PATH，在“Windows 设置 → 应用”里卸载），也可以用 Scoop、PowerShell 一行脚本，或下载 zip 解压到可写文件夹后运行。默认不需要管理员权限。不需要 Node.js，Windows 10 / 11 自带的 .NET Framework 4.8 就够了。</p></details>
+      <details><summary data-i18n="fq7">怎么升级和卸载？</summary><p data-i18n="fa7">安装程序：再运行新的 setup.exe 就是升级，设置保留在 %LOCALAPPDATA%\codeusagemonit；卸载在 Windows 设置 → 应用里，会询问是否删除设置。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit，数据放在 Scoop 的 persist 目录，升级不丢。PowerShell 脚本：再运行一次就是升级；卸载时删除 %LOCALAPPDATA%\Programs\codeusagemonit 并从用户 PATH 里去掉它。zip 版：用新版本覆盖旧文件即可，data 文件夹保留。</p></details>
       <details><summary data-i18n="fq2">为什么提示“Windows 已保护你的电脑”？</summary><p data-i18n="fa2">程序没有购买代码签名证书。点“更多信息 → 仍要运行”即可。</p></details>
       <details><summary data-i18n="fq3">需要把账号重新登录一遍吗？</summary><p data-i18n="fa3">不需要。Codex、Claude Code、Cursor、Antigravity、Grok 直接复用本机已有的登录；DeepSeek、Kimi、OpenCode、ZCode 填 API Key；Copilot 用 GitHub 设备码登录。</p></details>
       <details><summary data-i18n="fq4">显示的费用是真实账单吗？</summary><p data-i18n="fa4">不是。费用 = 本机日志里的 Token × 官方 API 单价，是 API 等价参考；订阅套餐按月费计费，不会产生这笔账单。</p></details>
@@ -310,11 +310,11 @@
       <div class="dl-glow" aria-hidden="true"></div>
       <img src="favicon.svg" width="64" height="64" alt="">
       <h2 data-i18n="dlTitle">现在就放进托盘</h2>
-      <p class="dl-meta">v1.2.0 · Windows 10 / 11 · x64 · 0.66 MB · MIT</p>
+      <p class="dl-meta">v1.2.0 · Windows 10 / 11 · x64 · MIT · <a class="quick-more" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip" data-i18n="downloadZip">免安装 zip</a></p>
       <div class="cta-row center">
-        <a class="btn btn-primary btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip">
+        <a class="btn btn-primary btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe">
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span data-i18n="download">下载 Windows 版</span>
+          <span data-i18n="download">下载安装程序</span>
         </a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases" data-i18n="dlAll">全部版本</a>
       </div>

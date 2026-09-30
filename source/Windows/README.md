@@ -86,7 +86,14 @@ The five newer providers are opt-in. Browser cookies are never imported.
 
 ## Privacy and network behavior
 
-Application settings, caches, indexes and the background picture live in `data` beside the executable. Auto proxy mode reads the Windows HTTP proxy, with HTTP/HTTPS environment fallback; global environment variables are not changed. External HTTPS validates certificates and rejects authenticated redirects. Provider login tokens remain in the owning applications. Keys saved through Settings use Windows DPAPI for the current user.
+Application settings, caches, indexes and the background picture live in one data directory:
+
+- **Portable** (the zip, Scoop's persisted `data` folder, and `install.ps1`): `<exe>\data`.
+- **setup.exe**: `%LOCALAPPDATA%\codeusagemonit`. The installer drops `installed.txt` next to the exe and writes `HKCU\Software\codeusagemonit\InstallPath`. Either mark selects the per-user directory, so an install under Program Files stays read-only. The first launch copies an existing `<exe>\data` into that folder when it is still empty (a Scoop junction is copied and not deleted).
+- **`portable.txt`** next to the exe forces `<exe>\data` even for an installed copy. **`CODEUSAGEMONIT_DATA`** overrides the directory unless `portable.txt` is present.
+- **`--demo`**: `<exe>\verification\demo-data`, and it does not migrate the real directory.
+
+Auto proxy mode reads the Windows HTTP proxy, with HTTP/HTTPS environment fallback; global environment variables are not changed. External HTTPS validates certificates and rejects authenticated redirects. Provider login tokens remain in the owning applications. Keys saved through Settings use Windows DPAPI for the current user.
 
 ## Build and verification
 
@@ -94,9 +101,10 @@ Application settings, caches, indexes and the background picture live in `data` 
 & .\source\Windows\build.ps1
 .\codeusagemonit.exe --self-test
 .\codeusagemonit.exe --demo
+& .\source\Windows\build.ps1 -Installer
 ```
 
-Build uses the Windows-supplied .NET Framework C# 5 compiler (`/codepage:65001`) and WPF assemblies, and copies `Panel.xaml`, `pricing.json` and `icons/` next to the executables. Scripts containing Chinese text are saved as UTF-8 with BOM so Windows PowerShell 5.1 parses them.
+Build uses the Windows-supplied .NET Framework C# 5 compiler (`/codepage:65001`) and WPF assemblies, and copies `Panel.xaml`, `pricing.json` and `icons/` next to the executables. Scripts containing Chinese text are saved as UTF-8 with BOM so Windows PowerShell 5.1 parses them. `-Installer` needs Inno Setup 6.3 or newer. The Simplified Chinese translation is `installer/ChineseSimplified.isl` in this repository, so it does not have to be copied into Inno Setup's Languages folder. The installer build also writes `codeusagemonit-setup-<version>.exe`, the portable zip and `SHA256SUMS.txt`. See `installer/README.md`.
 
 Demo mode has a separate instance and stores its settings under `verification/demo-data`; it neither reads account credentials nor modifies production preferences. `--background` starts in the tray; `--quit` exits the production instance; `--quit --demo` exits the preview.
 

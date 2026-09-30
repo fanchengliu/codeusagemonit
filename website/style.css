@@ -509,6 +509,9 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 .inst-note { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.75; }
 .inst-note code, .inst-foot code { padding: 1px 6px; border-radius: 5px; background: var(--fill-3); font-size: 12px; color: var(--ink); }
 .inst-foot { flex: none; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 13px; line-height: 1.55; }
+.inst-alt { margin: 0; color: var(--ink-3); font-size: 13px; line-height: 1.45; }
+.inst-alt a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+.inst-alt a:hover { color: var(--accent); }
 .inst-steps { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
 .inst-steps li { position: relative; padding-left: 28px; color: var(--ink-2); font-size: 14px; line-height: 1.55; counter-increment: s; }
 .inst-steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: var(--fill-3); color: var(--ink-2); font: 600 11px/1 var(--mono); }

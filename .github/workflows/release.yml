@@ -1,0 +1,98 @@
+name: Build Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Upload codeusagemonit-setup-<version>.exe to the GitHub release for AssemblyVersion. A published release keeps its existing zip and SHA256SUMS.txt.
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Inno Setup 6.3 or newer
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # ChineseSimplified.isl is vendored beside the .iss. The compiler Languages folder is not used.
+          choco install innosetup --yes --no-progress --limit-output
+          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 3010) { throw "choco install innosetup failed ($LASTEXITCODE)." }
+
+      - name: Build executables, portable zip and setup.exe
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          .\source\Windows\build.ps1 -OutputDirectory (Join-Path (Get-Location) 'dist') -Installer
+          Get-ChildItem -LiteralPath dist | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            dist/codeusagemonit-setup-*.exe
+            dist/codeusagemonit-*-win-x64.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Publish the GitHub release
+        if: github.repository == 'fanchengliu/codeusagemonit' && (github.event_name == 'push' || inputs.publish == true || inputs.publish == 'true')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = Get-ChildItem -LiteralPath dist -Filter 'codeusagemonit-setup-*.exe' | Select-Object -First 1
+          if ($setup.Name -notmatch '^codeusagemonit-setup-(.+)\.exe$') { throw "Unexpected setup name: $($setup.Name)" }
+          $ver = $Matches[1]
+          $tag = "v$ver"
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne $tag) {
+            throw "Tag $($env:GITHUB_REF_NAME) does not match AssemblyVersion $ver. Bump AssemblyVersion in source/Windows/App.cs first."
+          }
+          $zip = Join-Path (Get-Location) "dist\codeusagemonit-$ver-win-x64.zip"
+          $sums = Join-Path (Get-Location) 'dist\SHA256SUMS.txt'
+          if (-not (Test-Path -LiteralPath $zip)) { throw "Missing $zip" }
+
+          $notesPath = Join-Path (Get-Location) 'dist\RELEASE-NOTES.md'
+          $template = Get-Content -LiteralPath 'source\Windows\installer\release-notes.md' -Raw -Encoding UTF8
+          [System.IO.File]::WriteAllText($notesPath, ($template.Replace('__VERSION__', $ver)).Trim(), (New-Object System.Text.UTF8Encoding $false))
+
+          $json = & gh release view $tag --json isDraft,tagName 2>$null
+          $exists = $LASTEXITCODE -eq 0
+          if (-not $exists) {
+            & gh release create $tag --draft --title "codeusagemonit $ver" --notes-file $notesPath $setup.FullName $zip $sums
+            if ($LASTEXITCODE -ne 0) { throw 'gh release create failed.' }
+            & gh release edit $tag --draft=false --latest
+            if ($LASTEXITCODE -ne 0) { throw 'gh release edit failed.' }
+          } else {
+            $state = $json | ConvertFrom-Json
+            if ($state.isDraft) {
+              & gh release upload $tag $setup.FullName $zip $sums --clobber
+              if ($LASTEXITCODE -ne 0) { throw 'gh release upload failed.' }
+              & gh release edit $tag --draft=false --latest --notes-file $notesPath
+              if ($LASTEXITCODE -ne 0) { throw 'gh release edit failed.' }
+            } else {
+              # A published release already has the portable zip and its checksum (Scoop
+              # reads SHA256SUMS.txt). Add the installer only.
+              # --clobber replaces only this filename. The published zip and SHA256SUMS.txt stay.
+              & gh release upload $tag $setup.FullName --clobber
+              if ($LASTEXITCODE -ne 0) { throw 'gh release upload of setup.exe failed.' }
+            }
+          }
+          & gh release view $tag --json url,isDraft,assets

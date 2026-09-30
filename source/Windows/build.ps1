@@ -1,4 +1,7 @@
-param([string]$OutputDirectory = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
+﻿param(
+  [string]$OutputDirectory = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent),
+  [switch]$Installer
+)
 $ErrorActionPreference = 'Stop'
 $compilerRoot = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $compiler = Join-Path $compilerRoot 'csc.exe'
@@ -71,3 +74,72 @@ New-Item -ItemType Directory -Path $iconDir -Force | Out-Null
 # Provider logos (single-colour SVG paths, tinted in the app; source in THIRD-PARTY-NOTICES.md).
 Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'icons') -Filter '*.svg' | Copy-Item -Destination $iconDir -Force
 Write-Output ('Built '+(Join-Path $OutputDirectory 'codeusagemonit.exe'))
+
+function Find-InnoCompiler {
+  $candidates = @(
+    (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+    (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'),
+    (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')
+  )
+  foreach ($candidate in $candidates) { if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate } }
+  $command = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+  if ($command) { return $command.Source }
+  throw 'Inno Setup 6 compiler (ISCC.exe) was not found. Install Inno Setup 6.3 or newer from https://jrsoftware.org/isdl.php and run build.ps1 -Installer again.'
+}
+function Get-AppVersion {
+  $source = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'App.cs') -Raw -Encoding UTF8
+  if ($source -notmatch 'AssemblyVersion\("(\d+\.\d+\.\d+)\.\d+"\)') { throw 'AssemblyVersion was not found in App.cs.' }
+  return $Matches[1]
+}
+function New-PortableZip([string]$OutDir, [string]$RepoRoot, [string]$Version) {
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $stage = Join-Path ([System.IO.Path]::GetTempPath()) ('codeusagemonit-zip-' + [Guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $stage | Out-Null
+  try {
+    foreach ($name in @('codeusagemonit.exe', 'codeusage.exe', 'app.ico', 'Panel.xaml', 'pricing.json')) {
+      Copy-Item -LiteralPath (Join-Path $OutDir $name) -Destination (Join-Path $stage $name)
+    }
+    $iconStage = Join-Path $stage 'icons'
+    New-Item -ItemType Directory -Path $iconStage | Out-Null
+    Copy-Item -Path (Join-Path $OutDir 'icons\*') -Destination $iconStage -Recurse
+    foreach ($name in @('LICENSE', 'README.md', '使用说明.md', 'THIRD-PARTY-NOTICES.md', 'install.ps1')) {
+      Copy-Item -LiteralPath (Join-Path $RepoRoot $name) -Destination (Join-Path $stage $name)
+    }
+    Copy-Item -LiteralPath (Join-Path $RepoRoot 'source') -Destination (Join-Path $stage 'source') -Recurse
+    if (Test-Path -LiteralPath (Join-Path $stage 'installed.txt')) { throw 'Portable zip must not ship installed.txt next to the executable.' }
+    $zip = Join-Path $OutDir ('codeusagemonit-' + $Version + '-win-x64.zip')
+    if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+    return $zip
+  } finally {
+    Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+if ($Installer) {
+  $out = [System.IO.Path]::GetFullPath($OutputDirectory)
+  $repoRoot = [System.IO.Path]::GetFullPath((Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
+  $version = Get-AppVersion
+  foreach ($name in @('codeusagemonit.exe', 'codeusage.exe', 'app.ico', 'Panel.xaml', 'pricing.json')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $out $name))) { throw ('Missing build output: ' + $name) }
+  }
+  $zip = New-PortableZip $out $repoRoot $version
+  $iscc = Find-InnoCompiler
+  $iss = Join-Path $PSScriptRoot 'installer\codeusagemonit.iss'
+  $isl = Join-Path $PSScriptRoot 'installer\ChineseSimplified.isl'
+  if (-not (Test-Path -LiteralPath $isl)) { throw 'Missing source\Windows\installer\ChineseSimplified.isl.' }
+  $buildDirArg = '/DBuildDir="' + ($out -replace '"', '') + '"'
+  $repoArg = '/DRepoRoot="' + ($repoRoot -replace '"', '') + '"'
+  & $iscc ('/DMyAppVersion=' + $version) $buildDirArg $repoArg $iss
+  if ($LASTEXITCODE -ne 0) { throw ('Inno Setup compile failed (' + $LASTEXITCODE + ').') }
+  $setup = Join-Path $out ('codeusagemonit-setup-' + $version + '.exe')
+  if (-not (Test-Path -LiteralPath $setup)) { throw ('Installer was not written to ' + $setup) }
+  $sums = Join-Path $out 'SHA256SUMS.txt'
+  $lines = @(
+    ((Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower() + '  ' + [System.IO.Path]::GetFileName($zip)),
+    ((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLower() + '  ' + [System.IO.Path]::GetFileName($setup))
+  )
+  [System.IO.File]::WriteAllLines($sums, $lines, (New-Object System.Text.UTF8Encoding $false))
+  Write-Output ('Built ' + $setup)
+  Write-Output ('Built ' + $zip)
+  Write-Output ('Built ' + $sums)
+}

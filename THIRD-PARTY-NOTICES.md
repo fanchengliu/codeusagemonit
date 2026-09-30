@@ -1,6 +1,6 @@
 # Third-party notices
 
-codeusagemonit is an independent Windows application. It is not an official release of CodexBar or ccusage and is not affiliated with any monitored service. It contains no code or binaries from the projects below. The only files taken from another project are the provider logo SVGs in `icons/` (from CodexBar, see below); the other projects are credited because their public source was studied as a reference, or because data derived from them ships with the application.
+codeusagemonit is an independent Windows application. It is not an official release of CodexBar or ccusage and is not affiliated with any monitored service. It contains no code or binaries from the projects below. The files taken from another project are the provider logo SVGs in `icons/` (from CodexBar, see below) and the Simplified Chinese Inno Setup translation `source/Windows/installer/ChineseSimplified.isl` (see below). The other projects are credited because their public source was studied as a reference, or because data derived from them ships with the application.
 
 ## Data that ships with the application
 
@@ -19,6 +19,15 @@ Prices are the vendors' published list prices as recorded by these catalogs. The
 ## Provider logos
 
 The files in `icons/` are the logos of the monitored products, used unmodified only to identify each provider. They are taken from CodexBar (`Sources/CodexBar/Resources/ProviderIcon-<id>.svg`, MIT, Copyright (c) 2026 Peter Steinberger, license text in `licenses/CodexBar-MIT.txt`; `zcode.svg` is `ProviderIcon-zai.svg`). The logos and product names are trademarks of their respective owners; their use does not imply endorsement.
+
+## Installer translation
+
+### Inno Setup Simplified Chinese messages
+- File: `source/Windows/installer/ChineseSimplified.isl` (included unmodified).
+- Source: https://github.com/jrsoftware/issrc/blob/6ef32198ef1f7b7b375cd4b6b90896c2a58eb4c2/Files/Languages/ChineseSimplified.isl
+- The same translation lived at `Files/Languages/Unofficial/ChineseSimplified.isl` (still that path in the Inno Setup 6.7.3 source tag). The 6.7.3 installer does not copy unofficial languages into its `Languages` folder, so this repository vendors the file and the setup script references it by a relative path. Inno Setup 7 moved the file to `Files/Languages/`.
+- Translation maintainer: Zhenghan Yang (Kira), https://github.com/kira-96/Inno-Setup-Chinese-Simplified-Translation (header in the file: 847320916@QQ.com).
+- License: Inno Setup License. Copyright (C) 1997-2026 Jordan Russell. Portions Copyright (C) 2000-2026 Martijn Laan. Full text: `licenses/InnoSetup.txt`.
 
 ## Projects studied as references (no code included)
 

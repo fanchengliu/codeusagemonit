@@ -54,7 +54,8 @@ namespace CodeUsageMonit {
         }
 
         private static void Help() {
-            Console.WriteLine(Bold("codeusage") + " " + Version + " — codeusagemonit 的命令行版，与桌面版共用 data 目录（设置、密钥、缓存）");
+            Console.WriteLine(Bold("codeusage") + " " + Version + " — codeusagemonit 的命令行版，与桌面版共用数据目录（设置、密钥、缓存）");
+            Console.WriteLine("数据目录：" + Store.Data);
             Console.WriteLine();
             Console.WriteLine("用法：codeusage [命令] [选项]");
             Console.WriteLine();
