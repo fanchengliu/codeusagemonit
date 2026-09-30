@@ -1,0 +1,1 @@
+﻿Platform names and logos belong to their respective owners. The SVG provider icons are distributed from CodexBar under its MIT license; see licenses/CodexBar-MIT.txt. This is an independent Windows project, not an official CodexBar release.

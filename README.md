@@ -1,5 +1,24 @@
 # codeusagemonit
 
+Windows 原生 AI 编程助手用量监控：额度、本机 Token、API 等价费用与输出速度。
+
+**[项目官网](https://codeusagemonit.example.chatgpt.site)** · **[下载 Windows 1.1.0](downloads/codeusagemonit-1.1.0-win-x64.zip?raw=true)** · [网站源码](website/)
+
+当前发布版本为 **1.1.0**。该版本的完整 Windows 源码随便携包提供，位于解压后的 `source/Windows/`。官网截图来自 1.1.0 的演示模式。
+
+## 官网
+
+网站包含真实界面展示、平台列表、尺寸切换预览、命令行用法与常见问题。纯静态源码位于 [`website/`](website/)，无需依赖安装即可运行。
+
+## 版本分支
+
+- [`v1.1`](https://github.com/fanchengliu/codeusagemonit/tree/v1.1)：1.1.0 原始发布包。
+- [`v0.8`](https://github.com/fanchengliu/codeusagemonit/tree/v0.8)、[`v0.7`](https://github.com/fanchengliu/codeusagemonit/tree/v0.7)、[`v0.6`](https://github.com/fanchengliu/codeusagemonit/tree/v0.6)：对应历史源码与发布包。
+- [`website`](https://github.com/fanchengliu/codeusagemonit/tree/website)：项目官网页面。
+
+<details>
+<summary>0.8 版本的历史开发说明</summary>
+
 专为 Windows 设计的 AI 编程工具用量监控：一个托盘图标，集中查看账户额度、重置时间与本机 Token 用量。
 
 基于 C# / WPF，MIT 开源。界面和部分额度解析逻辑参考 [CodexBar](https://github.com/steipete/CodexBar)，这是独立 Windows 实现，并非 CodexBar 官方 Windows 版本。
@@ -76,3 +95,5 @@ downloads/         已校验的 Windows 便携包
 ## 许可与致谢
 
 [MIT License](LICENSE)。感谢 [CodexBar](https://github.com/steipete/CodexBar)、[Claude Code Usage Monitor](https://github.com/CodeZeno/Claude-Code-Usage-Monitor) 和 [ccusage](https://github.com/ccusage/ccusage)。移植范围、基线版本及完整许可见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务名称和标志属于各自权利人，本项目不隶属于这些平台。
+
+</details>
