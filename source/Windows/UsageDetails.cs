@@ -113,7 +113,23 @@ namespace CodeUsageMonit {
             if (zone.IsInvalidTime(local)) local = local.AddHours(1);
             return TimeZoneInfo.ConvertTimeToUtc(local, zone);
         }
+        // Tray text and other single-number summaries. Cursor's headline is 套餐总量;
+        // the Grok Bot weekly meter is never selected in its place.
+        public static Quota Primary(ProviderState state) {
+            if (state == null) return null;
+            if (state.Id == "cursor") {
+                Quota plan = state.Quotas.FirstOrDefault(q => q.Label == "套餐总量");
+                if (plan != null) return plan;
+            }
+            return state.Quotas.FirstOrDefault(q => q.Label == "每周") ?? state.Quotas.FirstOrDefault();
+        }
         public static Quota MainWindow(ProviderState state) {
+            if (state == null) return null;
+            if (state.Id == "cursor") {
+                Quota plan = state.Quotas.FirstOrDefault(q => q.Label == "套餐总量" && q.WindowSeconds > 0);
+                if (plan != null) return plan;
+                return state.Quotas.FirstOrDefault(q => q.Label != Parsers.CursorGrokLabel && q.WindowSeconds > 0);
+            }
             return state.Quotas.FirstOrDefault(q => q.Label == "每周" && q.WindowSeconds > 0) ?? state.Quotas.FirstOrDefault(q => q.WindowSeconds > 0);
         }
     }

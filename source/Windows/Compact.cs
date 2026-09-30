@@ -398,10 +398,16 @@ namespace CodeUsageMonit {
             return more;
         }
         // Headline: the chosen window (click cycles through the provider's windows), else the lowest.
+        // Cursor's Grok Bot row stays in the list, but it is not the automatic headline.
         private Quota Headline(ProviderState state) {
             string label;
             if (headlineChoice.TryGetValue(state.Id, out label)) { Quota chosen = state.Quotas.FirstOrDefault(q => q.Label == label); if (chosen != null) return chosen; }
-            return state.Quotas.OrderBy(q => q.Remaining).FirstOrDefault();
+            return AutomaticQuota(state);
+        }
+        private static Quota AutomaticQuota(ProviderState state) {
+            if (state == null) return null;
+            IEnumerable<Quota> pool = state.Id == "cursor" ? state.Quotas.Where(q => q.Label != Parsers.CursorGrokLabel) : state.Quotas;
+            return pool.OrderBy(q => q.Remaining).FirstOrDefault() ?? state.Quotas.OrderBy(q => q.Remaining).FirstOrDefault();
         }
         private void ChooseHeadline(ProviderState state, Quota quota) { headlineChoice[state.Id] = quota.Label; RenderCompact(); }
         private FrameworkElement HeadlineButton(ProviderState state, Quota main, double size) {
@@ -537,7 +543,7 @@ namespace CodeUsageMonit {
         }
         // Overview order: the providers closest to running out first, then the rest.
         private IEnumerable<string> Urgent(IEnumerable<string> ids) {
-            return ids.Select((id, i) => new { Id = id, Index = i, Main = states.ContainsKey(id) ? states[id].Quotas.OrderBy(q => q.Remaining).FirstOrDefault() : null })
+            return ids.Select((id, i) => new { Id = id, Index = i, Main = states.ContainsKey(id) ? AutomaticQuota(states[id]) : null })
                 .OrderBy(x => x.Main == null ? 1 : 0).ThenBy(x => x.Main == null ? 0 : x.Main.Remaining).ThenBy(x => x.Index).Select(x => x.Id);
         }
         private FrameworkElement OverviewLine(string id, bool name, int cells) {
@@ -548,7 +554,7 @@ namespace CodeUsageMonit {
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = name ? new GridLength(cells * 8) : new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
             FrameworkElement icon = Icon(id, 13); icon.Margin = new Thickness(0, 0, 7, 0); icon.VerticalAlignment = VerticalAlignment.Center; grid.Children.Add(icon);
-            Quota main = state.Quotas.OrderBy(q => q.Remaining).FirstOrDefault();
+            Quota main = AutomaticQuota(state);
             if (name) { var label = Label(ProviderCatalog.Name(id), 11.5, Ink); Grid.SetColumn(label, 1); grid.Children.Add(label); }
             string tip;
             if (main != null) {
