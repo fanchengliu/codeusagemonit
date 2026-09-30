@@ -71,6 +71,10 @@ Object.assign(zh, {
   vendorAll: '全部', priceShown: '显示 {n} / {total} 款', priceNone: '没有匹配的模型', tagLong: '长上下文 >{k}K', defaultCache: '官方未单列，按输入价的 10% 估算',
   instScoopNote: '和 Homebrew 的 tap 一样：先把本仓库加成 bucket，再安装。会创建开始菜单快捷方式，并把 codeusage 加进 PATH；data 文件夹放在 Scoop 的 persist 目录，升级不丢。',
   instUpdate: '以后升级', instNoScoop: '还没装 Scoop？先运行：',
+  instFootScoop: '开始菜单快捷方式和 PATH 上的 codeusage 会一起装好。data 放在 Scoop 的 persist 目录，升级不丢。还没装 Scoop 时，先运行 <code>irm get.scoop.sh | iex</code>。',
+  instFootPs: '不需要管理员权限。再运行一次就是升级，data 文件夹保留。',
+  instFootZip: '免安装。升级时用新版本覆盖旧文件，data 文件夹保留。',
+  instFootCli: '加上 <code>--json</code> 输出 JSON，接进脚本或状态栏。<code>codeusage help</code> 查看全部命令。',
   instPs1: '从 GitHub Releases 下载最新版', instPs2: '装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，不需要管理员权限', instPs3: '把 codeusage 加进用户 PATH，创建开始菜单快捷方式', instPs4: '再运行一次就是升级，data 文件夹保留',
   instZipBtn: '下载 codeusagemonit-1.2.0-win-x64.zip', instZip1: '完整解压到一个可写的文件夹，例如 D:\\Tools\\codeusagemonit', instZip2: '运行 codeusagemonit.exe；命令行用同目录的 codeusage.exe', instZip3: '升级时用新版本覆盖旧文件，data 文件夹保留'
 });
@@ -128,6 +132,10 @@ const en = {
   vendorAll: 'All', priceShown: '{n} of {total} models', priceNone: 'No matching models', tagLong: 'long ctx >{k}K', defaultCache: 'Not listed; estimated at 10% of the input price',
   instScoopNote: 'Like a Homebrew tap: add this repository as a bucket, then install. You get a Start menu shortcut and codeusage on PATH; the data folder lives in Scoop’s persist directory, so updates keep it.',
   instUpdate: 'Update later', instNoScoop: 'No Scoop yet? Install it first:',
+  instFootScoop: 'You get a Start menu shortcut and codeusage on PATH. Data lives in Scoop’s persist directory, so updates keep it. No Scoop yet? Run <code>irm get.scoop.sh | iex</code> first.',
+  instFootPs: 'No admin rights. Run it again to update; the data folder is kept.',
+  instFootZip: 'No installer. To update, overwrite with the new version and keep the data folder.',
+  instFootCli: 'Add <code>--json</code> for scripts or a status bar. <code>codeusage help</code> lists every command.',
   instPs1: 'Downloads the latest release from GitHub', instPs2: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit, no admin rights', instPs3: 'Adds codeusage to your user PATH and a Start menu shortcut', instPs4: 'Run it again to update; the data folder is kept',
   instZipBtn: 'Download codeusagemonit-1.2.0-win-x64.zip', instZip1: 'Extract everything into a writable folder, e.g. D:\\Tools\\codeusagemonit', instZip2: 'Run codeusagemonit.exe; use codeusage.exe in the same folder for the CLI', instZip3: 'To update, overwrite with the new version and keep the data folder'
 };
@@ -185,6 +193,10 @@ const ja = {
   vendorAll: 'すべて', priceShown: '{n} / {total} 件', priceNone: '一致するモデルはありません', tagLong: '長コンテキスト >{k}K', defaultCache: '未掲載のため入力単価の 10% で推定',
   instScoopNote: 'Homebrew の tap と同じく、まずこのリポジトリを bucket として追加してからインストール。スタートメニューのショートカットと PATH 上の codeusage が作られ、data フォルダーは Scoop の persist ディレクトリに置かれるので更新しても残ります。',
   instUpdate: '今後の更新', instNoScoop: 'Scoop が未導入なら先に：',
+  instFootScoop: 'スタートメニューのショートカットと PATH 上の codeusage が作られます。data は Scoop の persist に置かれるので更新しても残ります。Scoop が未導入なら先に <code>irm get.scoop.sh | iex</code>。',
+  instFootPs: '管理者権限は不要です。もう一度実行すれば更新。data フォルダーは保持されます。',
+  instFootZip: 'インストーラー不要。更新は新しいバージョンで上書きし、data フォルダーは残します。',
+  instFootCli: '<code>--json</code> を付けると JSON になり、スクリプトやステータスバーに渡せます。<code>codeusage help</code> で全コマンドを表示。',
   instPs1: 'GitHub Releases から最新版をダウンロード', instPs2: '%LOCALAPPDATA%\\Programs\\codeusagemonit にインストール（管理者権限不要）', instPs3: 'codeusage をユーザー PATH に追加し、スタートメニューにショートカットを作成', instPs4: 'もう一度実行すれば更新。data フォルダーは保持',
   instZipBtn: 'codeusagemonit-1.2.0-win-x64.zip をダウンロード', instZip1: '書き込み可能なフォルダー（例：D:\\Tools\\codeusagemonit）にすべて展開', instZip2: 'codeusagemonit.exe を実行。CLI は同じフォルダーの codeusage.exe', instZip3: '更新は新しいバージョンで上書きし、data フォルダーは残す'
 };
@@ -385,7 +397,8 @@ const OK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3
 async function writeClip(text) { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } }
 async function copyText(text, label, restore) { label.textContent = (await writeClip(text)) ? t('copied') : t('copyFailed'); setTimeout(() => { label.textContent = restore(); }, 1600); }
 async function copyIcon(btn, text) { const ok = await writeClip(text); btn.innerHTML = ok ? OK_ICON : COPY_ICON; btn.classList.toggle('ok', ok); btn.title = ok ? t('copied') : t('copyFailed'); setTimeout(() => { btn.innerHTML = COPY_ICON; btn.classList.remove('ok'); btn.title = t('copyLabel'); }, 1600); }
-const cmdRow = text => `<div class="cmd"><code><span class="pr">&gt; </span>${esc(text)}</code><button type="button" class="copy-btn" data-copy="${esc(text)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button></div>`;
+const cmdText = text => esc(text).replace(/\//g, '/<wbr>');
+const cmdRow = text => `<div class="cmd"><code><span class="pr">&gt; </span>${cmdText(text)}</code><button type="button" class="copy-btn" data-copy="${esc(text)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button></div>`;
 document.addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copyIcon(b, b.dataset.copy); });
 
 // ── Install (hero one-liner + the install panel) ──────────────────────
@@ -396,7 +409,7 @@ const INSTALL = {
 };
 let quickKind = 'scoop';
 function renderQuick() {
-  $('quick-code').innerHTML = INSTALL[quickKind].map(l => `<span class="pr">&gt; </span>${esc(l)}`).join('\n');
+  $('quick-code').innerHTML = INSTALL[quickKind].map(l => `<span class="pr">&gt; </span>${cmdText(l)}`).join('\n');
   document.querySelectorAll('[data-quick]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.quick === quickKind)));
   const btn = $('quick-copy'); btn.innerHTML = COPY_ICON; btn.dataset.copy = INSTALL[quickKind].join('\n'); btn.title = btn.ariaLabel = t('copyLabel');
 }
@@ -410,21 +423,60 @@ const USAGE = [
 function usageRows() {
   return USAGE.map(u => `<div class="cmd cmd-use" data-cmd="${u.id}" role="button" tabindex="0" aria-pressed="${u.id === termCmd}"><code><span class="pr">&gt; </span>${esc(u.cmd)}</code><button type="button" class="copy-btn" data-copy="${esc(u.cmd)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button><p class="cmd-desc">${esc(t(u.desc))}</p></div>`).join('');
 }
-function renderInstall() {
+const instGroup = html => `<div class="inst-group">${html}</div>`;
+const instFill = (groups, footKey) => `<div class="inst-fill"><div class="inst-main">${groups}</div><p class="inst-foot">${t(footKey)}</p></div>`;
+function paintInstall(animate) {
   const steps = keys => `<ol class="inst-steps">${keys.map(k => `<li>${esc(t(k))}</li>`).join('')}</ol>`;
   const html = instKind === 'scoop'
-    ? INSTALL.scoop.map(cmdRow).join('') + `<p class="inst-note">${esc(t('instScoopNote'))}</p><p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}<p class="cmd-label">${esc(t('instNoScoop'))}</p>${cmdRow('irm get.scoop.sh | iex')}`
+    ? instFill(instGroup(INSTALL.scoop.map(cmdRow).join('')) + instGroup(`<p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}`), 'instFootScoop')
     : instKind === 'ps'
-      ? cmdRow(INSTALL.ps[0]) + steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])
+      ? instFill(instGroup(cmdRow(INSTALL.ps[0])) + instGroup(steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])), 'instFootPs')
       : instKind === 'zip'
-        ? `<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>`
-          + cmdRow(REPO + '/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip')
-          + steps(['instZip1', 'instZip2', 'instZip3'])
-        : usageRows();
-  const el = $('inst-body'); el.innerHTML = html; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+        ? instFill(instGroup(`<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>${cmdRow(REPO + '/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip')}`) + instGroup(steps(['instZip1', 'instZip2', 'instZip3'])), 'instFootZip')
+        : instFill(usageRows(), 'instFootCli');
+  const el = $('inst-body');
+  el.innerHTML = html;
+  if (animate) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
   document.querySelectorAll('[data-inst]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.inst === instKind)));
 }
-$('inst-tabs').addEventListener('click', e => { const b = e.target.closest('[data-inst]'); if (b) { instKind = b.dataset.inst; renderInstall(); } });
+let fitting = false;
+function renderInstall() { paintInstall(true); if (!fitting) requestAnimationFrame(fitInstall); }
+$('inst-tabs').addEventListener('click', e => { const b = e.target.closest('[data-inst]'); if (b) { instKind = b.dataset.inst; paintInstall(true); } });
+function termBlock(c) {
+  const prompt = '<span class="p">PS C:\\Users\\you&gt;</span> ';
+  return prompt + esc(c.cmd) + '\n' + c.out().join('\n') + '\n' + prompt;
+}
+function fitInstall() {
+  const grid = document.querySelector('.install-grid');
+  if (!grid) return;
+  const wide = matchMedia('(min-width: 1121px)').matches;
+  if (!wide) { grid.style.removeProperty('--pair-h'); return; }
+  fitting = true;
+  const saved = instKind;
+  grid.classList.add('is-measure');
+  let card = 0;
+  for (const kind of ['scoop', 'ps', 'zip', 'cli']) {
+    instKind = kind;
+    paintInstall(false);
+    card = Math.max(card, document.querySelector('#install .inst').offsetHeight);
+  }
+  instKind = saved;
+  paintInstall(false);
+  const term = document.querySelector('#install .term');
+  const probe = document.createElement('pre');
+  probe.className = 'term-body';
+  probe.style.cssText = 'position:absolute;left:0;right:0;visibility:hidden;height:auto;min-height:0;flex:none;overflow:visible;pointer-events:none;';
+  term.appendChild(probe);
+  let body = 0;
+  for (const c of Object.values(COMMANDS)) { probe.innerHTML = termBlock(c); body = Math.max(body, probe.offsetHeight); }
+  probe.remove();
+  grid.classList.remove('is-measure');
+  fitting = false;
+  const termH = body + document.querySelector('#install .term-bar').offsetHeight + 2;
+  grid.style.setProperty('--pair-h', Math.ceil(Math.max(card, termH)) + 'px');
+}
+addEventListener('resize', () => { if (!fitting) requestAnimationFrame(fitInstall); });
+if (document.fonts) document.fonts.ready.then(() => { if (!fitting) fitInstall(); });
 
 // ── Providers: name + the connection method the app actually uses ─────
 // Checked against source/Windows Connect.cs, Core.cs, LocalAntigravity.cs,
@@ -825,10 +877,8 @@ function quotaLines(id, plan) {
   lines.push(`<span style="color:${P[id].c};font-weight:600">${P[id].name}</span>  ${dim(plan)}  ${dim('de•••@example.com')}`);
   q.windows.forEach(w => {
     lines.push('  ' + esc(padR(w.label, lw)) + bold(padL(w.rem + '%', 6)) + ' 剩余  ' + bar(w.rem, P[id].c) + '  ' + dim(w.reset.replace(' ', '') + '后重置'));
-    lines.push('  ' + ' '.repeat(lw) + (w.pace >= 0 ? col('余量 ' + w.pace + '%', '#7AD3A8') + dim(' · 按当前速度可持续到重置') : col('超前消耗 ' + -w.pace + '%', '#F2B36B') + dim(' · ' + (w.empty || ''))));
   });
-  if (q.credits) lines.push('  ' + esc(padR('限额重置', lw)) + q.credits + ' 次可用');
-  lines.push('  ' + dim(`今日 ${usd(SERIES[id].days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)} · ${compact(TOOLS[id].tokens)} Token · ${tps(speedOf(SERIES[id].days, id))}（API 等价）`));
+  lines.push('  ' + dim(`今日 ${usd(SERIES[id].days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)} · ${compact(TOOLS[id].tokens)} Token · ${tps(speedOf(SERIES[id].days, id))}`));
   return lines;
 }
 function costLines() {
@@ -846,7 +896,7 @@ function costLines() {
   return lines;
 }
 const COMMANDS = {
-  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.2.0 · ${stamp()} · 缓存 · 2 分钟前 · 价目 ${$('price-date').textContent}`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
+  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.2.0 · ${stamp()} · 缓存 · 2 分钟前`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
   cost: { cmd: 'codeusage cost --days 7', out: costLines },
   thirdparty: { cmd: 'codeusage thirdparty', out: () => [bold('第三方 API 用量') + dim('（本机日志；服务商的周/月限额无法得知）'), '',
     `<span style="color:${P.claude.c};font-weight:600">示例中转 A</span>` + col('  使用中', '#5CC8E0') + '  ' + dim('Claude Code · relay-a.example.com'),
