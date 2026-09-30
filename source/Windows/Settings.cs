@@ -115,6 +115,10 @@ namespace CodeUsageMonit {
             providers.Children.Add(Separator());
             CheckBox thirdPartySwitch = SwitchRow("统计第三方 API 用量", "按本机日志统计经中转站的 Token；服务商的限额无法得知", config.ShowThirdParty);
             providers.Children.Add(thirdPartySwitch);
+            providers.Children.Add(Separator());
+            Pricing.EnsureLoaded();
+            CheckBox priceSyncSwitch = SwitchRow("每天同步官方价目", "从本项目 GitHub 仓库取最新 pricing.json，只下载文件、不上传任何数据；当前价目 " + Pricing.Day + (Pricing.Source == "synced" ? "（已同步）" : "（随软件内置）"), config.PriceSync);
+            providers.Children.Add(priceSyncSwitch);
             content.Children.Add(Card(providers));
 
             // Window
@@ -311,6 +315,7 @@ namespace CodeUsageMonit {
                     if (pictureChanged) { if (picture.Length == 0) { RemoveBackground(); config.BackgroundImage = ""; } else config.BackgroundImage = StoreBackground(picture); }
                     if (displaySize != initialSize) config.DisplaySize = displaySize; // applied by CloseSettings below
                     bool thirdPartyOn = thirdPartySwitch.IsChecked == true && !config.ShowThirdParty; config.ShowThirdParty = thirdPartySwitch.IsChecked == true;
+                    config.PriceSync = priceSyncSwitch.IsChecked == true;
                     foreach (KeyField field in keyFields) {
                         if (demo) break;
                         if (field.Remove != null && field.Remove.IsChecked == true) { Store.SetProviderKey(field.Id, ""); states[field.Id] = new ProviderState { Id = field.Id }; }

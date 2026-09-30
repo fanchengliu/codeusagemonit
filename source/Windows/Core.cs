@@ -62,6 +62,8 @@ namespace CodeUsageMonit {
         public double WindowWidth = 420, WindowHeight = 790, UiScale = 1;
         public string Material = "acrylic";
         public bool ShowThirdParty = true;
+        // Fetch the repository's pricing.json once a day (Pricing.SyncAsync).
+        public bool PriceSync = true;
         public string KimiRegion = "china", ZaiRegion = "china";
         // Alpha of the smoke layer over Acrylic/Mica (0–1). Settings show it as
         // transparency = 1 − alpha, so 0% transparency is fully opaque.
@@ -241,9 +243,15 @@ namespace CodeUsageMonit {
         public static ProviderState Grok(object root) {
             var s = new ProviderState { Id = "grok", Plan = J.Str(root, "subscriptionTier") }; object c = J.Get(root, "config");
             object end = J.Get(c, "currentPeriod", "end"); if (J.Get(end, "seconds") != null) end = J.Get(end, "seconds");
+            // One shared allowance. productUsage (Build / Chat) splits what was spent from it;
+            // a product's share is not a quota of its own, so it gets no meter.
             Add(s, "当前账期", J.Get(c, "creditUsagePercent"), end);
-            foreach (object p in J.Arr(J.Get(c, "productUsage"))) { if (J.Str(p, "product").IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0) Add(s, "Build 占比", J.Get(p, "usagePercent"), end); }
             if (s.Plan.Length == 0) s.Plan = "Grok Build"; return s;
+        }
+        // Readings cached by older versions: before 1.2 Grok's Build share was saved as a quota.
+        public static ProviderState Normalize(ProviderState s) {
+            if (s != null && s.Id == "grok") s.Quotas.RemoveAll(q => q.Label == "Build 占比");
+            return s;
         }
         // GET api.github.com/copilot_internal/user. Snapshots report percent_remaining; the
         // monthly quota resets on quota_reset_date. Unlimited pools have no meter.

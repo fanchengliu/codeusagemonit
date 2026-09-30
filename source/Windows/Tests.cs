@@ -52,6 +52,12 @@ namespace CodeUsageMonit {
             test("Grok zero spend is a full allowance, not missing data", () => {
                 var s = Parsers.Grok(J.Parse("{\"config\":{\"creditUsagePercent\":0}}")); Require(s.Quotas.Count == 1 && s.Quotas[0].Remaining == 100);
             });
+            test("Grok product shares split the one allowance and are not quotas", () => {
+                var s = Parsers.Grok(J.Parse("{\"config\":{\"creditUsagePercent\":63,\"productUsage\":[{\"product\":\"GROK_BUILD\",\"usagePercent\":55},{\"product\":\"CHAT\",\"usagePercent\":8}]}}"));
+                Require(s.Quotas.Count == 1 && s.Quotas[0].Remaining == 37);
+                var old = new ProviderState { Id = "grok" }; Parsers.Add(old, "当前账期", 63, null); Parsers.Add(old, "Build 占比", 55, null);
+                Require(Parsers.Normalize(old).Quotas.Count == 1 && old.Quotas[0].Label == "当前账期");
+            });
             test("Percentages are bounded and nonnumeric values ignored", () => {
                 var s = new ProviderState(); Parsers.Add(s, "one", -10, null); Parsers.Add(s, "two", 150, null); Parsers.Add(s, "bad", "NaN", null); Require(s.Quotas.Count == 2 && s.Quotas[0].Remaining == 100 && s.Quotas[1].Remaining == 0);
             });
@@ -96,6 +102,15 @@ namespace CodeUsageMonit {
                 var q = new Quota { WindowSeconds = 604800, ResetUtc = new DateTime(2026, 1, 20, 4, 0, 0, DateTimeKind.Utc).ToString("o") };
                 var days = new[] { new DayUsage { Day = "2026-01-13", Tokens = 100 }, new DayUsage { Day = "2026-01-14", Tokens = 200 }, new DayUsage { Day = "2026-01-17", Tokens = 300 }, new DayUsage { Day = "2026-01-19", Tokens = 500 } };
                 var usage = UsageDetails.Window(days, q, now, 0, null, TimeZoneInfo.FindSystemTimeZoneById("China Standard Time")); Require(!usage.Exact && usage.Days.Count == 2 && usage.Tokens == 500);
+            });
+            test("Price sync accepts only a dated, complete catalogue", () => {
+                string date; var many = String.Join(",", Enumerable.Range(0, 120).Select(i => "\"m" + i + "\":{\"in\":1,\"out\":2}"));
+                Require(Pricing.Valid("{\"updated\":\"2026-10-01\",\"models\":{" + many + "}}", out date) && date == "2026-10-01");
+                Require(!Pricing.Valid("{\"updated\":\"2026-10-01\",\"models\":{\"a\":{\"in\":1,\"out\":2}}}", out date));
+                Require(!Pricing.Valid("{\"updated\":\"yesterday\",\"models\":{" + many + "}}", out date));
+                Require(Pricing.Valid("{\"updated\":\"2026-10-01T02:17Z\",\"models\":{" + many + "}}", out date) && String.CompareOrdinal(date, "2026-10-01") > 0);
+                Require(!Pricing.Valid("<html>rate limited</html>", out date));
+                Require(Pricing.Valid(File.ReadAllText(Path.Combine(Store.Root, "pricing.json")), out date));
             });
             test("Pricing: cache writes, 1-hour writes, whole-request and marginal long-context tiers", () => {
                 Pricing.LoadJson("{\"updated\":\"t\",\"models\":{\"t-model\":{\"in\":10,\"out\":50,\"cr\":1,\"cw\":12.5,\"long\":{\"at\":272000,\"in\":20,\"out\":75,\"cr\":2},\"fast\":2},\"c-model\":{\"in\":3,\"out\":15},\"m-model\":{\"in\":1,\"out\":2,\"long\":{\"at\":200000,\"marginal\":true,\"in\":2,\"out\":4}},\"g-5\":{\"in\":1,\"out\":1}}}");

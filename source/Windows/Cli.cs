@@ -81,7 +81,7 @@ namespace CodeUsageMonit {
         // ── status / usage ────────────────────────────────────────────────
         private static int Status(AppConfig config, List<string> ids) {
             string cache = Path.Combine(Store.Data, "quota-cache.json");
-            var cached = Store.Read<List<ProviderState>>("quota-cache.json").Where(s => s != null && s.Id != null).ToDictionary(s => s.Id, s => s);
+            var cached = Store.Read<List<ProviderState>>("quota-cache.json").Where(s => s != null && s.Id != null).Select(Parsers.Normalize).ToDictionary(s => s.Id, s => s);
             var states = ids.Select(id => { ProviderState s; return cached.TryGetValue(id, out s) ? s : new ProviderState { Id = id, Status = ProviderCatalog.LocalOnly(id) ? "ready" : "loading", Message = ProviderCatalog.LocalOnly(id) ? "仅本机用量" : "缓存中没有此平台，运行 codeusage usage 实时查询" }; }).ToList();
             string age = File.Exists(cache) ? Ago(File.GetLastWriteTimeUtc(cache)) : "无缓存";
             return Print(states, "缓存 · " + age);
@@ -108,7 +108,8 @@ namespace CodeUsageMonit {
                 })));
                 return 0;
             }
-            Console.WriteLine(Bold("codeusagemonit") + Dim(" V" + Version + " · " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + " · " + source));
+            Pricing.EnsureLoaded();
+            Console.WriteLine(Bold("codeusagemonit") + Dim(" V" + Version + " · " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + " · " + source + (Pricing.Day.Length > 0 ? " · 价目 " + Pricing.Day : "")));
             foreach (ProviderState s in states) {
                 Console.WriteLine();
                 string name = Paint(ProviderCatalog.Name(s.Id), ProviderCatalog.Color(s.Id), true);
