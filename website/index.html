@@ -66,7 +66,7 @@
   <div class="wrap hero-grid">
     <div class="hero-copy">
       <a class="release-chip" href="https://github.com/fanchengliu/codeusagemonit/releases/tag/v1.2.0">
-        <span class="chip-tag">v1.2</span><span data-i18n="chip">价目表每天与官方同步，一行命令安装</span><span class="chip-arrow" aria-hidden="true">→</span>
+        <span class="chip-tag">v1.2.0</span><span data-i18n="chip">价目表每天与官方同步，一行命令安装</span><span class="chip-arrow" aria-hidden="true">→</span>
       </a>
       <h1><span class="h1-line" data-i18n="heroA">额度还剩多少</span><span class="h1-line grad" data-i18n="heroB">抬眼就知道</span></h1>
       <p class="lead" data-i18n="heroLead">Codex、Claude、Cursor 等 11 个 AI 编程工具的剩余额度、重置时间、Token 用量和输出速度，都在 Windows 托盘的一个小窗口里。</p>
@@ -115,10 +115,7 @@
       <h2><span data-i18n="pA">已支持 11 个编程工具</span><span class="h2-dim" data-i18n="pB">外加你自己的接口</span></h2>
       <p class="body" data-i18n="pLead">复用各工具已有的登录：CLI、编辑器会话或 API Key。不导入浏览器 Cookie，不保存账户密码。</p>
     </div>
-    <div class="providers reveal">
-      <div class="p-grid" id="p-grid" role="tablist" aria-label="Providers"></div>
-      <div class="panel p-detail" id="p-detail" role="tabpanel" aria-live="polite"></div>
-    </div>
+    <ul class="provider-board reveal" id="p-grid"></ul>
   </div>
 </section>
 
@@ -173,15 +170,15 @@
     </div>
     <div class="bento">
       <div class="card price-card reveal">
-        <h3><span class="count" id="price-count">361</span> <span data-i18n="priceTitle">款模型，与官方同步计价</span></h3>
+        <h3 data-i18n="priceTitle">最新模型，与官方同步计价</h3>
         <p class="sub" data-i18n="priceSub">官方 API 单价，含长上下文阶梯、缓存读写和 Fast 模式倍率。</p>
         <div class="sync"><span class="sync-dot" aria-hidden="true"></span><span><span data-i18n="syncOk">已同步</span> · <span data-i18n="syncDate">价目日期</span> <b id="price-date">2026-09-30</b></span><span class="sync-sep" aria-hidden="true"></span><span data-i18n="syncEvery">每 24 小时检查一次更新</span></div>
         <div class="ptools">
-          <label class="psearch"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3.3 3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input type="search" id="price-q" autocomplete="off" spellcheck="false" data-i18n-ph="priceSearch" placeholder="搜索模型，例如 opus、gpt-5.5、glm"></label>
+          <label class="psearch"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3.3 3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input type="search" id="price-q" autocomplete="off" spellcheck="false" data-i18n-ph="priceSearch" placeholder="搜索模型，例如 gpt-6、opus、gemini"></label>
         </div>
         <div class="vendors" id="vendors" role="group" aria-label="Vendor"></div>
         <div class="ptable-wrap"><table class="ptable"><thead><tr><th data-i18n="thModel">模型</th><th data-i18n="thIn">输入</th><th data-i18n="thOut">输出</th><th data-i18n="thCache">缓存读</th></tr></thead><tbody id="price-rows"></tbody></table></div>
-        <div class="pfoot"><span id="price-shown"></span><span data-i18n="priceUnit">美元 / 百万 Token · 来源：厂商官方价目（经 LiteLLM、models.dev 汇总）</span></div>
+        <div class="pfoot"><span data-i18n="priceUnit">美元 / 百万 Token · 来源：厂商官方价目（经 LiteLLM、models.dev 汇总）</span></div>
       </div>
       <div class="card reveal">
         <h3 data-i18n="speedTitle">真实输出速度</h3>
@@ -209,36 +206,24 @@
   <div class="wrap">
     <div class="head reveal">
       <p class="eyebrow"><b>04</b><span data-i18n="eySizes">尺寸</span></p>
-      <h2><span data-i18n="sA">四种尺寸</span><span class="h2-dim" data-i18n="sB">一个窗口</span></h2>
+      <h2><span data-i18n="sA">从桌角到全景</span><span class="h2-dim" data-i18n="sB">一个窗口</span></h2>
       <p class="body" data-i18n="sLead">右键切换小、中、大、完整。紧凑尺寸待在桌面层，不挡工作窗口；每种尺寸都能拖动调整大小。</p>
     </div>
-    <div class="deck reveal" id="deck">
-      <button type="button" class="deck-card" data-size="full"><img src="assets/overview.png" width="480" height="840" alt=""><span class="deck-label"><b data-i18n="sFull">完整</b></span></button>
-      <button type="button" class="deck-card" data-size="large"><img src="assets/large.png" width="360" height="430" alt=""><span class="deck-label"><b data-i18n="sLarge">大</b></span></button>
-      <button type="button" class="deck-card" data-size="medium"><img src="assets/medium.png" width="360" height="180" alt=""><span class="deck-label"><b data-i18n="sMedium">中</b></span></button>
-      <button type="button" class="deck-card" data-size="small"><img src="assets/small.png" width="172" height="172" alt=""><span class="deck-label"><b data-i18n="sSmall">小</b></span></button>
+    <div class="size-tabs reveal" role="tablist" id="size-tabs" aria-label="尺寸">
+      <button type="button" role="tab" data-size="all" aria-selected="true" data-i18n="sAll">全部</button>
+      <button type="button" role="tab" data-size="small" aria-selected="false" data-i18n="sSmall">小</button>
+      <button type="button" role="tab" data-size="medium" aria-selected="false" data-i18n="sMedium">中</button>
+      <button type="button" role="tab" data-size="large" aria-selected="false" data-i18n="sLarge">大</button>
+      <button type="button" role="tab" data-size="full" aria-selected="false" data-i18n="sFull">完整</button>
     </div>
-    <p class="deck-hint reveal" data-i18n="deckHint">点一张卡片，放大看看</p>
-  </div>
-</section>
-
-<div class="viewer" id="viewer" hidden>
-  <div class="viewer-backdrop" data-close></div>
-  <div class="viewer-frame" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
-    <img class="viewer-img" id="viewer-img" alt="">
-    <div class="viewer-info">
-      <p class="viewer-dim" id="viewer-dim"></p>
-      <h3 id="viewer-title"></h3>
-      <p id="viewer-text"></p>
-      <div class="viewer-nav">
-        <button type="button" class="round" id="viewer-prev" aria-label="Previous"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span class="viewer-dots" id="viewer-dots"></span>
-        <button type="button" class="round" id="viewer-next" aria-label="Next"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="size-stage reveal" id="size-stage" data-mode="all">
+      <div class="size-fit" id="size-fit">
+        <div class="size-row" id="size-row"></div>
       </div>
     </div>
-    <button type="button" class="round viewer-close" data-close aria-label="Close"><svg viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    <p class="size-note reveal" id="size-note"></p>
   </div>
-</div>
+</section>
 
 <!-- 05 Install + CLI -->
 <section class="section" id="install" data-pager="pgInstall">
