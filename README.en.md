@@ -17,7 +17,7 @@ Remaining quota, reset times, token usage and output speed for Codex, Claude, Cu
 
 [简体中文](./README.md) · **English**
 
-<img src="./website/assets/og.png" width="820" alt="codeusagemonit screenshot" />
+<img src="./docs/readme-hero.png" width="820" alt="codeusagemonit: full, large, small and medium" />
 
 </div>
 
@@ -47,28 +47,9 @@ codeusagemonit puts all of it in the Windows tray. Click the icon to see what's 
 
 One window, four sizes. Switch with the size button at the top, a right-click anywhere in the window, or the tray menu.
 
-<table>
-  <tr>
-    <th>Full</th>
-    <th>Large</th>
-    <th>Medium / Small</th>
-  </tr>
-  <tr>
-    <td valign="top"><img src="./docs/screenshots/overview.png" width="280" alt="Full panel, overview page" /></td>
-    <td valign="top"><img src="./website/assets/large.png" width="280" alt="Large: quotas and local usage" /></td>
-    <td valign="top">
-      <img src="./website/assets/medium.png" width="280" alt="Medium: main quota and other windows" /><br /><br />
-      <img src="./website/assets/small.png" width="140" alt="Small: one big number and one meter" />
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">Cards for every provider, a detail page for each, the third-party page and settings</td>
-    <td valign="top">Full quota windows with pace, plus local usage: cost, tokens, requests, speed and a chart</td>
-    <td valign="top">Medium: main quota on the left, other windows on the right, no charts<br />Small: one big number and one meter</td>
-  </tr>
-</table>
+<img src="./docs/readme-hero.png" width="820" alt="Four sizes: full, large, small and medium" />
 
-<sub>Screenshots show the app's <code>--demo</code> mode with synthetic data and masked accounts.</sub>
+Light theme: full panel on the left, large in the center, small at the top right, medium at the bottom right.
 
 ## Supported providers
 
@@ -80,15 +61,14 @@ One window, four sizes. Switch with the size button at the top, a right-click an
 | [Antigravity](./docs/providers/antigravity.md) | The running desktop app, with the saved sign-in as a fallback | Period and per-model quotas | ✓ | — |
 | [DeepSeek](./docs/providers/deepseek.md) | API key (or `DEEPSEEK_API_KEY`) | API account balance per currency | — | — |
 | [Grok](./docs/providers/grok.md) | Your existing Grok Build CLI sign-in (`grok login`) | Subscription allowance for the billing period | ✓ | ✓ |
-| [GitHub Copilot](./docs/providers/copilot.md) | GitHub device login, or an official client's saved authorisation | Monthly premium requests and chat | ✓\* | — |
+| [GitHub Copilot](./docs/providers/copilot.md) | GitHub device login, or an official client's saved authorisation | Monthly premium requests and chat | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API key, China or international | 5-hour, weekly, monthly | ✓ | — |
-| [OpenCode Go](./docs/providers/opencode.md) | API key | 5-hour, weekly, monthly | ✓\* | ✓\* |
+| [OpenCode Go](./docs/providers/opencode.md) | API key | 5-hour, weekly, monthly | ✓ | ✓ |
 | [ZCode (Zhipu / Z.ai)](./docs/providers/zcode.md) | API key (GLM Coding Plan), China or international | 5-hour, weekly, MCP tool calls | ✓ | ✓ |
-| [Pi](./docs/providers/pi.md) | No sign-in needed | No account quota; local usage only | ✓\* | — |
+| [Pi](./docs/providers/pi.md) | No sign-in needed | No account quota; local usage only | ✓ | — |
 | [Custom](./docs/providers/custom.md) | Any GET endpoint that returns JSON; the key is stored encrypted | Up to 6 quota windows, or a balance | — | — |
 
 - The first six providers are enabled by default; turn on the rest in Settings → 显示的平台 (providers).
-- \* Experimental: the log readers for these tools have not been checked against real data yet. Copilot local usage comes from the GitHub Copilot CLI.
 - Data sources, connection steps and limits for each provider are in [`docs/providers/`](./docs/providers/) (Chinese).
 
 ## Install

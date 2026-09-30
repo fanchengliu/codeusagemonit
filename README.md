@@ -17,7 +17,7 @@ Codex、Claude、Cursor 等 11 款编程工具的剩余额度、重置时间、T
 
 **简体中文** · [English](./README.en.md)
 
-<img src="./website/assets/og.png" width="820" alt="codeusagemonit：额度还剩多少，抬眼就知道" />
+<img src="./docs/readme-hero.png" width="820" alt="codeusagemonit：完整、大、小、中四种尺寸" />
 
 </div>
 
@@ -44,28 +44,9 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 
 同一个窗口有四种尺寸：顶部“显示尺寸”按钮、窗口任意处右键或托盘菜单都能切换。
 
-<table>
-  <tr>
-    <th>完整</th>
-    <th>大</th>
-    <th>中 / 小</th>
-  </tr>
-  <tr>
-    <td valign="top"><img src="./docs/screenshots/overview.png" width="280" alt="完整面板：概览页" /></td>
-    <td valign="top"><img src="./website/assets/large.png" width="280" alt="大尺寸：额度与本机用量" /></td>
-    <td valign="top">
-      <img src="./website/assets/medium.png" width="280" alt="中尺寸：主额度与其他窗口" /><br /><br />
-      <img src="./website/assets/small.png" width="140" alt="小尺寸：一个大数字和一条额度条" />
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">所有平台的卡片、每个平台的详情页、「第三方」页和设置</td>
-    <td valign="top">完整的额度窗口和节奏，加上本机用量：费用、Token、请求、速度和柱状图</td>
-    <td valign="top">中：左边主额度，右边其他窗口，不放图表<br />小：一个大数字、一条额度条</td>
-  </tr>
-</table>
+<img src="./docs/readme-hero.png" width="820" alt="四种尺寸：完整面板、大、小、中" />
 
-<sub>截图为程序 <code>--demo</code> 模式下的演示数据，账号已打码。</sub>
+浅色主题：左边是完整面板，中间是大尺寸，右上是小尺寸，右下是中尺寸。
 
 ## 支持的平台
 
@@ -77,15 +58,14 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 | [Antigravity](./docs/providers/antigravity.md) | 读取正在运行的桌面应用，已保存的登录作为回退 | 周期额度、模型额度 | ✓ | — |
 | [DeepSeek](./docs/providers/deepseek.md) | API Key（或环境变量 `DEEPSEEK_API_KEY`） | API 账户余额，按币种显示 | — | — |
 | [Grok](./docs/providers/grok.md) | 复用 Grok Build CLI 的登录（`grok login`） | 当前账期的订阅额度 | ✓ | ✓ |
-| [GitHub Copilot](./docs/providers/copilot.md) | GitHub 设备码登录，或复用官方插件已保存的授权 | 每月高级请求、对话额度 | ✓\* | — |
+| [GitHub Copilot](./docs/providers/copilot.md) | GitHub 设备码登录，或复用官方插件已保存的授权 | 每月高级请求、对话额度 | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API Key，可选国内或国际 | 5 小时、每周、每月 | ✓ | — |
-| [OpenCode Go](./docs/providers/opencode.md) | API Key | 5 小时、每周、每月 | ✓\* | ✓\* |
+| [OpenCode Go](./docs/providers/opencode.md) | API Key | 5 小时、每周、每月 | ✓ | ✓ |
 | [ZCode（智谱 / Z.ai）](./docs/providers/zcode.md) | API Key（GLM 编码套餐），可选国内或国际 | 5 小时、每周、MCP 工具调用 | ✓ | ✓ |
-| [Pi](./docs/providers/pi.md) | 无需登录 | 没有账户额度，只统计本机用量 | ✓\* | — |
+| [Pi](./docs/providers/pi.md) | 无需登录 | 没有账户额度，只统计本机用量 | ✓ | — |
 | [自定义平台](./docs/providers/custom.md) | 任意返回 JSON 的 GET 接口，密钥单独加密保存 | 最多 6 个额度窗口，或余额 | — | — |
 
 - 前六个平台默认启用，其余在 设置 → 显示的平台 里打开。
-- \* 实验性：作者本机没有这几个工具的数据，日志读取尚未用真实数据验证。Copilot 的本机用量来自 GitHub Copilot CLI。
 - 各平台的数据来源、连接步骤和限制见 [`docs/providers/`](./docs/providers/)。
 
 ## 安装
