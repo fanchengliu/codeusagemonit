@@ -104,7 +104,7 @@ Auto proxy mode reads the Windows HTTP proxy, with HTTP/HTTPS environment fallba
 & .\source\Windows\build.ps1 -Installer
 ```
 
-Build uses the Windows-supplied .NET Framework C# 5 compiler (`/codepage:65001`) and WPF assemblies, and copies `Panel.xaml`, `pricing.json` and `icons/` next to the executables. Scripts containing Chinese text are saved as UTF-8 with BOM so Windows PowerShell 5.1 parses them. `-Installer` needs Inno Setup 6.2 or newer and also writes `codeusagemonit-setup-<version>.exe`, the portable zip and `SHA256SUMS.txt`. See `installer/README.md`.
+Build uses the Windows-supplied .NET Framework C# 5 compiler (`/codepage:65001`) and WPF assemblies, and copies `Panel.xaml`, `pricing.json` and `icons/` next to the executables. Scripts containing Chinese text are saved as UTF-8 with BOM so Windows PowerShell 5.1 parses them. `-Installer` needs Inno Setup 6.3 or newer. The Simplified Chinese translation is `installer/ChineseSimplified.isl` in this repository, so it does not have to be copied into Inno Setup's Languages folder. The installer build also writes `codeusagemonit-setup-<version>.exe`, the portable zip and `SHA256SUMS.txt`. See `installer/README.md`.
 
 Demo mode has a separate instance and stores its settings under `verification/demo-data`; it neither reads account credentials nor modifies production preferences. `--background` starts in the tray; `--quit` exits the production instance; `--quit --demo` exits the preview.
 

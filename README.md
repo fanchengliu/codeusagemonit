@@ -99,7 +99,7 @@ cd codeusagemonit
 .\source\Windows\build.ps1 -Installer
 ```
 
-不带参数时，构建在几秒内完成，并在根目录生成可执行程序。`-Installer` 还需要 [Inno Setup 6.2+](https://jrsoftware.org/isdl.php)，会额外生成 `codeusagemonit-setup-<版本>.exe` 和免安装 zip。说明见 `source/Windows/installer/README.md`。
+不带参数时，构建在几秒内完成，并在根目录生成可执行程序。`-Installer` 还需要 [Inno Setup 6.3 或更新版本](https://jrsoftware.org/isdl.php)（简体中文语言文件已放在仓库里，不用再往 Inno Setup 的 Languages 目录里复制），会额外生成 `codeusagemonit-setup-<版本>.exe` 和免安装 zip。说明见 `source/Windows/installer/README.md`。
 
 ---
 

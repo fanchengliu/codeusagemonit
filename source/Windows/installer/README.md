@@ -12,7 +12,7 @@ Inno Setup 6 script for the Windows installer. The portable zip is unchanged: it
 - Start menu shortcut.
 - Optional desktop shortcut (off by default).
 - Optional “start with Windows” (off by default). Same registry value the app’s own 开机自启 switch uses: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\codeusagemonit` = `"<install>\codeusagemonit.exe" --background`.
-- Optional user PATH entry for the install folder so `codeusage` works in a new terminal (on by default). The existing PATH string is edited in place and its registry type (`REG_SZ` or `REG_EXPAND_SZ`) is kept.
+- Optional user PATH entry for the install folder so `codeusage` works in a new terminal (on by default). The existing PATH string is edited in place and its registry type (`REG_SZ` or `REG_EXPAND_SZ`) is kept. Uninstall removes only that entry. A pre-existing trailing `;` stays, and the rest of the string is not trimmed or rebuilt.
 - Registers an uninstaller under Settings → Apps. Program files are removed. The uninstaller then asks before deleting user data; **No** is the default. A silent uninstall (`unins000.exe /SILENT`) keeps user data. A directory junction is not deleted (Scoop’s persist link). A `data` folder on a drive root is not offered for deletion either.
 - Upgrades use the same AppId and previous directory, replace program files, and do not touch `%LOCALAPPDATA%\codeusagemonit`.
 - Before copying files it asks a copy running from that folder to `--quit`, then force-closes only processes whose path is inside the install folder.
@@ -33,7 +33,7 @@ The first launch of an installed copy copies an existing `<exe>\data` into `%LOC
 
 ## Build on Windows
 
-Requires Windows 10 or 11 x64 and the **full** [Inno Setup 6.2+](https://jrsoftware.org/isdl.php) (the language file `ChineseSimplified.isl` must be installed). No Visual Studio.
+Requires Windows 10 or 11 x64 and [Inno Setup 6.3 or newer](https://jrsoftware.org/isdl.php). No Visual Studio. The Simplified Chinese wizard text is `ChineseSimplified.isl` next to `codeusagemonit.iss` (see `THIRD-PARTY-NOTICES.md`). Inno Setup's own `Languages` folder is not used for it. `x64compatible` needs 6.3. The script calls `CopyFile` on 6.4 and newer, and `FileCopy` on 6.3, which is the only name that version has. The translation matches the message names from Inno Setup 6.5 through 7.1, so those versions compile it with no language warnings. 6.3 and 6.4 still compile: a message this file does not define falls back to English, and a message name newer than that compiler is ignored.
 
 ```powershell
 git clone https://github.com/fanchengliu/codeusagemonit.git

@@ -26,10 +26,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Inno Setup 6
+      - name: Install Inno Setup 6.3 or newer
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
+          # ChineseSimplified.isl is vendored beside the .iss. The compiler Languages folder is not used.
           choco install innosetup --yes --no-progress --limit-output
           if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 3010) { throw "choco install innosetup failed ($LASTEXITCODE)." }
 

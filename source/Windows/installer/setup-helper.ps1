@@ -93,28 +93,31 @@ if ($Action -eq 'stop') {
 }
 
 $target = Path-Entry (Normalize-Dir $dir)
+$normTarget = Normalize-Dir $target
 $state = Get-UserPathState
 try {
-    $parts = @()
-    if ($state.Value) {
-        foreach ($part in $state.Value.Split(';')) {
-            if (-not [string]::IsNullOrWhiteSpace($part)) { $parts += $part }
-        }
-    }
-    $kept = @()
+    $raw = $state.Value
+    if ($null -eq $raw) { $raw = '' }
+    # Keep every other character, including empty segments from a trailing ";".
+    $segments = @($raw.Split([char]';'))
+    $kept = New-Object System.Collections.Generic.List[string]
     $found = $false
-    foreach ($part in $parts) {
-        if ((Normalize-Dir $part) -ieq (Normalize-Dir $target)) { $found = $true; if ($Action -eq 'remove-path') { continue } }
-        $kept += $part
+    foreach ($part in $segments) {
+        $norm = Normalize-Dir $part
+        if (($norm.Length -gt 0) -and ($norm -ieq $normTarget)) {
+            $found = $true
+            if ($Action -eq 'remove-path') { continue }
+        }
+        [void]$kept.Add($part)
     }
     if ($Action -eq 'add-path') {
         if ($found) { exit 0 }
-        if ([string]::IsNullOrWhiteSpace($state.Value)) { $updated = $target }
-        elseif ($state.Value.TrimEnd().EndsWith(';')) { $updated = $state.Value.TrimEnd() + $target }
-        else { $updated = $state.Value.TrimEnd() + ';' + $target }
+        if ([string]::IsNullOrWhiteSpace($raw)) { $updated = $target }
+        elseif ($raw.EndsWith(';')) { $updated = $raw + $target + ';' }
+        else { $updated = $raw + ';' + $target }
     } else {
         if (-not $found) { exit 0 }
-        $updated = ($kept -join ';')
+        $updated = [System.String]::Join(';', $kept.ToArray())
     }
     $state.Key.SetValue('Path', $updated, $state.Kind)
 } finally {

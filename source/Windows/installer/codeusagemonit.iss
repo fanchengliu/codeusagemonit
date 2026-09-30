@@ -1,10 +1,18 @@
 ﻿; codeusagemonit setup.exe
 ;
-; Inno Setup 6.2 or newer (full install, so ChineseSimplified.isl is present).
+; Inno Setup 6.3 or newer. ChineseSimplified.isl sits beside this script
+; (user-contributed translation; the 6.7 installer does not ship it).
+; x64compatible is the 6.3 replacement for the deprecated x64 identifier:
+; x64 Windows, and ARM64 Windows running this x64 build under emulation.
+; CopyFile replaced FileCopy in 6.4; 6.3 still compiles the old name.
 ; Build from the repo:  .\source\Windows\build.ps1 -Installer
 ; Or, after build.ps1 has produced the executables in the repo root:
 ;   ISCC.exe source\Windows\installer\codeusagemonit.iss
 ;
+#if Ver < EncodeVer(6, 3, 0)
+  #error codeusagemonit setup requires Inno Setup 6.3 or newer
+#endif
+
 ; AppId is stable on purpose: upgrades replace program files and keep
 ; %LOCALAPPDATA%\codeusagemonit. Do not change it.
 ;
@@ -59,8 +67,8 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 LicenseFile="{#RepoRoot}\LICENSE"
 CloseApplications=no
@@ -69,7 +77,7 @@ ChangesAssociations=no
 ShowLanguageDialog=auto
 
 [Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "chinesesimp"; MessagesFile: "ChineseSimplified.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [CustomMessages]
@@ -162,7 +170,11 @@ end;
 function InitializeUninstall: Boolean;
 begin
   UninstallHelper := ExpandConstant('{tmp}\setup-helper.ps1');
+#if Ver >= EncodeVer(6, 4, 0)
+  if not CopyFile(ExpandConstant('{app}\setup-helper.ps1'), UninstallHelper, False) then
+#else
   if not FileCopy(ExpandConstant('{app}\setup-helper.ps1'), UninstallHelper, False) then
+#endif
     UninstallHelper := ExpandConstant('{app}\setup-helper.ps1');
   Result := True;
 end;

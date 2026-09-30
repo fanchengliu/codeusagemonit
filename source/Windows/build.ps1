@@ -84,7 +84,7 @@ function Find-InnoCompiler {
   foreach ($candidate in $candidates) { if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate } }
   $command = Get-Command ISCC.exe -ErrorAction SilentlyContinue
   if ($command) { return $command.Source }
-  throw 'Inno Setup 6 compiler (ISCC.exe) was not found. Install the full Inno Setup 6.2+ from https://jrsoftware.org/isdl.php and run build.ps1 -Installer again.'
+  throw 'Inno Setup 6 compiler (ISCC.exe) was not found. Install Inno Setup 6.3 or newer from https://jrsoftware.org/isdl.php and run build.ps1 -Installer again.'
 }
 function Get-AppVersion {
   $source = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'App.cs') -Raw -Encoding UTF8
@@ -124,9 +124,9 @@ if ($Installer) {
   }
   $zip = New-PortableZip $out $repoRoot $version
   $iscc = Find-InnoCompiler
-  $isl = Join-Path (Split-Path -Parent $iscc) 'Languages\ChineseSimplified.isl'
-  if (-not (Test-Path -LiteralPath $isl)) { throw 'Inno Setup is missing Languages\ChineseSimplified.isl. Install the full Inno Setup 6.2 or newer, not a minimal copy.' }
   $iss = Join-Path $PSScriptRoot 'installer\codeusagemonit.iss'
+  $isl = Join-Path $PSScriptRoot 'installer\ChineseSimplified.isl'
+  if (-not (Test-Path -LiteralPath $isl)) { throw 'Missing source\Windows\installer\ChineseSimplified.isl.' }
   $buildDirArg = '/DBuildDir="' + ($out -replace '"', '') + '"'
   $repoArg = '/DRepoRoot="' + ($repoRoot -replace '"', '') + '"'
   & $iscc ('/DMyAppVersion=' + $version) $buildDirArg $repoArg $iss
