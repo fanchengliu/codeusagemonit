@@ -46,10 +46,9 @@ namespace CodeUsageMonit {
         private void Render() {
             if (quitting) return;
             UpdateStatus();
-            if (RangePickerOpen) return;
+            if (IsCompact) { RenderCompact(); return; }
             if (EditingKey()) { renderDeferred = true; return; }
             renderDeferred = false;
-            if (IsCompact) { RenderCompact(); return; }
             RenderTabs(); UpdateScaleLabel();
             double offset = bodyScroll.VerticalOffset;
             body.Children.Clear();
@@ -107,46 +106,65 @@ namespace CodeUsageMonit {
         // cards (and their meters) below stay untouched.
         private UIElement HeroContent() {
             var stack = new StackPanel();
-            List<DayUsage> all = history.Days.Where(d => config.Enabled.Contains(d.Agent)).ToList();
-            List<string> agents = ProviderCatalog.Ids.Where(id => all.Any(d => d.Agent == id)).ToList();
+            List<string> enabled = EnabledIds().ToList();
+            UsageRange range = RangeFor("overview");
+            RangeData all = RangeUsage(enabled, range, true, null);
+            List<string> agents = all.Parts.Where(p => p.Value.Tokens() > 0 || p.Value.D > 0).Select(p => p.Key).OrderBy(id => Array.IndexOf(ProviderCatalog.Ids, id)).ToList();
             if (heroFilter != "all" && !agents.Contains(heroFilter)) heroFilter = "all";
             bool single = heroFilter != "all";
-            string rangeId = single ? heroFilter : "overview"; PeriodUsage usage = RangeUsage(rangeId);
-            List<DayUsage> days = usage.Days;
-            var head = Row();
-            var copy = new Button { Style = Styled("IconButton"), Content = "", Width = 26, Height = 26, FontSize = 12, ToolTip = "复制用量概览", Margin = new Thickness(0, -5, -7, -5) };
+            RangeData data = single ? RangeUsage(new List<string> { heroFilter }, range, false, heroFilter) : all;
+            Action rerender = () => { if (heroCard != null) heroCard.Child = HeroContent(); };
+            var head = new Grid();
+            head.ColumnDefinitions.Add(new ColumnDefinition()); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            head.Children.Add(Label((single ? ProviderCatalog.Name(heroFilter) : "全部平台") + " · API 等价费用", 11, InkDim));
+            var picker = RangeButton("overview", rerender, false); picker.Margin = new Thickness(8, -3, 4, -3); Grid.SetColumn(picker, 1); head.Children.Add(picker);
+            var copy = new Button { Style = Styled("IconButton"), Content = "\uE8C8", Width = 26, Height = 26, FontSize = 12, ToolTip = "复制用量概览", Margin = new Thickness(0, -5, -7, -5) };
             copy.Click += delegate { CopySummary(copy); };
-            var actions = new StackPanel { Orientation = Orientation.Horizontal }; actions.Children.Add(RangeButton(rangeId)); actions.Children.Add(copy);
-            AddRow(head, Label(single ? ProviderCatalog.Name(heroFilter) : "全部平台", 11, InkDim), actions); stack.Children.Add(head);
-            var amount = Label(PeriodCost(usage), 26, Ink);
-            amount.FontWeight = FontWeights.SemiBold; amount.Margin = new Thickness(0, 1, 0, 0); Tabular(amount); stack.Children.Add(amount);
+            Grid.SetColumn(copy, 2); head.Children.Add(copy); stack.Children.Add(head);
+            var figures = new Grid { Margin = new Thickness(0, 4, 0, 0) };
+            figures.ColumnDefinitions.Add(new ColumnDefinition()); figures.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var amount = Label(data.Total.D > 0 || data.Total.Tokens() > data.Total.U ? Usd(data.Total.D) : "—", 26, Ink);
+            amount.FontWeight = FontWeights.SemiBold; Tabular(amount); figures.Children.Add(amount);
+            var side = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 3) };
+            var tokenLine = Label(Compact(data.Total.Tokens()) + " Token", 12, Ink); tokenLine.HorizontalAlignment = HorizontalAlignment.Right; Tabular(tokenLine); side.Children.Add(tokenLine);
+            if (data.Total.R > 0) { var req = Label(data.Total.R.ToString("N0", CultureInfo.InvariantCulture) + " 次请求", 10.5, InkFaint); req.HorizontalAlignment = HorizontalAlignment.Right; side.Children.Add(req); }
+            Grid.SetColumn(side, 1); figures.Children.Add(side); stack.Children.Add(figures);
             string line;
-            if (all.Count == 0) line = scanning ? "正在读取本地历史…" : history.Error.Length > 0 ? history.Error : "暂无本地历史记录";
-            else if (single) { string model = UsageDetails.MainModel(days); line = PeriodTokens(usage) + " Token" + (model.Length > 0 ? " · " + model : ""); }
-            else line = PeriodTokens(usage) + " Token · " + agents.Count + " 个平台有记录";
+            if (history.Days.Count == 0 && !data.FromLogs) line = scanning ? "正在读取本地记录…" : history.Error.Length > 0 ? history.Error : "暂无本地记录";
+            else if (single) { var top = data.Parts.FirstOrDefault(); line = "今日 " + TodayMoney(history.Days.Where(d => d.Agent == heroFilter)) + (top.Key != null ? " · 主要模型 " + top.Key : ""); }
+            else line = "今日 " + TodayMoney(history.Days.Where(d => enabled.Contains(d.Agent))) + " · " + agents.Count + " 个平台有记录" + (data.Total.U > 0 ? " · 部分模型无价目" : "");
             var sub = Label(line, 11, InkDim); sub.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(sub);
-            stack.Children.Add(Hint(PeriodCaption(usage), 4));
-            stack.Children.Add(PeriodChart(usage, rangeId, 42));
+            if (data.Bars.Count > 0) stack.Children.Add(UsageChart("hero|" + heroFilter, data.Hourly ? "每小时" : "每日", data.Bars, 46, true, false, rerender));
             if (agents.Count > 1) {
                 // Filter chips double as the legend: click one to see only that platform.
-                var chips = new WrapPanel { Margin = new Thickness(-3, 8, 0, -4) };
+                var chips = new WrapPanel { Margin = new Thickness(-3, 10, 0, -4) };
                 foreach (string key in new[] { "all" }.Concat(agents)) {
                     string captured = key; bool active = heroFilter == key;
                     var content = new StackPanel { Orientation = Orientation.Horizontal };
                     if (key != "all") content.Children.Add(new Border { Width = 7, Height = 7, CornerRadius = new CornerRadius(2), Background = Brush(ProviderCatalog.Color(key)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
-                    var text = Label(key == "all" ? "全部" : ProviderCatalog.Name(key), 10.5, active ? Ink : InkDim); Tabular(text);
+                    Bucket part = key == "all" ? null : all.Parts.First(p => p.Key == key).Value;
+                    var text = Label(key == "all" ? "全部" : ProviderCatalog.Name(key) + " " + Usd(part.D), 10.5, active ? Ink : InkDim); Tabular(text);
                     content.Children.Add(text);
-                    var chip = new Button { Content = content, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 4, 4), Background = Brush(active ? "#1CFFFFFF" : "#00FFFFFF"), BorderBrush = Brush(active ? "#30FFFFFF" : "#00FFFFFF"), BorderThickness = new Thickness(1), ToolTip = key == "all" ? "显示全部平台（按平台堆叠）" : "只看 " + ProviderCatalog.Name(key) };
+                    var chip = new Button { Content = content, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 4, 4), Background = Brush(active ? "#1CFFFFFF" : "#00FFFFFF"), BorderBrush = Brush(active ? "#30FFFFFF" : "#00FFFFFF"), BorderThickness = new Thickness(1), ToolTip = key == "all" ? "显示全部平台（按平台堆叠）" : "只看 " + ProviderCatalog.Name(key) + "（按模型堆叠）" };
                     System.Windows.Automation.AutomationProperties.SetName(chip, "图表：" + (key == "all" ? "全部" : ProviderCatalog.Name(key)));
-                    chip.Click += delegate { heroFilter = captured; if (heroCard != null) heroCard.Child = HeroContent(); };
+                    chip.Click += delegate { heroFilter = captured; rerender(); };
                     chips.Children.Add(chip);
                 }
                 stack.Children.Add(chips);
             }
-            stack.Children.Add(PeriodNote(rangeId, usage));
+            var note = Label("本机会话日志 × 官方 API 价目估算，不是订阅账单 ⓘ", 10.5, InkFaint);
+            note.Margin = new Thickness(0, 10, 0, 0); note.ToolTip = PricingHint(); stack.Children.Add(note);
             return stack;
         }
         private void CopySummary(Button source) {
+            // The clipboard can be held by another process; that must not become an error dialog.
+            try { Clipboard.SetText(SummaryText()); } catch { source.ToolTip = "剪贴板被占用，请重试"; return; }
+            source.Content = ""; source.Foreground = GoodBrush;
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
+            timer.Tick += delegate { timer.Stop(); source.Content = ""; source.ClearValue(Control.ForegroundProperty); };
+            timer.Start();
+        }
+        private string SummaryText() {
             var report = new StringBuilder("codeusagemonit · " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + "\n");
             foreach (string id in EnabledIds()) {
                 ProviderState state = states[id];
@@ -154,27 +172,25 @@ namespace CodeUsageMonit {
             }
             List<DayUsage> days = history.Days.Where(d => config.Enabled.Contains(d.Agent)).ToList();
             report.AppendLine("近 30 天 API 等价估算：" + Money(days) + " · " + Compact(days.Sum(d => d.Tokens)) + " Token（非订阅账单）");
-            // The clipboard can be held by another process; that must not become an error dialog.
-            try { Clipboard.SetText(report.ToString()); } catch { source.ToolTip = "剪贴板被占用，请重试"; return; }
-            source.Content = ""; source.Foreground = GoodBrush;
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
-            timer.Tick += delegate { timer.Stop(); source.Content = ""; source.ClearValue(Control.ForegroundProperty); };
-            timer.Start();
+            return report.ToString();
         }
         private UIElement ProviderCard(ProviderState state) {
             var stack = new StackPanel();
-            // The whole header row opens the provider page (hover highlight + chevron).
-            var header = new Button { Content = Identity(state, false), HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(7, 5, 7, 5), Margin = new Thickness(-7, -5, 0, -5), ToolTip = "查看 " + ProviderCatalog.Name(state.Id) + " 详情" };
+            // The whole header opens the provider page; its refresh button sits inside, on
+            // the name's line, with the account right-aligned beneath it.
+            var header = new Button { Content = Identity(state, false), HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(7, 5, 5, 5), Margin = new Thickness(-7, -5, -5, -5), ToolTip = "查看 " + ProviderCatalog.Name(state.Id) + " 详情" };
             System.Windows.Automation.AutomationProperties.SetName(header, ProviderCatalog.Name(state.Id) + " 详情");
             header.Click += delegate { SelectProvider(state.Id); };
-            stack.Children.Add(WithRefresh(header, state.Id));
+            stack.Children.Add(header);
             AccountBody(stack, state, false);
-            PeriodUsage usage = RangeUsage(state.Id);
-            if (usage.HasData || config.UsageRanges.ContainsKey(state.Id)) {
+            List<DayUsage> days = history.Days.Where(d => d.Agent == state.Id).ToList();
+            if (days.Count > 0) {
                 stack.Children.Add(new Border { Height = 1, Background = Hairline, Margin = new Thickness(0, 14, 0, 10) });
                 var footer = Row();
-                var summary = Label("所选时段 " + PeriodCost(usage), 11, InkDim); Tabular(summary);
-                var tokens = Label(PeriodTokens(usage) + " Token", 11, InkFaint); Tabular(tokens);
+                var summary = Label("今日 " + TodayMoney(days) + " · 30 天 " + Money(days), 11, InkDim); Tabular(summary);
+                double? speed = RecentSpeed(state.Id, days);
+                var tokens = Label(Compact(days.Sum(d => d.Tokens)) + " Token" + (speed.HasValue ? " · " + OutputTiming.Text(speed) : ""), 11, InkFaint); Tabular(tokens);
+                if (speed.HasValue) tokens.ToolTip = ProviderCatalog.Name(state.Id) + " 近 7 天输出速度 " + OutputTiming.Text(speed) + "\n" + OutputTiming.Definition;
                 AddRow(footer, summary, tokens); stack.Children.Add(footer);
             }
             return Card(stack);
@@ -186,22 +202,16 @@ namespace CodeUsageMonit {
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition());
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            FrameworkElement icon = Icon(state.Id, detail ? 20 : 17); icon.Margin = new Thickness(0, 0, 10, 0); icon.VerticalAlignment = VerticalAlignment.Center;
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(detail ? 26 : 24) }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            FrameworkElement icon = Icon(state.Id, detail ? 22 : 18); icon.Margin = new Thickness(0, 0, 10, 0); icon.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetRowSpan(icon, 2); grid.Children.Add(icon);
             var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             var name = Label(ProviderCatalog.Name(state.Id), detail ? 16 : 14, Ink); name.FontWeight = FontWeights.SemiBold; title.Children.Add(name);
             if (!String.IsNullOrEmpty(state.Plan)) title.Children.Add(Pill(state.Plan));
             Grid.SetColumn(title, 1); grid.Children.Add(title);
-            string account = state.Account ?? "";
-            if (config.HideAccounts && account.Contains("@")) account = account.Substring(0, Math.Min(2, account.IndexOf('@'))) + "•••" + account.Substring(account.IndexOf('@'));
-            var owner = Label(account, 11, InkDim); owner.MaxWidth = 170; owner.Margin = new Thickness(8, 0, 0, 0);
-            if (account.Length > 0 && detail) owner.ToolTip = config.HideAccounts ? "可在设置中关闭邮箱遮挡" : account;
-            Grid.SetColumn(owner, 2); grid.Children.Add(owner);
-            if (!detail) {
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                var chevron = new TextBlock { Text = "", FontFamily = IconFont, FontSize = 10, Foreground = InkFaint, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
-                Grid.SetColumn(chevron, 3); Grid.SetRowSpan(chevron, 2); grid.Children.Add(chevron);
+            if (!ProviderCatalog.LocalOnly(state.Id)) {
+                Button refresh = ProviderRefreshButton(state.Id, 26); refresh.Margin = new Thickness(8, -1, -2, -1); refresh.VerticalAlignment = VerticalAlignment.Center;
+                Grid.SetColumn(refresh, 2); grid.Children.Add(refresh);
             }
             string freshness; Brush tone = InkFaint;
             if (!config.Enabled.Contains(state.Id)) freshness = "已关闭";
@@ -210,8 +220,15 @@ namespace CodeUsageMonit {
             else if (state.Status == "loading") freshness = "正在读取…";
             else if (state.Status == "setup") freshness = "尚未连接";
             else { freshness = "需要处理"; tone = WarnBrush; }
-            var fresh = Label(freshness, 10.5, tone); fresh.Margin = new Thickness(0, 2, 0, 0); fresh.HorizontalAlignment = HorizontalAlignment.Left;
-            Grid.SetRow(fresh, 1); Grid.SetColumn(fresh, 1); Grid.SetColumnSpan(fresh, 2); grid.Children.Add(fresh);
+            var fresh = Label(freshness, 10.5, tone); fresh.HorizontalAlignment = HorizontalAlignment.Left;
+            Grid.SetRow(fresh, 1); Grid.SetColumn(fresh, 1); grid.Children.Add(fresh);
+            string account = state.Account ?? "";
+            if (config.HideAccounts && account.Contains("@")) account = account.Substring(0, Math.Min(2, account.IndexOf('@'))) + "•••" + account.Substring(account.IndexOf('@'));
+            if (account.Length > 0) {
+                var owner = Label(account, 10.5, InkFaint); owner.MaxWidth = 190; owner.Margin = new Thickness(10, 0, 0, 0); owner.HorizontalAlignment = HorizontalAlignment.Right;
+                owner.ToolTip = detail ? (config.HideAccounts ? "可在设置中关闭邮箱遮挡" : account) : null;
+                Grid.SetRow(owner, 1); Grid.SetColumn(owner, 1); Grid.SetColumnSpan(owner, 2); grid.Children.Add(owner);
+            }
             return grid;
         }
         private void AccountBody(StackPanel stack, ProviderState state, bool detail) {
@@ -220,7 +237,7 @@ namespace CodeUsageMonit {
             bool first = true;
             foreach (var quota in state.Quotas.Take(detail ? 30 : 3)) {
                 FrameworkElement row = QuotaRow(quota, state.Id, state.Stale);
-                if (first) { row.Margin = new Thickness(0, 14, 0, 0); first = false; }
+                if (first) { row.Margin = new Thickness(row.Margin.Left, 9, row.Margin.Right, 0); first = false; }
                 stack.Children.Add(row);
             }
             if (!detail && state.Quotas.Count > 3) {
@@ -240,34 +257,20 @@ namespace CodeUsageMonit {
                 // Not connected / login expired: connect right here. Other errors (network,
                 // proxy, rate limit) usually pass on a retry, so connecting is one click away.
                 if (state.Status == "error") stack.Children.Add(ReconnectToggle(state.Id));
-            }
-            if (state.Status == "setup" || state.Status == "expired" || connectionDetails.Contains(state.Id)) {
-                stack.Children.Add(ConnectPanel(state));
-                if (state.Status == "ready") stack.Children.Add(ReconnectToggle(state.Id));
+                if (state.Status == "setup" || state.Status == "expired" || (state.Status == "error" && connectionDetails.Contains(state.Id))) stack.Children.Add(ConnectPanel(state));
             }
         }
         private UIElement ReconnectToggle(string id) {
             bool open = connectionDetails.Contains(id);
-            var toggle = new Button { Style = Styled("SecondaryButton"), Content = open ? "收起连接选项" : "重新连接", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
+            var toggle = new Button { Style = Styled("LinkButton"), Content = open ? "收起连接选项" : "重新连接…", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 6, 0, 0) };
             toggle.Click += delegate { if (!connectionDetails.Add(id)) connectionDetails.Remove(id); Render(); };
             return toggle;
-        }
-        // The card / detail header with the provider's own refresh button at the right.
-        private UIElement WithRefresh(UIElement header, string id) {
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.Children.Add(header);
-            Button refresh = ProviderRefreshButton(id, 28); refresh.Margin = new Thickness(4, -4, -8, -4); refresh.VerticalAlignment = VerticalAlignment.Center;
-            Grid.SetColumn(refresh, 1); grid.Children.Add(refresh);
-            var range = RangeIcon(id); range.Margin = new Thickness(5, -4, 0, -4); Grid.SetColumn(range, 2); grid.Children.Add(range);
-            var more = ProviderActionsButton(id); more.Margin = new Thickness(0, -4, -8, -4); Grid.SetColumn(more, 3); grid.Children.Add(more);
-            return grid;
         }
         // Per-provider refresh: spins while that provider (or a full refresh) is in flight.
         private Button ProviderRefreshButton(string id, double size) {
             string name = ProviderCatalog.Name(id);
             bool busy = refreshing || refreshingIds.Contains(id);
-            Button button = SpinButton(size, busy, busy ? "正在刷新 " + name + "…" : "只刷新 " + name + (ProviderCatalog.LocalOnly(id) ? " 本机历史" : " 额度"));
+            Button button = SpinButton(size, busy, busy ? "正在刷新 " + name + "…" : "只刷新 " + name);
             System.Windows.Automation.AutomationProperties.SetName(button, "刷新 " + name);
             button.Click += delegate(object sender, RoutedEventArgs e) { e.Handled = true; if (!refreshing && !refreshingIds.Contains(id)) { var ignored = RefreshOne(id); } };
             return button;
@@ -287,23 +290,25 @@ namespace CodeUsageMonit {
                 double phase = DateTime.Now.TimeOfDay.TotalMilliseconds % 900 / 900 * 360;
                 rotate.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(phase, phase + 360, TimeSpan.FromSeconds(.9)) { RepeatBehavior = RepeatBehavior.Forever });
             }
-            var button = new Button { Style = Styled("IconButton"), Content = glyph, Width = size, Height = size, ToolTip = tip, IsEnabled = !busy };
+            var button = new Button { Style = Styled("IconButton"), Content = glyph, Width = size, Height = size, ToolTip = tip };
             if (busy) button.Foreground = AccentBrush;
             return button;
         }
         // The segmented meter is the user's own design: 24 cells, 2 px gaps, remaining
         // fraction filled in the provider colour, warm colour below 10%. Keep it as is.
+        // Click a window to expand its exact reset time, usage and window length.
         private FrameworkElement QuotaRow(Quota quota, string id, bool stale) {
-            var stack = new StackPanel { Margin = new Thickness(0, 16, 0, 0), Opacity = stale ? .62 : 1 };
+            string key = id + "|" + quota.Label; bool open = expandedQuotas.Contains(key);
+            var stack = new StackPanel { Opacity = stale ? .62 : 1 };
             var row = Row();
             var heading = new TextBlock { Foreground = Ink, FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
             heading.Inlines.Add(quota.Label + " ");
             heading.Inlines.Add(new Run(quota.Remaining.ToString("0.#") + "%") { FontSize = 17, FontWeight = FontWeights.SemiBold });
             heading.Inlines.Add(" 剩余");
-            heading.ToolTip = quota.Label + " " + quota.Remaining.ToString("0.#") + "% 剩余（已用 " + quota.Used.ToString("0.#") + "%）";
-            var reset = Label(Countdown(quota.ResetUtc), 10.5, InkDim); reset.Margin = new Thickness(8, 0, 0, 0);
-            reset.ToolTip = "重置时间：" + LocalTime(quota.ResetUtc);
-            AddRow(row, heading, reset); stack.Children.Add(row);
+            var right = new StackPanel { Orientation = Orientation.Horizontal };
+            var reset = Label(Countdown(quota.ResetUtc), 10.5, InkDim); reset.Margin = new Thickness(8, 0, 0, 0); right.Children.Add(reset);
+            right.Children.Add(new TextBlock { Text = open ? "\uE70E" : "\uE70D", FontFamily = IconFont, FontSize = 8, Foreground = InkFaint, Margin = new Thickness(7, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center });
+            AddRow(row, heading, right); stack.Children.Add(row);
             var segments = SegmentBar(quota.Remaining, ProviderCatalog.Color(id), 24, 8); segments.Margin = new Thickness(0, 8, 0, 0);
             stack.Children.Add(segments);
             PaceInfo pace = UsageDetails.Pace(quota, DateTime.UtcNow);
@@ -315,13 +320,26 @@ namespace CodeUsageMonit {
                 var line = new TextBlock { FontSize = 10.5, Foreground = InkDim, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 0, 0) };
                 line.Inlines.Add(new Run(reserve) { Foreground = even ? InkDim : pace.Reserve >= 0 ? GoodBrush : WarnBrush });
                 line.Inlines.Add(" · " + duration + buffer);
-                line.ToolTip = "按本周期平均使用速度线性估算，不是官方承诺。";
                 stack.Children.Add(line);
             }
-            return stack;
+            if (open) {
+                var detail = new Border { Background = Brush("#0AFFFFFF"), CornerRadius = new CornerRadius(7), Padding = new Thickness(10, 7, 10, 8), Margin = new Thickness(0, 8, 0, 0) };
+                var lines = new StackPanel();
+                Action<string, string> add = (label, value) => { var r = Row(); r.Margin = new Thickness(0, 2, 0, 1); var v = Label(value, 10.5, Ink); Tabular(v); AddRow(r, Label(label, 10.5, InkFaint), v); lines.Children.Add(r); };
+                add("已用 / 剩余", quota.Used.ToString("0.#") + "% / " + quota.Remaining.ToString("0.#") + "%");
+                if (quota.WindowSeconds > 0) add("窗口长度", quota.WindowSeconds % 86400 == 0 ? (quota.WindowSeconds / 86400) + " 天" : (quota.WindowSeconds / 3600.0).ToString("0.#") + " 小时");
+                DateTimeOffset resetAt; if (DateTimeOffset.TryParse(quota.ResetUtc, out resetAt)) add("重置时间", resetAt.LocalDateTime.ToString("M月d日 ddd HH:mm", Zh));
+                if (pace != null) add("线性节奏下应已用", Math.Max(0, Math.Min(100, quota.Used - pace.Reserve)).ToString("0") + "%");
+                lines.Children.Add(new TextBlock { Text = "节奏按本周期平均速度线性估算，不是官方承诺。", FontSize = 10, Foreground = InkFaint, Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap });
+                detail.Child = lines; stack.Children.Add(detail);
+            }
+            var button = new Button { Content = stack, HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(6, 5, 6, 6), Margin = new Thickness(-6, 11, -6, 0), ToolTip = open ? "点击收起" : "点击查看重置时间与用量明细" };
+            System.Windows.Automation.AutomationProperties.SetName(button, ProviderCatalog.Name(id) + " " + quota.Label + " 额度");
+            button.Click += delegate { if (!expandedQuotas.Add(key)) expandedQuotas.Remove(key); Render(); };
+            return button;
         }
         // The segmented meter itself: equal cells with 2 px gaps, the remaining fraction in
-        // the provider colour (warm below 10%). Full rows use 24 cells; compact sizes use fewer.
+        // the provider colour (warm below 10%). Panel rows use 24 cells; widgets use fewer.
         // The fill is laid out with star columns in the first layout pass (no SizeChanged
         // callback), so rebuilding a page never shows empty meters for a frame.
         private static UniformGrid SegmentBar(double remaining, string color, int count, double height) {
@@ -355,12 +373,11 @@ namespace CodeUsageMonit {
         // ── Detail page ───────────────────────────────────────────────────
         private void RenderDetail(ProviderState state) {
             var top = new StackPanel();
-            top.Children.Add(WithRefresh(Identity(state, true), state.Id));
+            top.Children.Add(Identity(state, true));
             AccountBody(top, state, true);
             body.Children.Add(Card(top));
-            body.Children.Add(Card(PeriodBlock(state.Id, false)));
             List<DayUsage> days = history.Days.Where(d => d.Agent == state.Id).ToList();
-            if (days.Count > 0) body.Children.Add(Card(UsageBlock(state, days)));
+            if (days.Count > 0 || usageIndexes.ContainsKey(state.Id)) body.Children.Add(Card(UsageBlock(state, days)));
             else if (!ProviderCatalog.Custom.ContainsKey(state.Id)) {
                 var empty = new StackPanel();
                 var title = Label("本机用量", 13, Ink); title.FontWeight = FontWeights.SemiBold; empty.Children.Add(title);
@@ -369,56 +386,70 @@ namespace CodeUsageMonit {
             }
         }
         private WindowUsage CurrentWindow(string id, List<DayUsage> days, Quota quota, int previous) {
-            // The subscription window counts only Codex's official provider, not relays.
-            return UsageDetails.Window(days, quota, DateTime.UtcNow, previous, id == "codex" ? codexLogs : null, TimeZoneInfo.Local, id == "codex" ? (Func<string, bool>)CodexLogs.IsOfficial : null);
+            // A subscription window counts only the official endpoint: Codex's own provider,
+            // Claude responses that carry Anthropic's request id; relays are left out.
+            LogIndex logs; usageIndexes.TryGetValue(id, out logs);
+            Func<string, bool> official = id == "codex" ? (Func<string, bool>)CodexLogs.IsOfficial : id == "claude" ? (Func<string, bool>)(p => p.Length == 0) : null;
+            return UsageDetails.Window(days, quota, DateTime.UtcNow, previous, logs, TimeZoneInfo.Local, official);
         }
+        // Local usage of one provider over a chosen period (button: 当天 / 1d / 7d / 14d / 30d
+        // or a custom start and end): totals, token composition, an interactive chart and
+        // the models used; then the subscription windows.
         private UIElement UsageBlock(ProviderState state, List<DayUsage> days) {
             var stack = new StackPanel();
-            var head = Row();
-            var title = Label("本机用量", 13, Ink); title.FontWeight = FontWeights.SemiBold;
-            var badge = Label("API 等价 · 官方价目 ⓘ", 10.5, InkFaint); badge.ToolTip = PricingHint();
-            AddRow(head, title, badge); stack.Children.Add(head);
-
-            string today = Today();
-            List<DayUsage> todayRows = days.Where(d => d.Day == today).ToList();
-            Quota quota = UsageDetails.MainWindow(state);
-            WindowUsage current = quota == null ? null : CurrentWindow(state.Id, days, quota, 0);
-
-            // Period × metric table: columns are periods, rows are $ and tokens.
-            var table = new Grid { Margin = new Thickness(0, 12, 0, 0) };
-            table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(44) });
-            for (int i = 0; i < 3; i++) table.ColumnDefinitions.Add(new ColumnDefinition());
-            for (int i = 0; i < 3; i++) table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            string windowHint = WindowHint(current);
-            Cell(table, 0, 1, Label("今日", 10.5, InkFaint), null);
-            Cell(table, 0, 2, Label(quota == null ? "当前窗口" : WindowName(quota), 10.5, InkFaint), windowHint);
-            Cell(table, 0, 3, Label("近 30 天", 10.5, InkFaint), null);
-            Cell(table, 1, 0, Label("费用", 11, InkDim), null);
-            Cell(table, 1, 1, Figure(TodayMoney(days), 15), "本机今天已记录的 API 等价费用");
-            Cell(table, 1, 2, Figure(WindowMoney(current), 15), windowHint);
-            Cell(table, 1, 3, Figure(Money(days), 15), "离线价格表下的本地 API 等价估算，不是订阅账单");
-            Cell(table, 2, 0, Label("Token", 11, InkDim), null);
-            Cell(table, 2, 1, Figure(todayRows.Count == 0 ? "0" : Compact(todayRows.Sum(d => d.Tokens)), 12), "新增输入 + 输出 + 缓存命中 + 缓存写入");
-            Cell(table, 2, 2, Figure(WindowTokens(current), 12), windowHint);
-            Cell(table, 2, 3, Figure(Compact(days.Sum(d => d.Tokens)), 12), "输入、输出及缓存 Token 的已记录小计");
-            stack.Children.Add(table);
-
-            DayUsage basis = todayRows.FirstOrDefault() ?? days.OrderByDescending(d => d.Day, StringComparer.Ordinal).First();
-            UIElement composition = Composition(basis, basis.Day == today ? "今日 Token 构成" : ShortDate(basis.Day) + " Token 构成");
+            var head = new Grid();
+            head.ColumnDefinitions.Add(new ColumnDefinition()); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var title = Label("本机用量", 13, Ink); title.FontWeight = FontWeights.SemiBold; head.Children.Add(title);
+            var picker = RangeButton(state.Id, Render, false); picker.Margin = new Thickness(8, -3, 8, -3); Grid.SetColumn(picker, 1); head.Children.Add(picker);
+            var badge = Label("API 等价 ⓘ", 10.5, InkFaint); badge.ToolTip = PricingHint(); Grid.SetColumn(badge, 2); head.Children.Add(badge);
+            stack.Children.Add(head);
+            RangeData data = RangeUsage(new List<string> { state.Id }, RangeFor(state.Id), false, state.Id);
+            Bucket total = data.Total;
+            bool timed = OutputTiming.Supported(state.Id);
+            var figures = new UniformGrid { Columns = timed ? 4 : 3, Margin = new Thickness(0, 12, 0, 0) };
+            figures.Children.Add(BigFigure("费用", total.D > 0 || total.Tokens() > total.U ? Usd(total.D) : "—", total.U > 0 ? "部分模型没有价目，未计入费用" : "按各模型官方 API 单价估算，不是订阅账单"));
+            figures.Children.Add(BigFigure("Token", Compact(total.Tokens()), "新增输入 + 输出 + 缓存命中 + 缓存写入"));
+            figures.Children.Add(BigFigure("请求", total.R > 0 ? total.R.ToString("N0", CultureInfo.InvariantCulture) : "—", data.FromLogs ? "本机日志里的模型请求次数" : "这一时间段只有按日汇总，没有请求次数"));
+            if (timed) figures.Children.Add(BigFigure("输出速度", OutputTiming.Text(total.Speed()), ProviderCatalog.Name(state.Id) + "：" + (total.Speed().HasValue ? "这一时间段 " + Math.Round(total.TN).ToString("N0", CultureInfo.InvariantCulture) + " 次请求计时，" + Compact(total.TO) + " 输出 Token ÷ " + Duration(total.TS) + "\n" : "这一时间段没有可计时的请求\n") + OutputTiming.Definition));
+            stack.Children.Add(figures);
+            UIElement composition = Composition(total.I, total.O, total.C, total.W, "Token 构成");
             if (composition != null) stack.Children.Add(composition);
             double relayed = thirdParty.AppMonth(state.Id);
             if (ThirdPartyVisible() && relayed > 0) {
-                var link = new Button { Style = Styled("LinkButton"), Content = "其中经第三方接口：近 30 天 " + Compact(relayed) + " Token ›", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 8, 0, 0), ToolTip = "上面的今日 / 30 天包含所有本机用量；额度窗口只计官方订阅。" };
+                var link = new Button { Style = Styled("LinkButton"), Content = "其中经第三方接口：近 30 天 " + Compact(relayed) + " Token ›", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 8, 0, 0), ToolTip = "上面的用量包含所有本机用量；额度窗口只计官方订阅。" };
                 link.Click += delegate { SelectProvider(ProviderCatalog.ThirdParty); };
                 stack.Children.Add(link);
             }
-
-            stack.Children.Add(Chart(days, state.Id));
-
+            if (data.Bars.Count > 0) stack.Children.Add(UsageChart("usage|" + state.Id, (data.Hourly ? "每小时" : "每日") + " · " + RangeFor(state.Id).Label(), data.Bars, 58, true, false, Render, true, timed ? ProviderCatalog.Color(state.Id) : null));
+            List<KeyValuePair<string, Bucket>> models = data.Parts.Where(p => p.Value.Tokens() > 0 || p.Value.D > 0).ToList();
+            if (models.Count > 0) {
+                var list = new StackPanel { Margin = new Thickness(0, 14, 0, 0) };
+                var caption = Row(); AddRow(caption, Label("模型", 10.5, InkFaint), Label("费用 · Token" + (timed ? " · 速度" : ""), 10.5, InkFaint)); list.Children.Add(caption);
+                double sum = Math.Max(1e-9, models.Sum(p => p.Value.D) > 0 ? models.Sum(p => p.Value.D) : models.Sum(p => p.Value.Tokens()));
+                bool byCost = models.Sum(p => p.Value.D) > 0; List<string> order = models.Select(p => p.Key).ToList();
+                foreach (var pair in models.Take(6)) {
+                    var line = new Grid { Margin = new Thickness(0, 6, 0, 0), ToolTip = pair.Key + "\n" + Usd(pair.Value.D) + " · " + Compact(pair.Value.Tokens()) + " Token" + (pair.Value.Speed().HasValue ? "\n输出速度 " + OutputTiming.Text(pair.Value.Speed()) + "（" + Math.Round(pair.Value.TN).ToString("N0", CultureInfo.InvariantCulture) + " 次请求计时）" : "") + (pair.Value.U > 0 ? "\n没有这个模型的价目" : "") };
+                    line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) }); line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    line.Children.Add(new Border { Width = 7, Height = 7, CornerRadius = new CornerRadius(2), Background = Brush(ModelColor(state.Id, pair.Key, order)), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
+                    var name = Label(pair.Key, 11, Ink); Grid.SetColumn(name, 1); line.Children.Add(name);
+                    double share = (byCost ? pair.Value.D : pair.Value.Tokens()) / sum;
+                    var track = new Grid { Height = 4, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 10, 0), Background = Brush("#14FFFFFF") };
+                    track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(.001, share), GridUnitType.Star) }); track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(.001, 1 - share), GridUnitType.Star) });
+                    track.Children.Add(new Border { Background = Brush(ModelColor(state.Id, pair.Key, order)), CornerRadius = new CornerRadius(2) });
+                    Grid.SetColumn(track, 2); line.Children.Add(track);
+                    var value = Label((pair.Value.U > 0 && pair.Value.D <= 0 ? "—" : Usd(pair.Value.D)) + " · " + Compact(pair.Value.Tokens()) + (timed ? " · " + OutputTiming.Text(pair.Value.Speed()) : ""), 10.5, InkDim); Tabular(value); Grid.SetColumn(value, 3); line.Children.Add(value);
+                    list.Children.Add(line);
+                }
+                if (models.Count > 6) { var more = Label("另有 " + (models.Count - 6) + " 个模型", 10.5, InkFaint); more.Margin = new Thickness(15, 6, 0, 0); list.Children.Add(more); }
+                stack.Children.Add(list);
+            }
+            Quota quota = UsageDetails.MainWindow(state);
+            WindowUsage current = quota == null ? null : CurrentWindow(state.Id, days, quota, 0);
             if (quota != null) {
+                string windowHint = WindowHint(current);
                 stack.Children.Add(new Border { Height = 1, Background = Hairline, Margin = new Thickness(0, 14, 0, 12) });
                 var caption = Row();
-                AddRow(caption, Label("额度窗口用量", 11, InkDim), Label(current != null && current.Exact ? "按小时精确 Token" : "只计完整自然日 · 下界", 10.5, InkFaint));
+                AddRow(caption, Label("额度窗口用量 · " + WindowName(quota), 11, InkDim), Label(current != null && current.Exact ? "按小时精确" : "只计完整自然日 · 下界", 10.5, InkFaint));
                 caption.ToolTip = windowHint; stack.Children.Add(caption);
                 for (int i = 0; i < 3; i++) {
                     WindowUsage usage = i == 0 ? current : CurrentWindow(state.Id, days, quota, i);
@@ -431,14 +462,27 @@ namespace CodeUsageMonit {
                     AddRow(row, left, right); stack.Children.Add(row);
                 }
             }
-            string mainModel = UsageDetails.MainModel(days);
-            var foot = Label((mainModel.Length > 0 ? "最常用模型 " + mainModel + " · " : "") + "数据来自本机日志，不含其他设备", 10.5, InkFaint);
-            foot.Margin = new Thickness(0, 14, 0, 0); foot.ToolTip = "按近 30 天记录的 Token 数排序；只统计这台电脑上的会话日志。";
-            stack.Children.Add(foot);
+            var foot = Label("数据来自本机日志，不含其他设备" + (data.FromLogs ? " · 按小时统计" : ""), 10.5, InkFaint);
+            foot.Margin = new Thickness(0, 14, 0, 0); stack.Children.Add(foot);
             return stack;
         }
-        private static UIElement Composition(DayUsage day, string caption) {
-            double input = day.InputTokens, output = day.OutputTokens, read = day.CachedTokens, write = day.CacheCreationTokens;
+        // One agent's output speed over the last 7 days (hourly index, else the daily history).
+        private double? RecentSpeed(string id, List<DayUsage> days) {
+            if (!OutputTiming.Supported(id)) return null;
+            LogIndex index;
+            if (usageIndexes.TryGetValue(id, out index) && index != null) return index.Usage(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow, null).Speed();
+            string from = HistoryService.DayKey(DateTime.Today.AddDays(-6));
+            List<DayUsage> recent = days.Where(d => String.CompareOrdinal(d.Day, from) >= 0).ToList();
+            return OutputTiming.Speed(recent.Sum(d => d.TimedOutput), recent.Sum(d => d.TimedSeconds));
+        }
+        private static FrameworkElement BigFigure(string title, string value, string tip) {
+            var box = new StackPanel { ToolTip = tip };
+            box.Children.Add(Label(title, 10.5, InkFaint));
+            var number = Label(value, 17, Ink); number.FontWeight = FontWeights.SemiBold; number.Margin = new Thickness(0, 2, 0, 0); Tabular(number); box.Children.Add(number);
+            return box;
+        }
+        private static UIElement Composition(DayUsage day, string caption) { return Composition(day.InputTokens, day.OutputTokens, day.CachedTokens, day.CacheCreationTokens, caption); }
+        private static UIElement Composition(double input, double output, double read, double write, string caption) {
             if (input + output + read + write <= 0) return null;
             var stack = new StackPanel { Margin = new Thickness(0, 14, 0, 0) };
             double prompt = input + read + write;
@@ -460,52 +504,9 @@ namespace CodeUsageMonit {
             var number = Label(Compact(value), 12.5, Ink); number.Margin = new Thickness(0, 2, 0, 0); Tabular(number); box.Children.Add(number);
             return box;
         }
-        private UIElement Chart(List<DayUsage> days, string provider) {
-            var wrapper = new StackPanel { Margin = new Thickness(0, 16, 0, 0) };
-            var series = Enumerable.Range(0, 30).Select(i => DateTime.Today.AddDays(i - 29)).Select((date, i) => {
-                string key = HistoryService.DayKey(date);
-                return new { Date = date, Index = i, Cost = days.Where(x => x.Day == key && x.CostKnown).Sum(x => x.Cost), Tokens = days.Where(x => x.Day == key).Sum(x => x.Tokens) };
-            }).ToList();
-            double max = Math.Max(.01, series.Max(d => d.Cost));
-            var head = Row();
-            AddRow(head, Label("每日费用 · 近 30 天", 10.5, InkFaint), Label("峰值 " + Usd(max, max < 10), 10.5, InkFaint));
-            wrapper.Children.Add(head);
-            var columns = new UniformGrid { Columns = 30, Height = 52, Margin = new Thickness(0, 6, 0, 0) };
-            string color = ProviderCatalog.Color(provider);
-            foreach (var item in series) {
-                var column = new Grid { Margin = new Thickness(1, 0, 1, 0), Background = Brushes.Transparent, ToolTip = item.Date.ToString("M月d日 ddd", CultureInfo.GetCultureInfo("zh-CN")) + "\n" + Usd(item.Cost) + " · " + Compact(item.Tokens) + " Token" };
-                column.Children.Add(new Border { Height = item.Cost > 0 ? Math.Max(2, 52 * item.Cost / max) : 1, Background = Brush(item.Cost > 0 ? color : "#FFFFFF"), Opacity = item.Cost <= 0 ? .12 : item.Index == 29 ? 1 : .55, VerticalAlignment = VerticalAlignment.Bottom, CornerRadius = new CornerRadius(1.5, 1.5, 0, 0) });
-                columns.Children.Add(column);
-            }
-            wrapper.Children.Add(columns);
-            wrapper.Children.Add(Axis());
-            return wrapper;
-        }
-        private UIElement StackedChart(List<DayUsage> days, int dayCount = 30) {
-            var wrapper = new StackPanel { Margin = new Thickness(0, 12, 0, 0) };
-            List<string> order = ProviderCatalog.Ids.Where(id => days.Any(d => d.Agent == id)).ToList();
-            var series = Enumerable.Range(0, dayCount).Select(i => DateTime.Today.AddDays(i + 1 - dayCount)).Select(date => {
-                string key = HistoryService.DayKey(date);
-                return new { Date = date, Parts = order.Select(id => new { Id = id, Cost = days.Where(x => x.Day == key && x.Agent == id && x.CostKnown).Sum(x => x.Cost) }).ToList() };
-            }).ToList();
-            double max = Math.Max(.01, series.Max(d => d.Parts.Sum(p => p.Cost)));
-            var columns = new UniformGrid { Columns = dayCount, Height = 36 };
-            foreach (var item in series) {
-                double total = item.Parts.Sum(p => p.Cost);
-                var tip = item.Date.ToString("M月d日 ddd", CultureInfo.GetCultureInfo("zh-CN")) + " · " + Usd(total) + String.Concat(item.Parts.Where(p => p.Cost > 0).Select(p => "\n" + ProviderCatalog.Name(p.Id) + "  " + Usd(p.Cost)));
-                var column = new Grid { Margin = new Thickness(1, 0, 1, 0), Background = Brushes.Transparent, ToolTip = tip };
-                var stackBar = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom };
-                if (total <= 0) stackBar.Children.Add(new Border { Height = 1, Background = Brush("#1FFFFFFF") });
-                else foreach (var part in Enumerable.Reverse(item.Parts)) if (part.Cost > 0) stackBar.Children.Add(new Border { Height = Math.Max(1.5, 36 * part.Cost / max), Background = Brush(ProviderCatalog.Color(part.Id)), Opacity = item.Date == DateTime.Today ? 1 : .7 });
-                column.Children.Add(stackBar); columns.Children.Add(column);
-            }
-            wrapper.Children.Add(columns);
-            wrapper.Children.Add(Axis(dayCount));
-            return wrapper;
-        }
-        private static UIElement Axis(int dayCount = 30) {
+        private static UIElement Axis() {
             var axis = Row(); axis.Margin = new Thickness(0, 4, 0, 0);
-            AddRow(axis, Label(DateTime.Today.AddDays(1 - dayCount).ToString("M/d"), 9.5, InkFaint), Label("今天", 9.5, InkFaint));
+            AddRow(axis, Label(DateTime.Today.AddDays(-29).ToString("M/d"), 9.5, InkFaint), Label("今天", 9.5, InkFaint));
             return axis;
         }
 
@@ -585,7 +586,7 @@ namespace CodeUsageMonit {
             var table = new Grid { Margin = new Thickness(0, 12, 0, 0) };
             table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(62) });
             for (int i = 0; i < 3; i++) { table.ColumnDefinitions.Add(new ColumnDefinition()); table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); }
-            string costTip = "按官方 API 单价估算的参考值（ccusage 价目）。中转站按自己的倍率或套餐扣费，实际花费以服务商后台为准。";
+            string costTip = "按官方 API 单价逐次请求估算的参考值。中转站按自己的倍率或套餐扣费，实际花费以服务商后台为准。";
             Cell(table, 0, 1, Label("今日", 10.5, InkFaint), null); Cell(table, 0, 2, Label("近 7 天", 10.5, InkFaint), null); Cell(table, 0, 3, Label("近 30 天", 10.5, InkFaint), null);
             Cell(table, 1, 0, Label("Token", 11, InkDim), null);
             Cell(table, 1, 1, Figure(Compact(endpoint.Today), 15), null); Cell(table, 1, 2, Figure(Compact(endpoint.Week), 15), null); Cell(table, 1, 3, Figure(Compact(endpoint.Month), 15), "近 30 天 " + endpoint.Requests.ToString("N0") + " 次请求");
@@ -594,7 +595,8 @@ namespace CodeUsageMonit {
             Cell(table, 2, 1, Figure(endpoint.Today > 0 ? approx + Usd(endpoint.CostToday) : "—", 12), costTip); Cell(table, 2, 2, Figure(endpoint.Week > 0 ? approx + Usd(endpoint.CostWeek) : "—", 12), costTip); Cell(table, 2, 3, Figure(endpoint.Month > 0 ? approx + Usd(endpoint.CostMonth) : "—", 12), costTip);
             stack.Children.Add(table);
             if (endpoint.Month > 0) stack.Children.Add(TokenChart(endpoint.Daily, ProviderCatalog.Color(endpoint.App)));
-            var foot = Label((endpoint.MainModel.Length > 0 ? "主要模型 " + endpoint.MainModel + " · " : "") + "近 30 天 " + endpoint.Requests.ToString("N0") + " 次请求 · 限额未知", 10.5, InkFaint);
+            var foot = Label((endpoint.MainModel.Length > 0 ? "主要模型 " + endpoint.MainModel + " · " : "") + "近 30 天 " + endpoint.Requests.ToString("N0") + " 次请求" + (endpoint.Speed.HasValue ? " · 输出速度 " + OutputTiming.Text(endpoint.Speed) : "") + " · 限额未知", 10.5, InkFaint);
+            if (endpoint.Speed.HasValue) foot.ToolTip = OutputTiming.Definition;
             foot.Margin = new Thickness(0, 12, 0, 0); stack.Children.Add(foot);
             return stack;
         }
@@ -675,8 +677,8 @@ namespace CodeUsageMonit {
             return "窗口 " + range + "（由重置时间和周期长度反推）。\n本地历史只有按日汇总，跨越窗口起点的那一天不计入，因此是保守下界（≥）。";
         }
         private static string PricingHint() {
-            return "费用 = 本机会话日志里的 Token × 模型官方 API 单价（ccusage 20.0.26 内置价目，离线）。\n" +
-                "已计入缓存折扣与长上下文分档，例如 GPT-6 Astra 单次请求输入超过 272K 时，整次请求按输入/缓存 ×2、输出 ×1.5 计价。CC Switch 目前按统一单价计算、且未收录部分新模型，所以它显示的金额更低。\n" +
+            return "费用 = 本机会话日志里每次请求的 Token × 该模型的官方 API 单价（本软件自带价目表 pricing.json，整理自公开的 LiteLLM / models.dev 价目，离线使用）。\n" +
+                "逐次请求计价：已计入缓存折扣、缓存写入（1 小时缓存按 2 倍输入价）、长上下文分档（例如单次请求输入超过 272K 时整次按长上下文价）和 Codex 优先 / fast 档的倍率。日志里自带费用的记录（Grok、部分 Claude、OpenCode）直接使用记录值。\n" +
                 "订阅套餐（如 Pro）实际按月费计费，这里只是 API 等价参考。";
         }
         private static string Compact(double n) {

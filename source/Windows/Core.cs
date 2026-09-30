@@ -1,5 +1,5 @@
-// Windows provider adapters. Protocol mappings are adapted from CodexBar (MIT)
-// and Windows credential discovery from CodeZeno/Claude-Code-Usage-Monitor (MIT).
+// Windows provider adapters, written for this project after studying how CodexBar (MIT)
+// and CodeZeno/Claude-Code-Usage-Monitor (MIT) talk to each provider; no code is shared.
 // See THIRD-PARTY-NOTICES.md. Credentials remain in their owning applications.
 using System;
 using System.Collections;
@@ -34,22 +34,20 @@ namespace CodeUsageMonit {
         public List<string> ResetCreditExpiries = new List<string>();
         public string ResetCreditsUpdated = "", ResetCreditsError = "";
     }
-    public sealed class ModelUsage { public string Model; public double Tokens, Cost; }
+    public sealed class ModelUsage { public string Model; public double Tokens, Cost, TimedOutput, TimedSeconds; }
     public sealed class DayUsage {
         public string Day, Agent;
-        // Tokens = fresh input + output + cache read + cache write (ccusage totalTokens).
+        // Tokens = fresh input + output + cache read + cache write (+ other counted tokens).
         // CachedTokens is the cache-read subset; InputTokens excludes cached input.
-        public double Cost, Tokens, CachedTokens, InputTokens, OutputTokens, CacheCreationTokens;
+        public double Cost, Tokens, CachedTokens, InputTokens, OutputTokens, CacheCreationTokens, Requests, UnpricedTokens;
+        // Requests with a measured duration: output tokens / seconds = output speed (OutputTiming).
+        public double TimedRequests, TimedOutput, TimedSeconds;
         public bool CostKnown = true;
         public List<ModelUsage> Models = new List<ModelUsage>();
     }
     public sealed class UsageHistory {
-        public string Updated = "", Error = "", Zone = "";
+        public string Updated = "", Error = "", Zone = "", Engine = "";
         public List<DayUsage> Days = new List<DayUsage>();
-    }
-    public sealed class PanelPlacement {
-        public double Width, Height;
-        public double? Left, Top;
     }
     public sealed class AppConfig {
         public string Proxy = "auto";
@@ -68,17 +66,24 @@ namespace CodeUsageMonit {
         // Alpha of the smoke layer over Acrylic/Mica (0–1). Settings show it as
         // transparency = 1 − alpha, so 0% transparency is fully opaque.
         public double SurfaceOpacity = .66;
+        // Colour of that layer (#RRGGBB); text stays light, so dark colours read best.
+        public string SurfaceColor = "#15171B";
+        // Optional background picture: a file in data/ (background.*), how it fills the
+        // window (fill | fit | tile) and how much it is dimmed for legibility (0–0.85).
+        public string BackgroundImage = "", BackgroundFit = "fill";
+        public double BackgroundDim = .35;
         // One window, four sizes: "small" | "medium" | "large" | "full" (the panel).
         public string DisplaySize = "full";
-        // Provider shown by the compact sizes ("overview" is available in large).
+        // Page shown by the compact sizes: "overview" or a provider id.
         public string CompactProvider = "overview";
+        // Position of the compact sizes before each size kept its own geometry (read once).
         public double? CompactLeft, CompactTop;
-        public Dictionary<string, PanelPlacement> Layouts = new Dictionary<string, PanelPlacement>();
-        public int LayoutStyleVersion;
-        public Dictionary<string, UsageRangeChoice> UsageRanges = new Dictionary<string, UsageRangeChoice>();
+        // Size and position of each compact size; the full panel uses WindowLeft/Top/Width/Height.
+        public Dictionary<string, WindowGeometry> Layouts = new Dictionary<string, WindowGeometry>();
     }
+    public sealed class WindowGeometry { public double Width, Height; public double? Left, Top; }
     public static class AppInfo {
-        public const string ShortVersion = "0.8";
+        public const string ShortVersion = "1.1";
         public const string UserAgent = "codeusagemonit/" + ShortVersion;
     }
     public static class ProviderCatalog {
@@ -570,54 +575,19 @@ namespace CodeUsageMonit {
             finally { if (stmt != IntPtr.Zero) sqlite3_finalize(stmt); if (db != IntPtr.Zero) sqlite3_close(db); }
         }
     }
-    public static class HistoryService {
-        public static Task<UsageHistory> Read() { return ReadRange(DateTime.Today.AddDays(-29), DateTime.Today); }
-        public static async Task<UsageHistory> ReadRange(DateTime firstDay, DateTime lastDay) {
-            string exe = Path.Combine(Store.Root, @"tools\ccusage.exe"); if (!File.Exists(exe)) return new UsageHistory { Error = "本地统计组件未安装" };
-            // No --timezone: ccusage then groups days by the Windows time zone, which is
-            // the same calendar DateTime.Today and the charts use.
-            var start = new ProcessStartInfo(exe, "daily --json --by-agent --offline --since " + DayKey(firstDay) + " --until " + DayKey(lastDay)) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
-            using (var p = Process.Start(start)) {
-                Task<string> output = p.StandardOutput.ReadToEndAsync(); Task<string> error = p.StandardError.ReadToEndAsync(); bool exited = await Task.Run(() => p.WaitForExit(45000)).ConfigureAwait(false);
-                if (!exited) { try { p.Kill(); } catch { } return new UsageHistory { Error = "扫描本地记录超时，稍后再试" }; }
-                string text = await output.ConfigureAwait(false); await error.ConfigureAwait(false);
-                if (p.ExitCode != 0) return new UsageHistory { Error = "本地记录暂时无法读取" };
-                try { return Parse(J.Parse(text)); } catch { return new UsageHistory { Error = "本地统计返回了无法识别的格式" }; }
-            }
-        }
+    public static partial class HistoryService {
         public static string DayKey(DateTime day) { return day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture); }
-        // A local-only card refresh replaces just that provider, preserving all other rows.
-        public static UsageHistory MergeProvider(UsageHistory previous, UsageHistory next, string id, string oldest, string today) {
-            if (previous.Days.Count > 0 && previous.Zone != next.Zone) throw new ArgumentException("Windows 时区已变化，请使用刷新全部更新本机历史。");
-            var oldAgent = new UsageHistory { Zone = previous.Zone, Days = previous.Days.Where(d => d.Agent == id).ToList() };
-            var newAgent = new UsageHistory { Zone = next.Zone, Days = next.Days.Where(d => d.Agent == id).ToList() };
-            var merged = Merge(oldAgent, newAgent, oldest, today);
-            return new UsageHistory { Zone = next.Zone, Updated = previous.Updated, Error = "", Days = previous.Days.Where(d => d.Agent != id).Concat(merged.Days).ToList() };
-        }
-        // Codex/Claude may delete or prune old session files; ccusage rescans files and
-        // then loses those rows. Past days therefore keep the largest total ever observed.
-        // Today is always replaced (it is still growing), and a time-zone change resets.
+        // Clients may delete or prune old session files, and a rebuilt index cannot count
+        // them any more. Past days therefore keep the largest total ever observed. Today is
+        // always replaced (it is still growing); a time-zone or engine change starts over.
         public static UsageHistory Merge(UsageHistory previous, UsageHistory next, string oldestDay, string today) {
-            if (previous == null || next == null || previous.Days.Count == 0 || previous.Zone != next.Zone) return next;
+            if (previous == null || next == null || previous.Days.Count == 0 || previous.Zone != next.Zone || previous.Engine != next.Engine) return next;
             foreach (DayUsage old in previous.Days) {
                 if (old.Day == null || String.CompareOrdinal(old.Day, today) >= 0 || String.CompareOrdinal(old.Day, oldestDay) < 0) continue;
                 int index = next.Days.FindIndex(d => d.Day == old.Day && d.Agent == old.Agent);
                 if (index < 0) next.Days.Add(old); else if (next.Days[index].Tokens < old.Tokens) next.Days[index] = old;
             }
             return next;
-        }
-        public static UsageHistory Parse(object root) {
-            var history = new UsageHistory { Updated = DateTime.UtcNow.ToString("o"), Zone = TimeZoneInfo.Local.Id };
-            foreach (object day in J.Arr(J.Get(root, "daily"))) foreach (object agent in J.Arr(J.Get(day, "agents"))) {
-                string id = J.Str(agent, "agent"); if (!ProviderCatalog.Ids.Contains(id)) continue;
-                var record = new DayUsage { Day = J.Str(day, "period"), Agent = id, Cost = J.Num(agent, "totalCost") ?? 0, CostKnown = J.Num(agent, "totalCost").HasValue, Tokens = J.Num(agent, "totalTokens") ?? 0, CachedTokens = J.Num(agent, "cacheReadTokens") ?? 0, InputTokens = J.Num(agent, "inputTokens") ?? 0, OutputTokens = J.Num(agent, "outputTokens") ?? 0, CacheCreationTokens = J.Num(agent, "cacheCreationTokens") ?? 0 };
-                foreach (object model in J.Arr(J.Get(agent, "modelBreakdowns"))) {
-                    double tokens = (J.Num(model, "inputTokens") ?? 0) + (J.Num(model, "outputTokens") ?? 0) + (J.Num(model, "cacheReadTokens") ?? 0) + (J.Num(model, "cacheCreationTokens") ?? 0);
-                    record.Models.Add(new ModelUsage { Model = J.Str(model, "modelName"), Tokens = tokens, Cost = J.Num(model, "cost") ?? 0 });
-                }
-                history.Days.Add(record);
-            }
-            return history;
         }
     }
 }

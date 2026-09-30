@@ -1,30 +1,36 @@
 # Third-party notices
 
-codeusagemonit is an independent Windows adaptation. It is not an official release of CodexBar and is not affiliated with any monitored service.
+codeusagemonit is an independent Windows application. It is not an official release of CodexBar or ccusage and is not affiliated with any monitored service. It contains no code or binaries from the projects below. The only files taken from another project are the provider logo SVGs in `icons/` (from CodexBar, see below); the other projects are credited because their public source was studied as a reference, or because data derived from them ships with the application.
 
-## CodexBar
+## Data that ships with the application
 
-- Upstream: https://github.com/steipete/CodexBar
-- Baseline commit: `25bba9b7fd9ce83c33053958f7366e23b2dc8a82`
-- Copyright (c) 2026 Peter Steinberger; MIT license.
-- Reused material: provider SVG icons; the unified provider-overview interaction; ported Codex quota-window and optional-limit mappings, plan formatting, read-only reset-credit requests, pace calculations, Claude utilization mappings, Antigravity local endpoint contracts, and DeepSeek per-currency balance semantics.
-- This repository contains the independent Windows implementation in `source/Windows`, using the Windows-supplied .NET Framework / WPF libraries. The upstream Swift/AppKit source is available at the baseline commit linked above.
-- Full license: `licenses/CodexBar-MIT.txt` in the distribution.
+### LiteLLM model price catalog
+- Source: https://github.com/BerriAI/litellm — `model_prices_and_context_window.json`
+- License: MIT (the catalog lives outside the repository's `enterprise/` directory). Full text: `licenses/LiteLLM-MIT.txt`.
+- Use: `pricing.json` (USD per million tokens) is compiled from this catalog for the API-equivalent cost estimates.
 
-## Claude Code Usage Monitor
+### models.dev
+- Source: https://github.com/anomalyco/models.dev
+- License: MIT. Full text: `licenses/models.dev-MIT.txt`.
+- Use: long-context price tiers (e.g. whole-request rates above 272K input tokens) and a few models the LiteLLM catalog does not list yet, compiled into `pricing.json`.
 
-- Upstream: https://github.com/CodeZeno/Claude-Code-Usage-Monitor
-- Reference version: `v2.15.22`; MIT license.
-- Adapted Windows provider discovery and response handling: Cursor's read-only `state.vscdb` token lookup and session-cookie construction; the exact Antigravity Credential Manager target and quota endpoints; Grok's allowlisted xAI CLI session issuer and billing headers.
-- This application does not launch or depend on the CodeZeno monitor.
-- Full license: `licenses/CodeZeno-MIT.txt` in the distribution.
+Prices are the vendors' published list prices as recorded by these catalogs. The estimates are not bills.
 
-## ccusage
+## Provider logos
 
-- Upstream: https://github.com/ccusage/ccusage
-- Bundled version: `20.0.26`, Windows x64 native executable; MIT license.
-- Purpose: read local usage records and return 30-day daily token and API-equivalent cost estimates.
-- Invoked with offline pricing and JSON output. This estimate is not a subscription bill or quota balance.
-- Full license: `licenses/ccusage-MIT.txt` in the distribution.
+The files in `icons/` are the logos of the monitored products, used unmodified only to identify each provider. They are taken from CodexBar (`Sources/CodexBar/Resources/ProviderIcon-<id>.svg`, MIT, Copyright (c) 2026 Peter Steinberger, license text in `licenses/CodexBar-MIT.txt`; `zcode.svg` is `ProviderIcon-zai.svg`). The logos and product names are trademarks of their respective owners; their use does not imply endorsement.
 
-Service names and brand marks belong to their respective owners. No proprietary API credentials are bundled.
+## Projects studied as references (no code included)
+
+### CodexBar
+- https://github.com/steipete/CodexBar — MIT, Copyright (c) 2026 Peter Steinberger. License text kept in `licenses/CodexBar-MIT.txt`.
+- The Windows application re-implements, in its own C#, the provider-overview idea and the published behaviour of the providers' quota endpoints (Codex windows and reset credits, Claude utilization, Antigravity local endpoints, DeepSeek balances). Apart from the provider logos above, no CodexBar file is included.
+
+### Claude Code Usage Monitor (CodeZeno)
+- https://github.com/CodeZeno/Claude-Code-Usage-Monitor — MIT. License text kept in `licenses/CodeZeno-MIT.txt`.
+- Studied for where Windows clients keep their sign-in state (Cursor `state.vscdb`, Antigravity Credential Manager target, Grok CLI session headers).
+
+### ccusage
+- https://github.com/ccusage/ccusage — studied for the local log formats of Claude Code, Codex, Antigravity, ZCode, Grok, Kimi, Pi, GitHub Copilot CLI and OpenCode, and their de-duplication rules. codeusagemonit reads those logs with its own engine (`LocalLogs.cs`, `AgentLogs.cs`, `MoreAgentLogs.cs`, `Pricing.cs`); ccusage is neither bundled nor called.
+
+Service names and brand names belong to their respective owners. No proprietary API credentials are bundled.

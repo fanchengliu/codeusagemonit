@@ -70,7 +70,7 @@ namespace CodeUsageMonit {
             Row2("  -p, --provider <id>", "只看指定平台，可用逗号分隔，例如 -p codex,claude");
             Row2("  --all", "包括未启用的平台");
             Row2("  --days <n>", "cost 的天数，1–30，默认 7");
-            Row2("  --refresh", "cost 先重新扫描本机日志（运行 ccusage）");
+            Row2("  --refresh", "cost 先重新扫描本机日志");
             Row2("  --json", "输出 JSON");
             Row2("  --no-color", "关闭颜色（也支持 NO_COLOR 环境变量）");
             Console.WriteLine();
@@ -137,14 +137,23 @@ namespace CodeUsageMonit {
 
         // ── cost ──────────────────────────────────────────────────────────
         private static int Cost(List<string> ids, int days, bool refresh) {
-            UsageHistory history = refresh ? HistoryService.Read().GetAwaiter().GetResult() : Store.Read<UsageHistory>("history.json");
+            UsageHistory history = Store.Read<UsageHistory>("history.json");
+            if (refresh) {
+                // Same scan the desktop app runs: every agent's local logs → hourly index → days.
+                var indexes = UsageScanner.ScanAll(UsageScanner.Agents.Select(a => a.Id), DateTime.UtcNow, true);
+                UsageHistory next = HistoryService.FromIndexes(indexes, TimeZoneInfo.Local, DateTime.Today, 30);
+                history = HistoryService.Merge(history, next, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today));
+                try { Store.Write("history.json", history); } catch { }
+            }
             if (history.Error.Length > 0) return Fail(history.Error);
             var range = Enumerable.Range(0, days).Select(i => HistoryService.DayKey(DateTime.Today.AddDays(i - days + 1))).ToList();
             var rows = history.Days.Where(d => range.Contains(d.Day) && (only.Count > 0 ? only.Contains(d.Agent) : ids.Contains(d.Agent))).ToList();
             List<string> agents = ProviderCatalog.Ids.Where(id => rows.Any(r => r.Agent == id)).ToList();
             if (json) {
                 Console.WriteLine(J.Serializer().Serialize(new {
-                    days = range.Select(day => new { date = day, providers = rows.Where(r => r.Day == day).Select(r => new { id = r.Agent, costUsd = r.CostKnown ? (double?)Round(r.Cost) : null, tokens = r.Tokens, inputTokens = r.InputTokens, outputTokens = r.OutputTokens, cacheReadTokens = r.CachedTokens, cacheWriteTokens = r.CacheCreationTokens }) }),
+                    days = range.Select(day => new { date = day, providers = rows.Where(r => r.Day == day).Select(r => new { id = r.Agent, costUsd = r.CostKnown ? (double?)Round(r.Cost) : null, tokens = r.Tokens, inputTokens = r.InputTokens, outputTokens = r.OutputTokens, cacheReadTokens = r.CachedTokens, cacheWriteTokens = r.CacheCreationTokens, requests = r.Requests, unpricedTokens = r.UnpricedTokens, outputTokensPerSecond = Tps(r.TimedOutput, r.TimedSeconds), timedRequests = r.TimedRequests, models = r.Models.Select(m => new { model = m.Model, tokens = m.Tokens, costUsd = Round(m.Cost), outputTokensPerSecond = Tps(m.TimedOutput, m.TimedSeconds) }) }) }),
+                    outputTokensPerSecond = agents.ToDictionary(id => id, id => Tps(rows.Where(r => r.Agent == id).Sum(r => r.TimedOutput), rows.Where(r => r.Agent == id).Sum(r => r.TimedSeconds))),
+                    speedNote = "output tokens (incl. reasoning) / seconds from request sent to last output, per agent; requests with >= 50 output tokens",
                     totalUsd = Round(rows.Where(r => r.CostKnown).Sum(r => r.Cost)), totalTokens = rows.Sum(r => r.Tokens), note = "API-equivalent estimate from local logs, not a subscription bill"
                 }));
                 return 0;
@@ -170,8 +179,12 @@ namespace CodeUsageMonit {
             if (other) total.Append(Pad(Cell(rows.Where(r => !columns.Contains(r.Agent))), 12, true));
             total.Append(Pad(Cell(rows), 12, true)).Append(Pad(Compact(rows.Sum(r => r.Tokens)), 10, true));
             Console.WriteLine(Bold(total.ToString()));
+            // Output speed per agent (never averaged across agents).
+            var speeds = agents.Select(id => new { Id = id, Speed = OutputTiming.Speed(rows.Where(r => r.Agent == id).Sum(r => r.TimedOutput), rows.Where(r => r.Agent == id).Sum(r => r.TimedSeconds)) }).Where(x => x.Speed.HasValue).ToList();
+            if (speeds.Count > 0) Console.WriteLine(Dim("输出速度  ") + String.Join(Dim(" · "), speeds.Select(x => ProviderCatalog.Name(x.Id) + " " + Bold(OutputTiming.Text(x.Speed)))) + Dim("（发出请求 → 最后一段输出，含首字延迟）"));
             return 0;
         }
+        private static double? Tps(double output, double seconds) { double? v = OutputTiming.Speed(output, seconds); return v.HasValue ? (double?)Math.Round(v.Value, 1) : null; }
         private static string Cell(IEnumerable<DayUsage> rows) { var list = rows.ToList(); return list.Count == 0 ? "—" : Money(list); }
 
         // ── thirdparty ────────────────────────────────────────────────────
@@ -179,7 +192,7 @@ namespace CodeUsageMonit {
             ThirdPartySummary report = ThirdPartyReport.Build(Store.Read<LogIndex>("codex-logs.json"), Store.Read<LogIndex>("claude-logs.json"), Store.Read<EndpointLog>("endpoints.json"), Store.Read<UsageHistory>("history.json"), DateTime.UtcNow, TimeZoneInfo.Local);
             if (json) {
                 Console.WriteLine(J.Serializer().Serialize(new {
-                    endpoints = report.Endpoints.Select(e => new { app = e.App, name = e.Title, host = e.Host, current = e.Current, todayTokens = e.Today, weekTokens = e.Week, monthTokens = e.Month, requests = e.Requests, officialPriceUsd30 = Round(e.CostMonth), lastUsed = e.LastUsed, mainModel = e.MainModel }),
+                    endpoints = report.Endpoints.Select(e => new { app = e.App, name = e.Title, host = e.Host, current = e.Current, todayTokens = e.Today, weekTokens = e.Week, monthTokens = e.Month, requests = e.Requests, outputTokensPerSecond = Tps(e.TimedOutput, e.TimedSeconds), officialPriceUsd30 = Round(e.CostMonth), lastUsed = e.LastUsed, mainModel = e.MainModel }),
                     claudeUnattributedTokens = report.ClaudeUnattributed, note = "Relays set their own limits; only usage is shown."
                 }));
                 return 0;
@@ -189,7 +202,7 @@ namespace CodeUsageMonit {
             foreach (EndpointUsage e in report.Endpoints) {
                 Console.WriteLine();
                 Console.WriteLine(Paint(e.Title, ProviderCatalog.Color(e.App), true) + (e.Current ? Paint("  使用中", "#5CC8E0", false) : "") + "  " + Dim((e.App == "claude" ? "Claude Code" : "Codex") + (e.Host.Length > 0 ? " · " + e.Host : "")));
-                Console.WriteLine("  今日 " + Bold(Compact(e.Today)) + "  近 7 天 " + Bold(Compact(e.Week)) + "  近 30 天 " + Bold(Compact(e.Month)) + " Token" + Dim("  · " + e.Requests.ToString("N0") + " 次请求 · 官方价参考 ≈$" + e.CostMonth.ToString("N2", CultureInfo.InvariantCulture)));
+                Console.WriteLine("  今日 " + Bold(Compact(e.Today)) + "  近 7 天 " + Bold(Compact(e.Week)) + "  近 30 天 " + Bold(Compact(e.Month)) + " Token" + Dim("  · " + e.Requests.ToString("N0") + " 次请求" + (e.Speed.HasValue ? " · " + OutputTiming.Text(e.Speed) : "") + " · 官方价参考 ≈$" + e.CostMonth.ToString("N2", CultureInfo.InvariantCulture)));
             }
             return 0;
         }

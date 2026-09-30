@@ -64,17 +64,10 @@ foreach ($target in @(@('winexe', 'codeusagemonit.exe', 'CodeUsageMonit.Program'
   if ($LASTEXITCODE -ne 0) { throw ('C# build failed: ' + $target[1]) }
 }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Panel.xaml') -Destination (Join-Path $OutputDirectory 'Panel.xaml') -Force
+# API list prices used for the cost estimates (compiled from the LiteLLM / models.dev catalogs).
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'pricing.json') -Destination (Join-Path $OutputDirectory 'pricing.json') -Force
 $iconDir = Join-Path $OutputDirectory 'icons'
 New-Item -ItemType Directory -Path $iconDir -Force | Out-Null
-# App provider id -> upstream CodexBar icon name (ZCode uses the z.ai / GLM mark).
-$iconMap = [ordered]@{ codex='codex'; claude='claude'; cursor='cursor'; antigravity='antigravity'; deepseek='deepseek'; grok='grok'; copilot='copilot'; kimi='kimi'; opencode='opencode'; zcode='zai'; pi='pi' }
-foreach($provider in $iconMap.Keys) {
-  $sourceIcon = Join-Path (Split-Path $PSScriptRoot -Parent) ('Sources\CodexBar\Resources\ProviderIcon-'+$iconMap[$provider]+'.svg')
-  if (-not (Test-Path -LiteralPath $sourceIcon)) {
-    # The portable release contains the Windows source and licensed SVG assets.
-    $sourceIcon = Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) ('icons\'+$provider+'.svg')
-  }
-  $targetIcon = Join-Path $iconDir ($provider+'.svg')
-  if ((Test-Path -LiteralPath $sourceIcon) -and [IO.Path]::GetFullPath($sourceIcon) -ne [IO.Path]::GetFullPath($targetIcon)) { Copy-Item -LiteralPath $sourceIcon -Destination $targetIcon -Force }
-}
+# Provider logos (single-colour SVG paths, tinted in the app; source in THIRD-PARTY-NOTICES.md).
+Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'icons') -Filter '*.svg' | Copy-Item -Destination $iconDir -Force
 Write-Output ('Built '+(Join-Path $OutputDirectory 'codeusagemonit.exe'))
