@@ -84,7 +84,8 @@ namespace CodeUsageMonit {
             var strip = CoinStrip(ids, state.Id, 12, false); strip.Margin = new Thickness(-3, 7, 0, 4); DockPanel.SetDock(strip, Dock.Top); root.Children.Add(strip);
             var footer = Label(copyNotice.Length > 0 ? copyNotice : VisibleAccount(state), 9.5, InkFaint); footer.Margin = new Thickness(0, 7, 0, 0); DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
             var content = new StackPanel();
-            foreach (var quota in state.Quotas.Take(3)) content.Children.Add(LargeQuota(quota, state.Id));
+            foreach (var quota in state.Quotas.Take(state.Id == "cursor" ? 4 : 3)) content.Children.Add(LargeQuota(quota, state.Id));
+            if (!String.IsNullOrWhiteSpace(state.GrokBotError)) content.Children.Add(Hint(state.GrokBotError, 6));
             if (NeedsConnect(state)) content.Children.Add(ConnectionButton(state.Id, true));
             foreach (var balance in state.Balances) { content.Children.Add(BigValue(balance.Amount.ToString("N2"), 26)); content.Children.Add(Label(balance.Currency + " 余额", 10.5, InkDim)); }
             if (state.ResetCreditsAvailable.HasValue) content.Children.Add(Hint("限额重置额度 · " + state.ResetCreditsAvailable + " 次可用", 6));

@@ -218,15 +218,18 @@ namespace CodeUsageMonit {
             if (!config.Enabled.Contains(state.Id)) { stack.Children.Add(Notice("此平台已关闭，可在设置中启用。", false)); return; }
             if (ProviderCatalog.LocalOnly(state.Id)) { stack.Children.Add(Notice(ProviderCatalog.Help(state.Id), false)); return; }
             bool first = true;
-            foreach (var quota in state.Quotas.Take(detail ? 30 : 3)) {
+            if (!String.IsNullOrWhiteSpace(state.GrokBotError)) stack.Children.Add(Notice(state.GrokBotError, false));
+            int quotaLimit = detail ? 30 : state.Id == "cursor" ? 4 : 3;
+            foreach (var quota in state.Quotas.Take(quotaLimit)) {
                 FrameworkElement row = QuotaRow(quota, state.Id, state.Stale);
                 if (first) { row.Margin = new Thickness(0, 14, 0, 0); first = false; }
                 stack.Children.Add(row);
             }
-            if (!detail && state.Quotas.Count > 3) {
-                var more = new Button { Style = Styled("LinkButton"), Content = "查看其余 " + (state.Quotas.Count - 3) + " 项额度 ›", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 8, 0, 0) };
+            if (!detail && state.Quotas.Count > quotaLimit) {
+                var more = new Button { Style = Styled("LinkButton"), Content = "查看其余 " + (state.Quotas.Count - quotaLimit) + " 项额度 ›", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 8, 0, 0) };
                 more.Click += delegate { SelectProvider(state.Id); }; stack.Children.Add(more);
             }
+            if (state.ProductUsage.Count > 0) stack.Children.Add(ProductUsageBlock(state));
             foreach (var balance in state.Balances) {
                 var row = Row(); row.Margin = new Thickness(0, 14, 0, 0);
                 var value = Label(balance.Currency + " " + balance.Amount.ToString("N2", CultureInfo.InvariantCulture), 20, Ink); value.FontWeight = FontWeights.SemiBold; Tabular(value);
@@ -358,6 +361,7 @@ namespace CodeUsageMonit {
             top.Children.Add(WithRefresh(Identity(state, true), state.Id));
             AccountBody(top, state, true);
             body.Children.Add(Card(top));
+            if (state.Id == "cursor") body.Children.Add(GrokBotActivityCard());
             body.Children.Add(Card(PeriodBlock(state.Id, false)));
             List<DayUsage> days = history.Days.Where(d => d.Agent == state.Id).ToList();
             if (days.Count > 0) body.Children.Add(Card(UsageBlock(state, days)));
@@ -367,6 +371,31 @@ namespace CodeUsageMonit {
                 empty.Children.Add(Notice(scanning ? "正在扫描本地历史…" : "本机暂未发现该平台的 Token 历史。账户额度来自服务商接口，本机用量来自本地会话日志，两者相互独立。", false));
                 body.Children.Add(Card(empty));
             }
+        }
+        private UIElement ProductUsageBlock(ProviderState state) {
+            var breakdown = new StackPanel { Margin = new Thickness(0, 12, 0, 0), Opacity = state.Stale ? .62 : 1 };
+            breakdown.Children.Add(Label("本期消耗构成 · 共用当前账期额度", 10.5, InkFaint));
+            foreach (var product in state.ProductUsage) {
+                var row = Row(); row.Margin = new Thickness(0, 5, 0, 0);
+                var amount = Label("已消耗总额度 " + product.UsedPercent.ToString("0.#") + "%", 11, InkDim);
+                Tabular(amount); AddRow(row, Label(product.DisplayName, 11, InkDim), amount);
+                row.ToolTip = "该消耗已计入当前账期的已用额度，各产品共享上方显示的剩余额度。";
+                breakdown.Children.Add(row);
+            }
+            return breakdown;
+        }
+        private UIElement GrokBotActivityCard() {
+            var stack = new StackPanel(); var heading = Label("Grok Bot · 本机活动", 13, Ink); heading.FontWeight = FontWeights.SemiBold; stack.Children.Add(heading);
+            if (grokBotActivity.Updated.Length == 0) { stack.Children.Add(Notice(grokBotActivity.Warning.Length > 0 ? grokBotActivity.Warning : "正在读取本机缓存…", false)); return Card(stack); }
+            BotActivityDay today = grokBotActivity.Days.FirstOrDefault(d => d.Day == HistoryService.DayKey(DateTime.Today));
+            foreach (var item in new[] {
+                new[] { "今日", grokBotActivity.TodaySessions + " 个会话 · " + (today == null ? 0 : today.UserMessages + today.AssistantMessages) + " 条消息" },
+                new[] { "近 30 天缓存", grokBotActivity.Sessions + " 个会话 · " + grokBotActivity.Days.Sum(d => d.UserMessages + d.AssistantMessages) + " 条消息" },
+                new[] { "Token / 费用", "本机记录未提供" }
+            }) { var row = Row(); row.Margin = new Thickness(0, 10, 0, 0); AddRow(row, Label(item[0], 11, InkDim), Label(item[1], 11, Ink)); stack.Children.Add(row); }
+            stack.Children.Add(Hint("统计 Grok Bot 当前登录账号的本机缓存，仅含已确认消息；缓存可能截断，不代表完整云端历史。不能由消息数或额度百分比反推 Token / 费用。", 10));
+            if (grokBotActivity.Warning.Length > 0) stack.Children.Add(Notice(grokBotActivity.Warning, false));
+            return Card(stack);
         }
         private WindowUsage CurrentWindow(string id, List<DayUsage> days, Quota quota, int previous) {
             // The subscription window counts only Codex's official provider, not relays.

@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -27,6 +28,7 @@ public static class UiRegression {
     static void Pump() { var f = new DispatcherFrame(); app.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => f.Continue = false)); Dispatcher.PushFrame(f); window.UpdateLayout(); }
     static void Finish(Task task) { while (!task.IsCompleted) { Pump(); System.Threading.Thread.Sleep(10); } task.GetAwaiter().GetResult(); Pump(); }
     static IEnumerable<DependencyObject> Tree(DependencyObject root) { yield return root; for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++) foreach (var c in Tree(VisualTreeHelper.GetChild(root, i))) yield return c; }
+    static string VisibleText() { Pump(); return String.Join("\n", Tree(window).OfType<TextBlock>().Select(t => new TextRange(t.ContentStart, t.ContentEnd).Text)); }
     static ButtonBase Button(string name, DependencyObject root = null) { Pump(); return Tree(root ?? window).OfType<ButtonBase>().First(b => b.IsVisible && (AutomationProperties.GetName(b) == name || Convert.ToString(b.Content) == name)); }
     static void Click(ButtonBase b) { Require(b.IsEnabled, "disabled: " + AutomationProperties.GetName(b)); if (b is RadioButton) ((RadioButton)b).IsChecked = true; b.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent)); Pump(); }
     static Rect Bounds() { return new Rect(window.Left, window.Top, window.ActualWidth, window.ActualHeight); }
@@ -226,6 +228,38 @@ public static class UiRegression {
                     Require(usage.Period.StartUtc > DateTime.UtcNow.AddDays(-14).AddMinutes(-1) && usage.Period.StartUtc < DateTime.UtcNow.AddDays(-14).AddMinutes(1), "older range replaced selection");
                 } finally { typeof(MonitorPanel).GetField("demo", Private).SetValue(panel, true); config.UsageRanges = previous; }
             });
+            var originalCursor = states["cursor"]; var originalGrok = states["grok"];
+            var botCursor = Parsers.Cursor(J.Parse("{\"individualUsage\":{\"plan\":{\"totalPercentUsed\":30,\"autoPercentUsed\":20,\"apiPercentUsed\":40}}}"));
+            botCursor.Status = "ready"; botCursor.Quotas.Add(Parsers.CursorGrokBot(J.Parse("{\"usagePercent\":8.6,\"nextResetTimestampUtc\":\"2026-10-05T00:00:00Z\"}"))); states["cursor"] = botCursor;
+            var grok = Parsers.Grok(J.Parse("{\"config\":{\"creditUsagePercent\":63,\"productUsage\":[{\"product\":\"build\",\"usagePercent\":55},{\"product\":\"chat\",\"usagePercent\":8}]}}")); grok.Status = "ready"; states["grok"] = grok;
+            typeof(MonitorPanel).GetField("grokBotActivity", Private).SetValue(panel, new BotActivity { Updated = DateTime.UtcNow.ToString("o"), Sessions = 3, TodaySessions = 1, Days = { new BotActivityDay { Day = DateTime.Today.ToString("yyyy-MM-dd"), UserMessages = 5, AssistantMessages = 6 } } });
+            Check("Full Cursor and overview retain the fourth Bot quota and its local activity", () => {
+                Call("SetDisplaySize", "full"); Call("SelectProvider", "cursor"); string text = VisibleText();
+                Require(text.IndexOf("Grok Bot · 每周", StringComparison.Ordinal) > text.IndexOf("API / 手动模型", StringComparison.Ordinal), "Bot order");
+                Require(text.Contains("91.4%") && text.Contains("11 条消息") && text.Contains("本机记录未提供"), "Bot data or activity missing");
+                Call("SelectProvider", "overview"); Require(VisibleText().Contains("Grok Bot · 每周"), "fourth quota hidden");
+            });
+            Check("All compact sizes expose Bot quota and local activity through their details", () => {
+                foreach (string size in new[] { "small", "medium", "large" }) {
+                    Call("SetDisplaySize", size); Call("SelectCompact", "cursor");
+                    if (size == "large") Require(VisibleText().Contains("Grok Bot · 每周"), "large card hides Bot");
+                    Rect bounds = Bounds(); Click(Button("查看 Cursor 用量详情")); SameBounds(bounds); string text = VisibleText();
+                    Require(text.Contains("Grok Bot · 每周") && text.Contains("91.4%") && text.Contains("11 条消息"), "Bot missing in " + size);
+                }
+            });
+            Check("Full and compact Grok details label consumption without a fake remaining quota", () => {
+                Call("SetDisplaySize", "full"); Call("SelectProvider", "grok"); string text = VisibleText();
+                Require(text.Contains("37%") && text.Contains("已消耗总额度 55%") && !text.Contains("Build 占比") && !text.Contains("45%"), "full Grok quota semantics");
+                foreach (string size in new[] { "small", "medium", "large" }) {
+                    Call("SetDisplaySize", size); Call("SelectCompact", "grok"); Click(Button("查看 Grok 用量详情")); text = VisibleText();
+                    Require(text.Contains("37%") && text.Contains("已消耗总额度 55%") && !text.Contains("Build 占比"), "compact Grok quota semantics");
+                }
+            });
+            Check("Failed refresh retains the last Grok breakdown with the last good quota", () => {
+                Call("Accept", "grok", new ProviderState { Id = "grok", Status = "error", Message = "synthetic timeout" });
+                Require(states["grok"].Stale && states["grok"].Quotas.Count == 1 && states["grok"].ProductUsage.Count == 2, "cached breakdown lost");
+            });
+            states["cursor"] = originalCursor; states["grok"] = originalGrok;
             Check("Saved custom compact geometry and zoom survive cold startup", () => {
                 panel.Dispose(); typeof(MonitorPanel).GetField("quitting", Private).SetValue(panel, true); window.Close();
                 var saved = new AppConfig { UiVersion = 2, DisplaySize = "small", CompactProvider = "overview", UiScale = 1.4 };

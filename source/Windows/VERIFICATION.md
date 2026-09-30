@@ -4,6 +4,17 @@ Validated on Windows 11 Pro x64 (build 26200), 2026-09-30.
 
 ## 0.8 current release
 
+### Grok fixes (source, not yet a new portable release)
+
+- The new shared-allowance regression failed against the original parser (59 existing tests passed, 1 new test failed), then passed with the fix.
+- **72 self-tests and 26 offline WPF integration checks pass** with this change. Grok-specific coverage includes independent Bot resets, missing/pooled personal allowances, failed and cancelled optional requests, malformed consumption breakdowns, old-cache normalization, active-account filtering, message de-duplication and a Windows path longer than 260 characters.
+- WPF checks cover the fourth Cursor quota in the overview and large card, Bot activity in full and compact detail pages, shared Grok consumption labels, and retaining the last good breakdown after a failed refresh. They use synthetic state and do not access credentials or call quota services.
+- Both GUI and CLI compile from the changed source. A synthetic CLI cache smoke check confirms old `Build 占比` entries are removed and product consumption remains separate from the shared remaining allowance in text and JSON output.
+- Proxy selection, accepted proxy schemes, proxy settings and the default HTTP handler options retain their existing behavior. No proxy extension or packaged executable is included in this change.
+- Bot activity summarizes confirmed messages from the active account's local cache; it does not provide token counts, billing amounts, or a complete cloud transcript.
+
+### Published 0.8 baseline
+
 - **59 self-tests pass.** New range fixtures cover local midnight versus a rolling day, a fixed start with follow-now, invalid/reversed/future/old input, weighted hour boundaries, scanned current-hour prefixes, exclusive end boundaries, missing histories, conservative daily-only selection, fractional-time-zone midnight pricing, wider historical scan coverage and index-cache invalidation.
 - **22 offline WPF integration checks pass.** New checks exercise the calendar in all layouts, five preset buttons, actual day-cell selection, HH:mm edits, confirm/cancel validation, independent per-provider persistence and follow-now. They also measure equal progress-track widths with mixed refresh/connect states and verify distinct small/medium/large summary structures with icon navigation. Existing resize, geometry, connection, settings, refresh and privacy regressions remain covered. A synthetic history executable also verifies one scan per confirmation, coalescing of obsolete queued requests and acceptance of the latest range; no real user logs are read by this check.
 - Inspected screenshots include calendar selection, small/medium/large summaries, aligned overviews, settings and connection pages. Synthetic account data is used; no real login or credential submission is part of these UI checks. WPF screenshots validate layout, not composited backdrop appearance.

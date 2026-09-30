@@ -168,6 +168,9 @@ namespace CodeUsageMonit {
             int max = details ? Int32.MaxValue : activeSize == "small" ? 1 : activeSize == "medium" ? 2 : 3;
             foreach (Quota quota in state.Quotas.Take(max)) content.Children.Add(InteractiveQuota(quota, state, !details));
             if (state.Quotas.Count > max) content.Children.Add(ActionButton("查看全部 " + state.Quotas.Count + " 项额度", "全部额度", () => OpenCompactPage(id, "details"), false));
+            if (!String.IsNullOrWhiteSpace(state.GrokBotError)) content.Children.Add(Hint(state.GrokBotError, 6));
+            if (details && state.ProductUsage.Count > 0) content.Children.Add(ProductUsageBlock(state));
+            if (details && id == "cursor") content.Children.Add(GrokBotActivityCard());
             foreach (Balance balance in state.Balances) { content.Children.Add(BigValue(balance.Amount.ToString("N2", CultureInfo.InvariantCulture), 27)); content.Children.Add(Label(balance.Currency + " 可用余额", 11, InkDim)); }
             if (state.Quotas.Count == 0 && state.Balances.Count == 0) content.Children.Add(Hint(ProviderCatalog.LocalOnly(id) ? "本平台仅统计本机历史。" : state.Status == "loading" ? "正在读取…" : "暂未读取到账户额度。", 8));
             if (state.ResetCreditsAvailable.HasValue) content.Children.Add(Hint("限额重置额度 · " + state.ResetCreditsAvailable + " 次可用", 9));

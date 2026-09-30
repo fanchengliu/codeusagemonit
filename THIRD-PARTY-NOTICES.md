@@ -1,5 +1,11 @@
 # Third-party notices
 
+## Pane
+
+- Upstream: https://github.com/ItsJazii/pane
+- Reference commit: `51877a421eb5489b629220a72df387aea048526d`; MIT license. Full text: `licenses/Pane-MIT.txt`.
+- Referenced Cursor Grok Bot DashboardService usage fields and independent allowance handling. The adapter is implemented in C#; no Pane executable is bundled.
+
 codeusagemonit is an independent Windows adaptation. It is not an official release of CodexBar and is not affiliated with any monitored service.
 
 ## CodexBar

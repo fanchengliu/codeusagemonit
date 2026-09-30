@@ -94,6 +94,7 @@ namespace CodeUsageMonit {
             return states.Any(s => s.Status == "ready") ? code : 1;
         }
         private static int Print(List<ProviderState> states, string source) {
+            foreach (ProviderState state in states) Parsers.NormalizeCachedState(state);
             UsageHistory history = Store.Read<UsageHistory>("history.json");
             var config = Store.Read<AppConfig>("settings.json");
             if (json) {
@@ -103,6 +104,8 @@ namespace CodeUsageMonit {
                         id = s.Id, name = ProviderCatalog.Name(s.Id), status = s.Status, message = s.Status == "ready" ? "" : s.Message, plan = s.Plan, account = Mask(s.Account, config.HideAccounts), updated = s.LastSuccess,
                         windows = s.Quotas.Select(q => new { label = q.Label, remainingPercent = Math.Round(q.Remaining, 2), usedPercent = Math.Round(q.Used, 2), resetsAt = q.ResetUtc, windowSeconds = q.WindowSeconds }),
                         balances = s.Balances.Select(b => new { currency = b.Currency, amount = b.Amount }),
+                        productUsage = s.ProductUsage.Select(p => new { product = p.Product, usedPercent = p.UsedPercent }),
+                        grokBotError = s.GrokBotError,
                         spend = days.Count == 0 ? null : new { todayUsd = Round(days.Where(d => d.Day == Today() && d.CostKnown).Sum(d => d.Cost)), last30Usd = Round(days.Where(d => d.CostKnown).Sum(d => d.Cost)), last30Tokens = days.Sum(d => d.Tokens) }
                     };
                 })));
@@ -127,6 +130,8 @@ namespace CodeUsageMonit {
                         Console.WriteLine("  " + new string(' ', labelWidth) + Paint(keyword, Math.Abs(pace.Reserve) < 1 ? "#A7ADB7" : pace.Reserve >= 0 ? "#7AD3A8" : "#F2B36B", false) + Dim(tail));
                     }
                 }
+                foreach (ProductConsumption product in s.ProductUsage) Console.WriteLine("  " + product.DisplayName + " · 已消耗总额度 " + product.UsedPercent.ToString("0.#", CultureInfo.InvariantCulture) + "%（共用当前账期额度）");
+                if (!String.IsNullOrWhiteSpace(s.GrokBotError)) Console.WriteLine("  " + Dim(s.GrokBotError));
                 foreach (Balance b in s.Balances) Console.WriteLine("  " + Pad("可用余额", labelWidth) + Bold(b.Currency + " " + b.Amount.ToString("N2", CultureInfo.InvariantCulture)));
                 if (s.ResetCreditsAvailable.HasValue) Console.WriteLine("  " + Pad("限额重置", labelWidth) + s.ResetCreditsAvailable + " 次可用");
                 var days = history.Days.Where(d => d.Agent == s.Id).ToList();

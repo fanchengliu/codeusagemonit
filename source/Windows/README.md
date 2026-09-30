@@ -64,10 +64,10 @@ Disconnected/expired accounts expose connection controls directly in their overv
 | --- | --- |
 | Codex | Existing `CODEX_HOME/auth.json` or `~/.codex/auth.json`; quota and reset-credit endpoints |
 | Claude | Existing Claude Code login |
-| Cursor | Read-only editor `state.vscdb`; separate total / Auto / API meters and reported billing-cycle boundaries |
+| Cursor | Read-only editor `state.vscdb`; separate total / Auto / API meters and reported billing-cycle boundaries; optional Grok Bot allowance with its own reset, appended last |
 | Antigravity | First tries an already-running same-user desktop language server with its local CSRF token, then the existing Google credential fallback |
 | DeepSeek | API key entered in Settings or `DEEPSEEK_API_KEY`; balances are kept separate by currency |
-| Grok | Existing xAI Grok Build CLI login; shared billing-period allowance |
+| Grok | Existing xAI Grok Build CLI login; one shared billing-period allowance plus validated Build / Chat consumption, never independent product quotas |
 | GitHub Copilot | In-app GitHub OAuth device flow (VS Code Copilot client ID, `read:user`), or a token already saved by an official Copilot client (`github-copilot/apps.json` / `hosts.json`, read-only); `GET api.github.com/copilot_internal/user` |
 | Kimi Code | API key (`KIMI_CODE_API_KEY` or DPAPI-saved); `GET api.kimi.com|api.kimi.ai/coding/v1/usages`; ratio pools, legacy counts, rate-limit windows |
 | OpenCode | OpenCode Go API key (`OPENCODE_API_KEY` or saved); `GET opencode.ai/zen/go/v1/usage` |

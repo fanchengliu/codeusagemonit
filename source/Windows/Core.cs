@@ -25,10 +25,20 @@ namespace CodeUsageMonit {
         public double Remaining { get { return Math.Max(0, 100 - Used); } }
     }
     public sealed class Balance { public string Currency; public double Amount; }
+    public sealed class ProductConsumption {
+        public string Product;
+        // Percentage points consumed from the same total allowance, not a separate quota.
+        public double UsedPercent;
+        public string DisplayName {
+            get { return Product.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0 ? "Build" : Product; }
+        }
+    }
     public sealed class ProviderState {
         public string Id, Status = "loading", Message = "等待首次读取", Plan = "", Account = "", LastSuccess = "", LastAttempt = "";
         public List<Quota> Quotas = new List<Quota>();
         public List<Balance> Balances = new List<Balance>();
+        public List<ProductConsumption> ProductUsage = new List<ProductConsumption>();
+        public string GrokBotError = "";
         public bool Stale;
         public int? ResetCreditsAvailable;
         public List<string> ResetCreditExpiries = new List<string>();
@@ -233,12 +243,43 @@ namespace CodeUsageMonit {
             foreach (object b in J.Arr(J.Get(root, "balance_infos"))) { double? n = J.Num(b, "total_balance"); string c = J.Str(b, "currency"); if (n.HasValue && c.Length > 0) s.Balances.Add(new Balance { Currency = c, Amount = n.Value }); }
             return s;
         }
+        // Cursor DashboardService/Sand contract, also used by Pane (MIT).
+        public static Quota CursorGrokBot(object usage) {
+            if (Object.Equals(J.Get(usage, "usesPooledEnterpriseAllowance"), true) ||
+                Object.Equals(J.Get(usage, "hasNonZeroIncludedLimit"), false) || Object.Equals(J.Get(usage, "includedLimitZero"), true)) return null;
+            double? used = J.Num(usage, "usagePercent"); if (!used.HasValue || used < 0) return null;
+            string end = J.Iso(J.Get(usage, "nextResetTimestampUtc"));
+            string start = J.Iso(J.Get(usage, "currentPeriodStart"));
+            DateTimeOffset a, b; double duration = 604800;
+            if (DateTimeOffset.TryParse(start, out a) && DateTimeOffset.TryParse(end, out b) && b > a) duration = (b - a).TotalSeconds;
+            return new Quota { Label = "Grok Bot · 每周", Used = Math.Min(100, used.Value), ResetUtc = end, WindowSeconds = duration };
+        }
         public static ProviderState Grok(object root) {
             var s = new ProviderState { Id = "grok", Plan = J.Str(root, "subscriptionTier") }; object c = J.Get(root, "config");
             object end = J.Get(c, "currentPeriod", "end"); if (J.Get(end, "seconds") != null) end = J.Get(end, "seconds");
             Add(s, "当前账期", J.Get(c, "creditUsagePercent"), end);
-            foreach (object p in J.Arr(J.Get(c, "productUsage"))) { if (J.Str(p, "product").IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0) Add(s, "Build 占比", J.Get(p, "usagePercent"), end); }
+            double? sharedUsed = J.Num(c, "creditUsagePercent");
+            var products = new List<ProductConsumption>(); var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool valid = sharedUsed.HasValue && sharedUsed >= 0 && sharedUsed <= 100;
+            foreach (object product in J.Arr(J.Get(c, "productUsage"))) {
+                string name = J.Str(product, "product").Trim(); double? used = J.Num(product, "usagePercent");
+                if (name.Length == 0 || !used.HasValue || used < 0 || used > 100 || !names.Add(name)) { valid = false; break; }
+                products.Add(new ProductConsumption { Product = name, UsedPercent = used.Value });
+            }
+            // Allow one percentage point for independently rounded product shares.
+            if (valid && products.Count > 0 && Math.Abs(products.Sum(p => p.UsedPercent) - sharedUsed.Value) <= 1)
+                s.ProductUsage = products;
             if (s.Plan.Length == 0) s.Plan = "Grok Build"; return s;
+        }
+        public static void NormalizeCachedState(ProviderState state) {
+            if (state.ProductUsage == null) state.ProductUsage = new List<ProductConsumption>();
+            if (state.Id == "cursor")
+                state.Quotas = state.Quotas.OrderBy(q => (q.Label ?? "").StartsWith("Grok Bot", StringComparison.OrdinalIgnoreCase) ? 1 : 0).ToList();
+            if (state.Id == "grok") {
+                // Older versions saved a product share as a quota. Its complement is not
+                // spendable allowance. Preserve the actual shared quota while offline.
+                state.Quotas.RemoveAll(q => q.Label == "Build 占比");
+            }
         }
         // GET api.github.com/copilot_internal/user. Snapshots report percent_remaining; the
         // monthly quota resets on quota_reset_date. Unlimited pools have no meter.
@@ -344,12 +385,16 @@ namespace CodeUsageMonit {
     public sealed class ProviderService : IDisposable {
         private readonly HttpClient client;
         private readonly AppConfig config;
-        public ProviderService(AppConfig config) {
+        public ProviderService(AppConfig config) : this(config, null) { }
+        internal ProviderService(AppConfig config, HttpMessageHandler transport) {
             this.config = config ?? new AppConfig();
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12; ServicePointManager.DefaultConnectionLimit = 12;
-            var handler = new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate, UseCookies = false };
-            string proxy = ResolveProxy(config.Proxy); handler.UseProxy = proxy.Length > 0; if (handler.UseProxy) handler.Proxy = new WebProxy(proxy);
-            client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(18) };
+            if (transport == null) {
+                var handler = new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate, UseCookies = false };
+                string proxy = ResolveProxy(config.Proxy); handler.UseProxy = proxy.Length > 0; if (handler.UseProxy) handler.Proxy = new WebProxy(proxy);
+                transport = handler;
+            }
+            client = new HttpClient(transport) { Timeout = TimeSpan.FromSeconds(18) };
         }
         public static string ResolveProxy(string setting) {
             if (setting == "direct") return "";
@@ -375,6 +420,25 @@ namespace CodeUsageMonit {
                     return J.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                 }
             }
+        }
+        internal async Task<ProviderState> FetchCursorUsage(string token, string subject) {
+            var bot = FetchGrokBot(token);
+            var summary = Request("https://cursor.com/api/usage-summary", null, subject + "%3A%3A" + token, null, new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" } });
+            await Task.WhenAll((Task)summary, bot).ConfigureAwait(false);
+            var state = Parsers.Cursor(await summary.ConfigureAwait(false));
+            var extra = await bot.ConfigureAwait(false);
+            if (extra.Quotas.Count > 0) state.Quotas.Add(extra.Quotas[0]);
+            state.GrokBotError = extra.Message; return state;
+        }
+        private async Task<ProviderState> FetchGrokBot(string token) {
+            var result = new ProviderState { Message = "" };
+            try {
+                object data = await Request("https://api2.cursor.sh/aiserver.v1.DashboardService/GetSandUsageStatus", token, null, "{}", new Dictionary<string, string> { { "Connect-Protocol-Version", "1" } }, 6).ConfigureAwait(false);
+                Quota quota = Parsers.CursorGrokBot(data);
+                if (quota != null) result.Quotas.Add(quota);
+                else result.Message = "Grok Bot 暂无可显示的独立额度（未返回个人用量或使用团队共享额度）。";
+            } catch { result.Message = "Grok Bot 额度暂未取得，请检查代理或稍后刷新；Cursor 主额度不受影响。"; }
+            return result;
         }
         private static string Home { get { return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); } }
         private static string ConfigPath(string variable, string fallback, string file) { string path = Environment.GetEnvironmentVariable(variable); if (String.IsNullOrWhiteSpace(path)) path = Path.Combine(Home, fallback); path = Environment.ExpandEnvironmentVariables(path); if (path.StartsWith("~")) path = Home + path.Substring(1); return Path.Combine(path, file); }
@@ -413,7 +477,7 @@ namespace CodeUsageMonit {
                     case "cursor": {
                         string db = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Cursor\User\globalStorage\state.vscdb");
                         string token = NativeCredentials.SqliteText(db, "cursorAuth/accessToken"); Need(token, id); object claims = J.Jwt(token); string sub = J.Str(claims, "sub"); if (sub.Contains("|")) sub = sub.Substring(sub.LastIndexOf('|') + 1); Need(sub, id);
-                        s = Parsers.Cursor(await Request("https://cursor.com/api/usage-summary", null, sub + "%3A%3A" + token, null, new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" } }).ConfigureAwait(false));
+                        s = await FetchCursorUsage(token, sub).ConfigureAwait(false);
                         s.Account = NativeCredentials.SqliteText(db, "cursorAuth/cachedEmail"); break;
                     }
                     case "deepseek": {

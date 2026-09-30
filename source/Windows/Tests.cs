@@ -281,6 +281,11 @@ namespace CodeUsageMonit {
                 var result = HistoryService.MergeProvider(old, next, "pi", "2026-01-01", "2026-01-02");
                 Require(Object.ReferenceEquals(result.Days.Single(d => d.Agent == "codex"), other) && result.Days.Where(d => d.Agent == "pi").Sum(d => d.Tokens) == 130);
             });
+            test("Grok product consumption does not create a separate remaining allowance", () => {
+                var state = Parsers.Grok(J.Parse("{\"config\":{\"creditUsagePercent\":63,\"productUsage\":[{\"product\":\"build\",\"usagePercent\":55},{\"product\":\"chat\",\"usagePercent\":8}]}}"));
+                Require(state.Quotas.Count == 1 && state.Quotas[0].Remaining == 37);
+            });
+            GrokTests.Run(test);
             PeriodTests.Add(test);
             test("Restored compact defaults migrate once while custom and zoomed geometry remain", () => {
                 var c = new AppConfig { UiVersion = 2 }; c.Layouts["small"] = new PanelPlacement { Width = 260, Height = 320 }; c.Layouts["medium"] = new PanelPlacement { Width = 405, Height = 285 };

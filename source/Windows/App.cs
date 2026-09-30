@@ -79,6 +79,7 @@ namespace CodeUsageMonit {
         private AppConfig config;
         private Dictionary<string, ProviderState> states = new Dictionary<string, ProviderState>();
         private UsageHistory history;
+        private BotActivity grokBotActivity = new BotActivity();
         private LogIndex codexLogs, claudeLogs;
         private EndpointLog endpointLog;
         private ThirdPartySummary thirdParty = new ThirdPartySummary();
@@ -106,6 +107,7 @@ namespace CodeUsageMonit {
             try {
                 foreach (var s in Store.Read<List<ProviderState>>("quota-cache.json")) {
                     if (!states.ContainsKey(s.Id)) continue;
+                    Parsers.NormalizeCachedState(s);
                     // Only entries that actually hold data are shown as the last good reading.
                     if (s.Quotas.Count == 0 && s.Balances.Count == 0) continue;
                     s.Stale = true; s.Status = "cached"; s.Message = "上次成功读取的数据"; states[s.Id] = s;
@@ -315,7 +317,7 @@ namespace CodeUsageMonit {
         // A failed read keeps the last good values (marked stale) instead of blanking them.
         private void Accept(string id, ProviderState incoming) {
             ProviderState old; if (!states.TryGetValue(id, out old)) old = new ProviderState { Id = id };
-            if (incoming.Status == "error" || incoming.Status == "expired") { incoming.Quotas = old.Quotas; incoming.Balances = old.Balances; incoming.LastSuccess = old.LastSuccess; incoming.Plan = old.Plan; incoming.Account = old.Account; incoming.ResetCreditsAvailable = old.ResetCreditsAvailable; incoming.ResetCreditExpiries = old.ResetCreditExpiries; incoming.ResetCreditsUpdated = old.ResetCreditsUpdated; incoming.Stale = old.Quotas.Count > 0 || old.Balances.Count > 0; }
+            if (incoming.Status == "error" || incoming.Status == "expired") { incoming.Quotas = old.Quotas; incoming.Balances = old.Balances; incoming.ProductUsage = old.ProductUsage; incoming.GrokBotError = old.GrokBotError; incoming.LastSuccess = old.LastSuccess; incoming.Plan = old.Plan; incoming.Account = old.Account; incoming.ResetCreditsAvailable = old.ResetCreditsAvailable; incoming.ResetCreditExpiries = old.ResetCreditExpiries; incoming.ResetCreditsUpdated = old.ResetCreditsUpdated; incoming.Stale = old.Quotas.Count > 0 || old.Balances.Count > 0; }
             states[id] = incoming;
         }
         // A full refresh and a single-provider refresh can overlap; only the newest fetch
@@ -342,6 +344,7 @@ namespace CodeUsageMonit {
                         }
                     }
                 } else using (var service = new ProviderService(config)) { ProviderState result = await Task.Run(() => service.Fetch(id)); if (Latest(id, serial)) Accept(id, result); }
+                if (id == "cursor") { BotActivity activity = await Task.Run(() => GrokBotActivity.Read()); if (Latest(id, serial)) grokBotActivity = activity; }
                 Store.Write("quota-cache.json", states.Values.ToList()); UpdateTray();
             } catch (Exception e) { statusNote = e is ArgumentException ? e.Message : ProviderCatalog.Name(id) + " 刷新未完成"; }
             finally {
@@ -355,9 +358,11 @@ namespace CodeUsageMonit {
             scanning = true; Render();
             try {
                 // ccusage (daily $, per-model) and the hourly log indexes run side by side.
+                Task<BotActivity> bot = config.Enabled.Contains("cursor") ? Task.Run(() => GrokBotActivity.Read()) : Task.FromResult(new BotActivity());
                 Task<UsageHistory> read = Task.Run(() => HistoryService.Read());
                 Task<LogIndex> logs = config.Enabled.Contains("codex") || config.ShowThirdParty ? Task.Run(() => CodexLogs.Scan(Store.Read<LogIndex>("codex-logs.json"), DateTime.UtcNow)) : Task.FromResult<LogIndex>(null);
                 Task<LogIndex> claude = config.ShowThirdParty ? Task.Run(() => ClaudeLogs.Scan(Store.Read<LogIndex>("claude-logs.json"), DateTime.UtcNow)) : Task.FromResult<LogIndex>(null);
+                grokBotActivity = await bot;
                 UsageHistory next = await read;
                 if (next.Error.Length == 0) { history = HistoryService.Merge(history, next, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today)); Store.Write("history.json", history); }
                 else history.Error = next.Error;
