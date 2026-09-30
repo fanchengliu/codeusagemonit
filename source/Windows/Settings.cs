@@ -278,6 +278,7 @@ namespace CodeUsageMonit {
             var about = new StackPanel();
             var name = Label("codeusagemonit V" + AppInfo.ShortVersion, 12.5, Ink); name.FontWeight = FontWeights.SemiBold; about.Children.Add(name);
             about.Children.Add(Hint("code用量监控", 3));
+            about.Children.Add(Hint("数据目录 " + Store.Data, 3));
             var links = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(-6, 8, 0, 0) };
             var folder = new Button { Style = Styled("LinkButton"), Content = "打开数据目录" };
             folder.Click += delegate { try { Process.Start("explorer.exe", "\"" + Store.Data + "\""); } catch { } };

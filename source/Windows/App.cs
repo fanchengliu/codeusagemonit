@@ -308,7 +308,7 @@ namespace CodeUsageMonit {
             pinButton.Foreground = keepOpen ? AccentBrush : InkDim;
             pinButton.ToolTip = keepOpen ? "保持展开中 · 点击后改为失焦自动收起（不影响置顶）" : "失焦自动收起中 · 点击保持展开（不影响置顶）";
         }
-        private void SaveConfig() { try { Store.Write("settings.json", config); } catch { statusNote = "设置保存失败，请检查 data 目录权限"; UpdateStatus(); } }
+        private void SaveConfig() { try { Store.Write("settings.json", config); } catch { statusNote = "设置保存失败，请检查数据目录是否可写"; UpdateStatus(); } }
         private void SetSpinning(bool on) {
             var rotate = refreshGlyph.RenderTransform as RotateTransform; if (rotate == null) return;
             if (on) rotate.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(0, 360, TimeSpan.FromSeconds(0.9)) { RepeatBehavior = RepeatBehavior.Forever });

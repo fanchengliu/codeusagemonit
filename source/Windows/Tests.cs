@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -419,6 +420,61 @@ namespace CodeUsageMonit {
             });
             test("Antigravity desktop response parses measured model quotas", () => {
                 var state = LocalAntigravity.Parse(J.Parse("{\"userStatus\":{\"cascadeModelConfigData\":{\"clientModelConfigs\":[{\"label\":\"test-model\",\"quotaInfo\":{\"remainingFraction\":0.6,\"resetTime\":\"2026-01-20T00:00:00Z\"}}]}}}")); Require(state.Quotas.Count == 1 && state.Quotas[0].Remaining == 60);
+            });
+            test("Installed copies use the per-user directory; zip copies and portable.txt stay beside the exe", () => {
+                string root = Path.Combine(Path.GetTempPath(), "codeusagemonit-data-" + Guid.NewGuid().ToString("N"));
+                string user = Path.Combine(root, "userdir");
+                Directory.CreateDirectory(root);
+                try {
+                    Require(Store.PathsEqual(Store.UserDataDirectory(), Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "codeusagemonit")));
+                    Require(!Store.PathsEqual(null, root) && !Store.PathsEqual("  ", root));
+                    Require(Store.PathsEqual(root + Path.DirectorySeparatorChar, root));
+                    Require(Store.NormalizeDirectory("C:\\") == "C:\\");
+                    Require(!Store.TryMigratePortableData(Path.Combine(user, "inside"), user));
+                    string beside = Path.Combine(root, "data");
+                    Require(Store.PathsEqual(Store.ResolveData(root, "", null, false, user), beside));
+                    Require(Store.PathsEqual(Store.ResolveData(root, Path.Combine(root, "other"), null, false, user), beside));
+                    Require(Store.PathsEqual(Store.ResolveData(root, root + Path.DirectorySeparatorChar, null, false, user), user));
+                    Require(Store.PathsEqual(Store.ResolveData(root, "", null, true, user), user));
+                    Require(Store.PathsEqual(Store.ResolveData(root, "", Path.Combine(root, "override"), true, user), Path.Combine(root, "override")));
+                    File.WriteAllText(Path.Combine(root, "portable.txt"), "portable");
+                    Require(Store.PathsEqual(Store.ResolveData(root, root, Path.Combine(root, "override"), true, user), beside));
+                    File.Delete(Path.Combine(root, "portable.txt"));
+                    Directory.CreateDirectory(beside);
+                    File.WriteAllText(Path.Combine(beside, "settings.json"), "{\"kept\":true}");
+                    Directory.CreateDirectory(Path.Combine(beside, "nested"));
+                    File.WriteAllText(Path.Combine(beside, "nested", "a.txt"), "a");
+                    File.WriteAllText(Path.Combine(root, "installed.txt"), "installed");
+                    string chosen = Store.ChooseDataFor(root, "", null, user);
+                    Require(Store.PathsEqual(chosen, user));
+                    Require(File.ReadAllText(Path.Combine(user, "settings.json")) == "{\"kept\":true}");
+                    Require(File.ReadAllText(Path.Combine(user, "nested", "a.txt")) == "a");
+                    Require(!Directory.Exists(beside));
+                    Directory.CreateDirectory(beside);
+                    File.WriteAllText(Path.Combine(beside, "settings.json"), "{\"new\":true}");
+                    Require(!Store.TryMigratePortableData(beside, user));
+                    Require(File.ReadAllText(Path.Combine(user, "settings.json")) == "{\"kept\":true}");
+                } finally { try { Directory.Delete(root, true); } catch { } }
+            });
+            test("A linked data directory is copied and the link is left in place", () => {
+                string root = Path.Combine(Path.GetTempPath(), "codeusagemonit-link-" + Guid.NewGuid().ToString("N"));
+                string real = Path.Combine(root, "real"); string link = Path.Combine(root, "data"); string user = Path.Combine(root, "user");
+                Directory.CreateDirectory(real);
+                File.WriteAllText(Path.Combine(real, "settings.json"), "{}");
+                Process linkProcess = Process.Start(new ProcessStartInfo("cmd.exe", "/c mklink /J \"" + link + "\" \"" + real + "\"") { UseShellExecute = false, CreateNoWindow = true });
+                linkProcess.WaitForExit();
+                Require(linkProcess.ExitCode == 0);
+                try {
+                    Require(Store.TryMigratePortableData(link, user));
+                    Require(File.ReadAllText(Path.Combine(user, "settings.json")) == "{}");
+                    Require(Directory.Exists(link) && File.Exists(Path.Combine(real, "settings.json")));
+                } finally {
+                    try {
+                        Process remove = Process.Start(new ProcessStartInfo("cmd.exe", "/c rmdir \"" + link + "\"") { UseShellExecute = false, CreateNoWindow = true });
+                        if (remove != null) remove.WaitForExit();
+                        Directory.Delete(root, true);
+                    } catch { }
+                }
             });
             Directory.CreateDirectory(Path.Combine(Store.Root, "verification"));
             File.WriteAllText(Path.Combine(Store.Root, "verification", "tests.json"), J.Serializer().Serialize(new { passed = passed.Count, failed = failed.Count, checks = passed, errors = failed }));

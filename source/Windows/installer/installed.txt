@@ -1,0 +1,6 @@
+codeusagemonit setup.exe installation marker.
+
+This file tells the app to keep settings, keys and usage cache in
+%LOCALAPPDATA%\codeusagemonit instead of a data folder next to the program.
+Do not delete it. To force the portable layout, create portable.txt here
+(portable.txt wins over this file and over HKCU\Software\codeusagemonit\InstallPath).
