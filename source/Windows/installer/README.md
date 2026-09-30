@@ -45,7 +45,7 @@ cd codeusagemonit
 `-Installer` compiles the two executables, then writes these next to them (the repo root, unless you pass `-OutputDirectory`):
 
 - `codeusagemonit-setup-1.2.0.exe` (version comes from `AssemblyVersion` in `source\Windows\App.cs`)
-- `codeusagemonit-1.2.0-win-x64.zip` (portable; no `installed.txt` beside the exe)
+- `codeusagemonit-1.2.0-win-x64.zip` (portable; no `installed.txt` beside the exe). The zip includes `source/` so the program can be rebuilt, except `source/Windows/VERIFICATION.md`. That file is a maintainer checklist and is removed while the zip is staged. `setup.exe` never installs `source/` or `VERIFICATION.md`; it does install `使用说明.md`.
 - `SHA256SUMS.txt`
 
 `.\source\Windows\build.ps1` without `-Installer` still only builds the executables.

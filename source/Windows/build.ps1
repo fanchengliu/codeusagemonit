@@ -106,6 +106,11 @@ function New-PortableZip([string]$OutDir, [string]$RepoRoot, [string]$Version) {
       Copy-Item -LiteralPath (Join-Path $RepoRoot $name) -Destination (Join-Path $stage $name)
     }
     Copy-Item -LiteralPath (Join-Path $RepoRoot 'source') -Destination (Join-Path $stage 'source') -Recurse
+    # Maintainer checklist only. Not required to build or run, and not shipped.
+    # setup.exe never copies source/ (see installer/codeusagemonit.iss).
+    $verificationNotes = Join-Path $stage 'source\Windows\VERIFICATION.md'
+    if (Test-Path -LiteralPath $verificationNotes) { Remove-Item -LiteralPath $verificationNotes -Force }
+    if (Test-Path -LiteralPath $verificationNotes) { throw 'Portable zip must not ship source\Windows\VERIFICATION.md.' }
     if (Test-Path -LiteralPath (Join-Path $stage 'installed.txt')) { throw 'Portable zip must not ship installed.txt next to the executable.' }
     $zip = Join-Path $OutDir ('codeusagemonit-' + $Version + '-win-x64.zip')
     if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
