@@ -10,42 +10,86 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
 namespace CodeUsageMonit {
-    // Settings have their own window; editing never changes the monitor's geometry.
+    // Settings open in their own window (same surface, cards and controls as the panel), so
+    // the panel keeps whatever display size it has. Changes apply on Save; Esc / close cancels.
     public sealed partial class MonitorPanel {
-        private FrameworkElement settingsView;
         private Window settingsWindow;
         private Border settingsSurface;
-        private Grid settingsContentHost;
+        private Grid settingsHost;
         private TextBlock settingsTitle;
         private Button settingsBack;
+        private FrameworkElement settingsView;
         private static readonly int[] RefreshSteps = { 1, 2, 3, 5, 10, 15, 20, 30, 45, 60 };
 
         private void OpenSettings() {
-            if (settingsWindow != null) { if (settingsWindow.WindowState == WindowState.Minimized) settingsWindow.WindowState = WindowState.Normal; settingsWindow.Activate(); return; }
+            if (settingsWindow != null) {
+                if (settingsWindow.WindowState == WindowState.Minimized) settingsWindow.WindowState = WindowState.Normal;
+                settingsWindow.Activate(); return;
+            }
+            settingsWindow = BuildSettingsWindow();
             settingsView = BuildSettings();
-            settingsContentHost = new Grid(); settingsContentHost.Children.Add(settingsView);
-            var layout = new Grid(); layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); layout.RowDefinitions.Add(new RowDefinition());
-            var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(14, 10, 14, 5) };
-            settingsBack = IconAction("", "返回设置", BackFromSettings); settingsBack.Visibility = Visibility.Collapsed; head.Children.Add(settingsBack);
-            settingsTitle = Label("偏好设置", 18, Ink); settingsTitle.FontWeight = FontWeights.SemiBold; settingsTitle.VerticalAlignment = VerticalAlignment.Center; head.Children.Add(settingsTitle); layout.Children.Add(head);
-            Grid.SetRow(settingsContentHost, 1); layout.Children.Add(settingsContentHost);
-            settingsSurface = new Border { Child = layout, Background = Brush("#FF15171B") };
-            settingsWindow = new Window { Title = "设置 · codeusagemonit", Width = 550, Height = Math.Min(760, SystemParameters.WorkArea.Height - 30), MinWidth = 460, MinHeight = 500, Content = settingsSurface, Background = Brushes.Transparent, Foreground = Ink, Resources = window.Resources, FontFamily = window.FontFamily, FontSize = 12, ResizeMode = ResizeMode.CanResize, ShowInTaskbar = true, ShowActivated = !demo, WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            settingsWindow.SourceInitialized += delegate { PreviewTransparency(config.SurfaceOpacity); };
-            settingsWindow.KeyDown += delegate(object sender, System.Windows.Input.KeyEventArgs e) { if (e.Key == System.Windows.Input.Key.Escape) { BackFromSettings(); e.Handled = true; } };
-            settingsWindow.Closed += delegate {
-                settingsWindow = null; settingsSurface = null; settingsContentHost = null; settingsView = null; customEditor = null; customList = null;
-                frame.ApplyMaterial(); settingsButton.ClearValue(Control.ForegroundProperty); Render();
-            };
-            settingsButton.Foreground = AccentBrush; settingsWindow.Show();
-            if (!demo) settingsWindow.Activate();
+            settingsHost.Children.Add(settingsView);
+            settingsButton.Foreground = AccentBrush;
+            settingsWindow.Show(); settingsWindow.Activate();
         }
+        // Cancel / Esc / the window's close button: drop unsaved changes and previews.
         private void CloseSettings() {
-            if (settingsWindow != null) settingsWindow.Close();
+            if (settingsWindow == null) return;
+            Window closing = settingsWindow;
+            settingsWindow = null; settingsView = null; customEditor = null; customList = null; settingsHost = null;
+            ApplyAppearance(); // drop an unsaved transparency / picture preview
+            settingsButton.ClearValue(Control.ForegroundProperty);
+            closing.Close();
+            if (activeSize != config.DisplaySize) ApplyDisplaySize(config.DisplaySize); else Render();
         }
-        private void PreviewTransparency(double opacity) {
-            frame.ApplyMaterial("acrylic", opacity);
-            if (settingsWindow != null) WindowFrame.ApplyBackdrop(settingsWindow, settingsSurface, "acrylic", opacity);
+        private Window BuildSettingsWindow() {
+            double s = config.UiScale;
+            var w = new Window {
+                Title = "codeusagemonit 设置", Width = 460 * s, Height = 720 * s, MinWidth = 400 * s, MinHeight = 480 * s,
+                WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.CanResize, Background = Brushes.Transparent, ShowInTaskbar = true,
+                FontFamily = window.FontFamily, FontSize = window.FontSize, Foreground = window.Foreground, UseLayoutRounding = true, SnapsToDevicePixels = true,
+                WindowStartupLocation = WindowStartupLocation.Manual
+            };
+            try { w.Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri(Path.Combine(Store.Root, "app.ico"))); } catch { }
+            System.Windows.Shell.WindowChrome.SetWindowChrome(w, new System.Windows.Shell.WindowChrome { CaptionHeight = 0, ResizeBorderThickness = new Thickness(7), GlassFrameThickness = new Thickness(-1), CornerRadius = new CornerRadius(8), UseAeroCaptionButtons = false });
+            // Beside the panel when there is room, otherwise centred on the panel's screen.
+            Rect area = SystemParameters.WorkArea;
+            double left = window.IsVisible ? window.Left - w.Width - 12 : area.Left + (area.Width - w.Width) / 2;
+            if (left < area.Left + 8) left = window.IsVisible && window.Left + window.ActualWidth + 12 + w.Width <= area.Right ? window.Left + window.ActualWidth + 12 : area.Left + (area.Width - w.Width) / 2;
+            w.Left = Math.Max(area.Left, left); w.Top = Math.Max(area.Top, area.Top + (area.Height - w.Height) / 2);
+            if (w.Height > area.Height) w.Height = area.Height;
+
+            settingsSurface = new Border { BorderBrush = Brush("#26FFFFFF"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Background = new SolidColorBrush(WindowFrame.ParseTint(config.SurfaceColor)) };
+            var root = new Grid { LayoutTransform = new ScaleTransform(s, s) };
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(46) }); root.RowDefinitions.Add(new RowDefinition());
+            var head = new Grid { Background = Brushes.Transparent, Margin = new Thickness(10, 0, 8, 0) };
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); head.ColumnDefinitions.Add(new ColumnDefinition()); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            settingsBack = new Button { Style = Styled("IconButton"), Content = "", Visibility = Visibility.Collapsed, ToolTip = "返回（Esc）", Margin = new Thickness(-4, 0, 2, 0) };
+            System.Windows.Automation.AutomationProperties.SetName(settingsBack, "返回");
+            settingsBack.Click += delegate { BackFromSettings(); };
+            head.Children.Add(settingsBack);
+            settingsTitle = Label("设置", 12.5, Ink); settingsTitle.FontWeight = FontWeights.SemiBold; settingsTitle.Margin = new Thickness(4, 0, 0, 0);
+            Grid.SetColumn(settingsTitle, 1); head.Children.Add(settingsTitle);
+            var close = new Button { Style = Styled("IconButton"), Content = "", FontSize = 10.5, ToolTip = "关闭（不保存）" };
+            System.Windows.Automation.AutomationProperties.SetName(close, "关闭设置");
+            close.Click += delegate { CloseSettings(); };
+            Grid.SetColumn(close, 2); head.Children.Add(close);
+            head.MouseLeftButtonDown += delegate(object sender, System.Windows.Input.MouseButtonEventArgs e) { if (e.ButtonState == System.Windows.Input.MouseButtonState.Pressed) { try { w.DragMove(); } catch (InvalidOperationException) { } } };
+            root.Children.Add(head);
+            root.Children.Add(new Border { Height = 1, Background = Hairline, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 0) });
+            settingsHost = new Grid(); Grid.SetRow(settingsHost, 1); root.Children.Add(settingsHost);
+            settingsSurface.Child = root; w.Content = settingsSurface;
+            w.SourceInitialized += delegate { WindowFrame.ApplyBackdrop(w, settingsSurface, "acrylic", config.SurfaceOpacity, WindowFrame.ParseTint(config.SurfaceColor)); };
+            w.KeyDown += delegate(object sender, System.Windows.Input.KeyEventArgs e) { if (e.Key == System.Windows.Input.Key.Escape) { BackFromSettings(); e.Handled = true; } };
+            // Closed from outside (Alt+F4, taskbar): same as cancel.
+            w.Closed += delegate { if (settingsWindow == w) CloseSettings(); };
+            return w;
+        }
+        // Colour / transparency / picture preview until Save or Cancel (the settings window
+        // follows the colour and transparency, the picture is shown on the panel only).
+        private void PreviewAppearance(double alpha, string picture, string fit, double dim, Color tint) {
+            ApplyAppearance(alpha, picture, fit, dim, tint);
+            if (settingsWindow != null) WindowFrame.ApplyBackdrop(settingsWindow, settingsSurface, "acrylic", alpha, tint);
         }
         private FrameworkElement BuildSettings() {
             var root = new Grid();
@@ -76,28 +120,14 @@ namespace CodeUsageMonit {
             // Window
             content.Children.Add(SectionTitle("窗口"));
             var windowCard = new StackPanel();
-            string displaySize = config.DisplaySize, originalDisplaySize = config.DisplaySize;
+            // One window, four sizes: small / medium / large sit on the desktop; full is the panel.
+            string displaySize = config.DisplaySize, initialSize = config.DisplaySize;
             var sizeRow = Row();
-            AddRow(sizeRow, FieldLabel("显示尺寸", null), Segmented(DisplaySizes.Select(s => new[] { s, SizeName(s) }).ToArray(), displaySize, code => displaySize = code));
-            windowCard.Children.Add(sizeRow);
-            windowCard.Children.Add(Hint("四种布局都能拖边缘调大小，并分别记忆位置和宽高。", 7));
-            windowCard.Children.Add(Separator());
-            CheckBox onTop = SwitchRow("置于其他窗口上方", "默认关闭；单击窗口可正常操作", config.AlwaysOnTop);
+            AddRow(sizeRow, FieldLabel("显示尺寸", "拖动边缘可调整每种尺寸的大小"), Segmented(DisplaySizes.Select(s => new[] { s, SizeName(s) }).ToArray(), displaySize, code => displaySize = code));
+            windowCard.Children.Add(sizeRow); windowCard.Children.Add(Separator());
+            CheckBox onTop = SwitchRow("置于其他窗口上方", "默认关闭；关闭时小 / 中 / 大尺寸位于桌面层", config.AlwaysOnTop);
             CheckBox autoHide = SwitchRow("点击其他窗口时自动收起", "仅完整面板；标题栏的图钉按钮也可以切换", config.HideOnDeactivate);
             windowCard.Children.Add(onTop); windowCard.Children.Add(Separator()); windowCard.Children.Add(autoHide); windowCard.Children.Add(Separator());
-            // Transparency is shown as 0–100 (0 = opaque); the config keeps the surface alpha.
-            double transparency = Math.Round((1 - config.SurfaceOpacity) * 100);
-            var transparencyValue = Label(transparency.ToString("0") + "%", 12, InkDim); Tabular(transparencyValue);
-            var transparencySlider = new Slider { Minimum = 0, Maximum = 100, Value = transparency, SmallChange = 1, LargeChange = 10, Margin = new Thickness(0, 8, 0, 0) };
-            System.Windows.Automation.AutomationProperties.SetName(transparencySlider, "界面透明度");
-            var transparencyRow = Row(); transparencyRow.Margin = new Thickness(0, 12, 0, 0);
-            AddRow(transparencyRow, FieldLabel("界面透明度", "0 为不透明，越高越通透"), transparencyValue);
-            windowCard.Children.Add(transparencyRow); windowCard.Children.Add(transparencySlider);
-            transparencySlider.ValueChanged += delegate {
-                transparency = Math.Round(transparencySlider.Value); transparencyValue.Text = transparency.ToString("0") + "%";
-                PreviewTransparency(1 - transparency / 100);
-            };
-            windowCard.Children.Add(Separator());
             var zoomRow = Row(); var zoomValue = Label((config.UiScale * 100).ToString("0") + "%", 12, InkDim); Tabular(zoomValue);
             AddRow(zoomRow, FieldLabel("界面缩放", "也可以在面板上按 Ctrl + 滚轮"), zoomValue); windowCard.Children.Add(zoomRow);
             var zoom = new Slider { Minimum = .8, Maximum = 1.4, Value = config.UiScale, TickFrequency = .05, IsSnapToTickEnabled = true, SmallChange = .05, LargeChange = .1, Margin = new Thickness(0, 8, 0, 0) };
@@ -106,8 +136,83 @@ namespace CodeUsageMonit {
             windowCard.Children.Add(zoom); windowCard.Children.Add(Separator());
             var placeRow = Row(); var reset = new Button { Style = Styled("SecondaryButton"), Content = "重置" };
             reset.Click += delegate { frame.ResetPosition(); };
-            AddRow(placeRow, FieldLabel("窗口位置与尺寸", "回到屏幕右下角、默认大小"), reset); windowCard.Children.Add(placeRow);
+            AddRow(placeRow, FieldLabel("窗口位置与尺寸", "当前显示尺寸回到默认位置和大小"), reset); windowCard.Children.Add(placeRow);
             content.Children.Add(Card(windowCard));
+
+            // Appearance: surface colour and interface transparency (0 = opaque) — together in
+            // the palette, transparency also as a slider — and an optional background picture.
+            content.Children.Add(SectionTitle("外观"));
+            var look = new StackPanel();
+            double transparency = Math.Round((1 - config.SurfaceOpacity) * 100);
+            Color tint = WindowFrame.ParseTint(config.SurfaceColor);
+            string picture = SavedBackgroundPath(config) ?? "", fit = config.BackgroundFit; double dim = config.BackgroundDim; bool pictureChanged = false;
+            Action preview = () => PreviewAppearance(1 - transparency / 100, picture, fit, dim, tint);
+            var colorRow = Row();
+            var swatchFill = new Border { CornerRadius = new CornerRadius(5) };
+            var swatch = new Grid { Width = 40, Height = 22, Margin = new Thickness(0, 0, 8, 0) };
+            swatch.Children.Add(new Border { CornerRadius = new CornerRadius(5), Background = Checkerboard() }); swatch.Children.Add(swatchFill);
+            swatch.Children.Add(new Border { CornerRadius = new CornerRadius(5), BorderBrush = Brush("#33FFFFFF"), BorderThickness = new Thickness(1) });
+            var swatchText = Label("", 11.5, Ink); Tabular(swatchText); swatchText.VerticalAlignment = VerticalAlignment.Center;
+            var swatchContent = new StackPanel { Orientation = Orientation.Horizontal }; swatchContent.Children.Add(swatch); swatchContent.Children.Add(swatchText);
+            swatchContent.Children.Add(new TextBlock { Text = "", FontFamily = IconFont, FontSize = 8, Foreground = InkFaint, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 1, 0, 0) });
+            var colorButton = new Button { Style = Styled("SecondaryButton"), Content = swatchContent, Padding = new Thickness(6, 4, 10, 4), ToolTip = "打开调色盘：颜色与透明度" };
+            System.Windows.Automation.AutomationProperties.SetName(colorButton, "背景颜色");
+            AddRow(colorRow, FieldLabel("背景颜色", "调色盘选颜色和透明度，深色最清楚"), colorButton);
+            look.Children.Add(colorRow);
+            var transparencyValue = Label(transparency.ToString("0") + "%", 12, InkDim); Tabular(transparencyValue);
+            var transparencyRow = Row(); transparencyRow.Margin = new Thickness(0, 12, 0, 0);
+            AddRow(transparencyRow, FieldLabel("界面透明度", "0 为不透明，数值越大越能看到后面的桌面"), transparencyValue);
+            look.Children.Add(transparencyRow);
+            var transparencySlider = new Slider { Minimum = 0, Maximum = 100, Value = transparency, SmallChange = 1, LargeChange = 10, Margin = new Thickness(0, 8, 0, 0) };
+            System.Windows.Automation.AutomationProperties.SetName(transparencySlider, "界面透明度");
+            Action refreshSwatch = () => { swatchFill.Background = new SolidColorBrush(Color.FromArgb((byte)Math.Round((1 - transparency / 100) * 255), tint.R, tint.G, tint.B)); swatchText.Text = Hex(tint); };
+            transparencySlider.ValueChanged += delegate { transparency = Math.Round(transparencySlider.Value); transparencyValue.Text = transparency.ToString("0") + "%"; refreshSwatch(); preview(); };
+            colorButton.Click += delegate {
+                ShowColorPicker(colorButton, tint, transparency, (c, t) => {
+                    tint = c;
+                    if (Math.Abs(t - transparency) > .1) transparencySlider.Value = t; // previews through the slider
+                    else { refreshSwatch(); preview(); }
+                });
+            };
+            refreshSwatch();
+            look.Children.Add(transparencySlider); look.Children.Add(Separator());
+            var pictureRow = new Grid();
+            pictureRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); pictureRow.ColumnDefinitions.Add(new ColumnDefinition()); pictureRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var thumb = new Border { Width = 64, Height = 40, CornerRadius = new CornerRadius(6), BorderBrush = Brush("#26FFFFFF"), BorderThickness = new Thickness(1), Background = Brush("#0AFFFFFF"), Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+            var pictureLabel = FieldLabel("背景图片", picture.Length > 0 ? "已设置 · 复制保存在 data 目录" : "未设置 · 支持 PNG / JPG / BMP / GIF / WebP");
+            var pictureButtons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            var choose = new Button { Style = Styled("SecondaryButton"), Content = "选择图片…" };
+            var clear = new Button { Style = Styled("LinkButton"), Content = "移除", Margin = new Thickness(4, 0, 0, 0) };
+            System.Windows.Automation.AutomationProperties.SetName(choose, "选择背景图片"); System.Windows.Automation.AutomationProperties.SetName(clear, "移除背景图片");
+            pictureButtons.Children.Add(choose); pictureButtons.Children.Add(clear);
+            pictureRow.Children.Add(thumb); Grid.SetColumn(pictureLabel, 1); pictureRow.Children.Add(pictureLabel); Grid.SetColumn(pictureButtons, 2); pictureRow.Children.Add(pictureButtons);
+            look.Children.Add(pictureRow);
+            var fitRow = Row(); fitRow.Margin = new Thickness(0, 12, 0, 0);
+            AddRow(fitRow, FieldLabel("填充方式", null), Segmented(new[] { new[] { "fill", "填满" }, new[] { "fit", "适应" }, new[] { "tile", "平铺" } }, fit, code => { fit = code; preview(); }));
+            look.Children.Add(fitRow);
+            var dimValue = Label((dim * 100).ToString("0") + "%", 12, InkDim); Tabular(dimValue);
+            var dimRow = Row(); dimRow.Margin = new Thickness(0, 12, 0, 0);
+            AddRow(dimRow, FieldLabel("图片压暗", "让图片上的文字更清楚"), dimValue); look.Children.Add(dimRow);
+            var dimSlider = new Slider { Minimum = 0, Maximum = 85, Value = dim * 100, SmallChange = 1, LargeChange = 10, Margin = new Thickness(0, 8, 0, 0) };
+            System.Windows.Automation.AutomationProperties.SetName(dimSlider, "图片压暗");
+            dimSlider.ValueChanged += delegate { dim = Math.Round(dimSlider.Value) / 100; dimValue.Text = (dim * 100).ToString("0") + "%"; preview(); };
+            look.Children.Add(dimSlider);
+            Action refreshPicture = () => {
+                var image = LoadPicture(picture);
+                thumb.Background = image == null ? Brush("#0AFFFFFF") : (Brush)new ImageBrush(image) { Stretch = Stretch.UniformToFill };
+                clear.Visibility = picture.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                fitRow.Visibility = dimRow.Visibility = dimSlider.Visibility = picture.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                ((TextBlock)((StackPanel)pictureLabel).Children[1]).Text = picture.Length == 0 ? "未设置 · 支持 PNG / JPG / BMP / GIF / WebP" : pictureChanged ? "预览中 · 保存后复制到 data 目录" : "已设置 · 复制保存在 data 目录";
+            };
+            choose.Click += delegate {
+                var dialog = new Microsoft.Win32.OpenFileDialog { Title = "选择背景图片", Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.tif;*.tiff" };
+                if (dialog.ShowDialog(settingsWindow) != true) return;
+                if (LoadPicture(dialog.FileName) == null) { MessageBox.Show(settingsWindow, "无法读取这张图片（格式不支持或超过 40 MB）。", "codeusagemonit"); return; }
+                picture = dialog.FileName; pictureChanged = true; refreshPicture(); preview();
+            };
+            clear.Click += delegate { picture = ""; pictureChanged = true; refreshPicture(); preview(); };
+            refreshPicture();
+            content.Children.Add(Card(look));
 
             // Data & network
             content.Children.Add(SectionTitle("数据与网络"));
@@ -201,8 +306,10 @@ namespace CodeUsageMonit {
                     config.Proxy = proxyValue; config.RefreshMinutes = minutes; config.HideAccounts = hidden.IsChecked == true;
                     config.Enabled = ProviderCatalog.All.Where(id => choices.ContainsKey(id) ? choices[id].IsChecked == true : config.Enabled.Contains(id)).ToArray();
                     config.KimiRegion = kimiRegion; config.ZaiRegion = zaiRegion;
-                    config.AlwaysOnTop = onTop.IsChecked == true; config.HideOnDeactivate = autoHide.IsChecked == true; config.Material = "acrylic"; config.SurfaceOpacity = WindowFrame.ClampOpacity(1 - transparency / 100);
-                    if (displaySize != originalDisplaySize) SetDisplaySize(displaySize);
+                    config.AlwaysOnTop = onTop.IsChecked == true; config.HideOnDeactivate = autoHide.IsChecked == true; config.SurfaceOpacity = WindowFrame.ClampOpacity(1 - transparency / 100); config.SurfaceColor = Hex(tint);
+                    config.BackgroundFit = fit; config.BackgroundDim = dim;
+                    if (pictureChanged) { if (picture.Length == 0) { RemoveBackground(); config.BackgroundImage = ""; } else config.BackgroundImage = StoreBackground(picture); }
+                    if (displaySize != initialSize) config.DisplaySize = displaySize; // applied by CloseSettings below
                     bool thirdPartyOn = thirdPartySwitch.IsChecked == true && !config.ShowThirdParty; config.ShowThirdParty = thirdPartySwitch.IsChecked == true;
                     foreach (KeyField field in keyFields) {
                         if (demo) break;
@@ -285,7 +392,6 @@ namespace CodeUsageMonit {
             device.Children.Add(Hint("在浏览器里输入下面的代码并授权：", 0)); device.Children.Add(code); device.Children.Add(open); device.Children.Add(cancel);
             stack.Children.Add(device);
             bool cancelled = false; ProviderService.DeviceLogin pending = null;
-            stack.Unloaded += delegate { cancelled = true; };
             open.Click += delegate {
                 if (pending == null) return;
                 try { Clipboard.SetText(pending.UserCode); } catch { }
@@ -298,14 +404,12 @@ namespace CodeUsageMonit {
                 try {
                     using (var service = new ProviderService(config)) {
                         pending = await service.StartCopilotLogin();
-                        if (cancelled) return;
                         code.Text = pending.UserCode; device.Visibility = Visibility.Visible; status.Text = "等待你在 GitHub 上授权…";
                         DateTime until = DateTime.UtcNow.AddSeconds(pending.ExpiresIn);
                         while (!cancelled && DateTime.UtcNow < until) {
                             await Task.Delay(TimeSpan.FromSeconds(Math.Max(5, pending.Interval)));
                             if (cancelled) break;
                             string token = await service.PollCopilotLogin(pending);
-                            if (cancelled || quitting) return;
                             if (token == null) continue;
                             Store.SetProviderKey("copilot", token); states["copilot"] = new ProviderState { Id = "copilot" };
                             device.Visibility = Visibility.Collapsed; status.Text = "登录成功。保存设置并启用 Copilot 后即可显示额度。"; logout.Visibility = Visibility.Visible; login.Content = "重新登录";
@@ -347,7 +451,7 @@ namespace CodeUsageMonit {
         private void BackFromSettings() { if (customEditor != null) CloseCustomEditor(); else CloseSettings(); }
         private void CloseCustomEditor() {
             if (customEditor == null) return;
-            customEditor = null; settingsContentHost.Children.Clear(); settingsContentHost.Children.Add(settingsView); settingsTitle.Text = "偏好设置"; settingsBack.Visibility = Visibility.Collapsed; RenderCustomList();
+            customEditor = null; settingsHost.Children.Clear(); settingsHost.Children.Add(settingsView); settingsTitle.Text = "设置"; settingsBack.Visibility = Visibility.Collapsed; RenderCustomList();
         }
         private void OpenCustomEditor(CustomProvider existing) {
             var root = new Grid();
@@ -438,7 +542,7 @@ namespace CodeUsageMonit {
                 CloseCustomEditor();
             };
             customEditor = root;
-            settingsContentHost.Children.Clear(); settingsContentHost.Children.Add(root); settingsTitle.Text = "自定义平台"; settingsBack.Visibility = Visibility.Visible;
+            settingsHost.Children.Clear(); settingsHost.Children.Add(root); settingsTitle.Text = "自定义平台"; settingsBack.Visibility = Visibility.Visible;
         }
     }
 }

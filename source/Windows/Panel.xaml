@@ -112,7 +112,7 @@
 
     <Style TargetType="TextBox">
       <Setter Property="Foreground" Value="#F2F3F5"/><Setter Property="CaretBrush" Value="#F2F3F5"/><Setter Property="SelectionBrush" Value="#5CC8E0"/>
-      <Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="10,7"/>
+      <Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="10,0"/><Setter Property="Height" Value="32"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox">
         <Border x:Name="Box" Background="#0FFFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1" CornerRadius="7">
           <ScrollViewer x:Name="PART_ContentHost" Style="{x:Null}" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
@@ -126,7 +126,7 @@
     </Style>
     <Style TargetType="PasswordBox">
       <Setter Property="Foreground" Value="#F2F3F5"/><Setter Property="CaretBrush" Value="#F2F3F5"/><Setter Property="SelectionBrush" Value="#5CC8E0"/>
-      <Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="10,7"/>
+      <Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="10,0"/><Setter Property="Height" Value="32"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="PasswordBox">
         <Border x:Name="Box" Background="#0FFFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1" CornerRadius="7">
           <ScrollViewer x:Name="PART_ContentHost" Style="{x:Null}" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
@@ -228,15 +228,17 @@
 
   <Border x:Name="Surface" Background="#A815171B" BorderBrush="#26FFFFFF" BorderThickness="1" CornerRadius="8">
    <Grid>
+    <!-- Optional background picture and its dimming layer (see Appearance.cs). -->
+    <Border x:Name="BackdropImage" CornerRadius="7" Visibility="Collapsed"/>
+    <Border x:Name="BackdropScrim" CornerRadius="7" Visibility="Collapsed"/>
     <!-- Small / medium / large display sizes render here; ScaleRoot is the full panel. -->
     <Border x:Name="CompactRoot" Visibility="Collapsed" Background="Transparent"/>
     <Grid x:Name="ScaleRoot">
       <Grid.RowDefinitions><RowDefinition Height="46"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="30"/></Grid.RowDefinitions>
 
-      <!-- Header: the whole row is the native caption (drag); buttons opt out of it. -->
+      <!-- Header: drag to move (DragMove), right-click for display sizes. -->
       <Grid x:Name="TitleArea" Background="Transparent" Margin="14,0,8,0">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <Button x:Name="BackButton" Style="{StaticResource IconButton}" Content="&#xE72B;" Visibility="Collapsed" Margin="-8,0,2,0" ToolTip="返回（Esc）" AutomationProperties.Name="返回" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
           <Grid x:Name="Logo" Width="13" Height="14" Margin="0,0,9,0" VerticalAlignment="Center">
             <Border Width="3" Height="7" Background="#6DE0D6" CornerRadius="1" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
@@ -252,6 +254,7 @@
           <Button x:Name="RefreshButton" Style="{StaticResource IconButton}" ToolTip="刷新（F5）" AutomationProperties.Name="刷新额度">
             <TextBlock x:Name="RefreshGlyph" Text="&#xE72C;" RenderTransformOrigin="0.5,0.5"><TextBlock.RenderTransform><RotateTransform/></TextBlock.RenderTransform></TextBlock>
           </Button>
+          <Button x:Name="SizeButton" Style="{StaticResource IconButton}" Content="&#xE73F;" ToolTip="显示尺寸（小 / 中 / 大 / 完整）" AutomationProperties.Name="显示尺寸"/>
           <Button x:Name="PinButton" Style="{StaticResource IconButton}" Content="&#xE718;" AutomationProperties.Name="固定面板"/>
           <Button x:Name="SettingsButton" Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="设置" AutomationProperties.Name="设置"/>
           <Button x:Name="HideButton" Style="{StaticResource IconButton}" Content="&#xE8BB;" FontSize="10.5" ToolTip="收起到托盘（Esc）" AutomationProperties.Name="收起面板"/>
@@ -266,7 +269,6 @@
 
       <Grid Grid.Row="2">
         <ScrollViewer x:Name="BodyScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,4,0" Padding="14,12,8,6" CanContentScroll="False"><StackPanel x:Name="Body"/></ScrollViewer>
-        <Grid x:Name="SettingsHost" Visibility="Collapsed"/>
       </Grid>
 
       <Grid Grid.Row="3" Margin="16,0,14,0">

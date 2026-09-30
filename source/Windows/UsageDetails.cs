@@ -77,27 +77,20 @@ namespace CodeUsageMonit {
             DateTime nowUtc = now.ToUniversalTime();
             List<DayUsage> rows = source.ToList();
             if (logs != null && logs.Covers(result.StartUtc)) {
-                // Hour-accurate tokens from session logs. Cost uses each local day's
-                // ccusage rate ($ per token), so long-context pricing tiers carry over.
+                // Hour-accurate tokens and cost from the local session index (each request was
+                // priced when it was read, so long-context tiers are exact per request).
                 result.Exact = true;
                 DateTime until = result.EndUtc < nowUtc ? result.EndUtc : nowUtc;
-                for (DateTime day = TimeZoneInfo.ConvertTimeFromUtc(result.StartUtc, zone).Date; ; day = day.AddDays(1)) {
-                    DateTime dayStart = LocalMidnightUtc(day, zone), dayEnd = LocalMidnightUtc(day.AddDays(1), zone);
-                    if (dayStart >= until) break;
-                    DateTime a = dayStart > result.StartUtc ? dayStart : result.StartUtc, b = dayEnd < until ? dayEnd : until;
-                    if (b <= a) continue;
-                    double tokens = logs.Tokens(a, b, provider);
-                    if (tokens <= 0) continue;
-                    result.Tokens += tokens;
-                    string key = HistoryService.DayKey(day);
-                    DayUsage row = rows.FirstOrDefault(d => d.Day == key);
-                    if (row != null) result.Days.Add(row);
-                    if (row != null && row.CostKnown && row.Tokens > 0) { result.Cost += tokens * row.Cost / row.Tokens; result.HasCost = true; }
-                    else result.CostComplete = false;
+                Bucket total = logs.Usage(result.StartUtc, until, provider);
+                result.Tokens = total.Tokens(); result.Cost = total.D;
+                result.HasCost = total.D > 0 || (result.Tokens > 0 && total.U < result.Tokens);
+                result.CostComplete = total.U <= 0;
+                for (DateTime day = TimeZoneInfo.ConvertTimeFromUtc(result.StartUtc, zone).Date; LocalMidnightUtc(day, zone) < until; day = day.AddDays(1)) {
+                    string key = HistoryService.DayKey(day); DayUsage row = rows.FirstOrDefault(d => d.Day == key); if (row != null) result.Days.Add(row);
                 }
                 return result;
             }
-            // ccusage daily rows have no intra-day timestamps. Include only days wholly
+            // Daily rows have no intra-day timestamps. Include only days wholly
             // contained in the window, plus the still-open current day. This gives a
             // conservative recorded subtotal, never a falsely exact hourly estimate.
             DateTime localNow = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, zone);

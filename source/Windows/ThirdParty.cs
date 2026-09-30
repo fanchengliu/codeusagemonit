@@ -19,7 +19,8 @@ namespace CodeUsageMonit {
     public sealed class EndpointUsage {
         public string App = "", Host = "", Key = "", Name = "", LastUsed = "", MainModel = "";
         public bool Current, CostPartial;
-        public double Today, Week, Month, Requests, CostToday, CostWeek, CostMonth;
+        public double Today, Week, Month, Requests, CostToday, CostWeek, CostMonth, TimedOutput, TimedSeconds;
+        public double? Speed { get { return OutputTiming.Speed(TimedOutput, TimedSeconds); } }
         public double[] Daily = new double[30];
         public string Id { get { return App + "|" + Host + "|" + Key; } }
         public string Title { get { return Name.Length > 0 ? Name : Host.Length > 0 ? Host : "地址未记录的第三方接口"; } }
@@ -149,7 +150,6 @@ namespace CodeUsageMonit {
             var map = new Dictionary<string, EndpointUsage>();
             var models = new Dictionary<string, Dictionary<string, double>>();
             DateTime today = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, zone).Date, first = today.AddDays(-29);
-            var rates = Rates(history);
             foreach (var source in new[] { new { App = Endpoints.CodexApp, Index = codex }, new { App = Endpoints.ClaudeApp, Index = claude } }) {
                 if (source.Index == null) continue;
                 foreach (HourUsage hour in source.Index.Entries()) {
@@ -171,15 +171,15 @@ namespace CodeUsageMonit {
                     if (!map.TryGetValue(target.Id, out usage)) { usage = new EndpointUsage { App = target.App, Host = target.Host, Key = target.Key, Name = target.Name }; map[target.Id] = usage; models[target.Id] = new Dictionary<string, double>(); }
                     if (usage.Name.Length == 0 && target.Name.Length > 0) usage.Name = target.Name;
                     int slot = (day - first).Days;
-                    usage.Daily[slot] += hour.Tokens; usage.Month += hour.Tokens; usage.Requests += hour.Requests;
+                    usage.Daily[slot] += hour.Tokens; usage.Month += hour.Tokens; usage.Requests += hour.Requests; usage.TimedOutput += hour.TimedOutput; usage.TimedSeconds += hour.TimedSeconds;
                     if (day == today) usage.Today += hour.Tokens;
                     if (slot >= 23) usage.Week += hour.Tokens;
-                    double rate;
-                    if (rates.TryGetValue(source.App + "|" + HistoryService.DayKey(day) + "|" + hour.Model, out rate) || rates.TryGetValue(source.App + "|" + HistoryService.DayKey(day) + "|", out rate)) {
-                        double cost = hour.Tokens * rate; usage.CostMonth += cost;
-                        if (day == today) usage.CostToday += cost;
-                        if (slot >= 23) usage.CostWeek += cost;
-                    } else usage.CostPartial = true;
+                    // Each hour carries the API-equivalent cost of its requests (list prices,
+                    // long-context tiers included); tokens without a known price mark it partial.
+                    usage.CostMonth += hour.Cost;
+                    if (day == today) usage.CostToday += hour.Cost;
+                    if (slot >= 23) usage.CostWeek += hour.Cost;
+                    if (hour.Unpriced > 0) usage.CostPartial = true;
                     double tally; models[target.Id].TryGetValue(hour.Model, out tally); models[target.Id][hour.Model] = tally + hour.Tokens;
                     string last = hour.Hour.AddHours(1).ToString("o"); if (String.CompareOrdinal(last, usage.LastUsed) > 0) usage.LastUsed = last;
                 }
@@ -196,17 +196,6 @@ namespace CodeUsageMonit {
         private static void PickModel(EndpointUsage target, Dictionary<string, double> tally) {
             var top = tally.Where(p => p.Key.Length > 0).OrderByDescending(p => p.Value).FirstOrDefault();
             target.MainModel = top.Key ?? "";
-        }
-        // $ per token from ccusage (official list prices, incl. long-context tiers), per
-        // agent/day/model, with a per-day blend as fallback. Unpriced models stay unknown.
-        private static Dictionary<string, double> Rates(UsageHistory history) {
-            var rates = new Dictionary<string, double>();
-            if (history == null) return rates;
-            foreach (DayUsage day in history.Days) {
-                if (day.CostKnown && day.Tokens > 0 && day.Cost > 0) rates[day.Agent + "|" + day.Day + "|"] = day.Cost / day.Tokens;
-                foreach (ModelUsage model in day.Models ?? new List<ModelUsage>()) if (model.Tokens > 0 && model.Cost > 0) rates[day.Agent + "|" + day.Day + "|" + model.Model] = model.Cost / model.Tokens;
-            }
-            return rates;
         }
     }
 }
