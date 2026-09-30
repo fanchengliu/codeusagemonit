@@ -85,7 +85,7 @@ namespace CodeUsageMonit {
     }
     public sealed class WindowGeometry { public double Width, Height; public double? Left, Top; }
     public static class AppInfo {
-        public const string ShortVersion = "1.1";
+        public const string ShortVersion = "1.2";
         public const string UserAgent = "codeusagemonit/" + ShortVersion;
     }
     public static class ProviderCatalog {

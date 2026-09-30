@@ -1,4 +1,12 @@
-# Verification — Windows 1.1
+# Verification — Windows 1.2
+
+## 1.2 daily price sync, Grok shared allowance
+
+- `--self-test` **55/55** (new: Grok Build / Chat shares no longer become a quota and old cached "Build 占比" entries are removed on load; the price-sync validator accepts a dated catalogue of ≥ 100 models with sane prices, both `2026-10-01` and `2026-10-01T02:17Z` dates, and rejects short tables, bad dates and HTML).
+- Sync against a local server (a harness calling `Pricing.SyncAsync` with the URL pointed at it): a table with the bundled date is left alone ("unchanged"), an HTML page is rejected, a newer table is written to `data/pricing.json` and used at once (claude-opus-5-5 input 4 → 3.5 in the test file), a repeat request keeps it; `codeusage status` then prints "价目 2026-10-01".
+- `tools/update-pricing.mjs` against the live LiteLLM and models.dev catalogues: 361 models, no change on the first run; with a doctored LiteLLM file an upstream price change is applied, a curated override (Gemini image output) is kept, a new model is added with its long-context tier, an image model is skipped, and a 100× jump aborts without writing.
+- `install.ps1` against the published 1.1.0 release: download, SHA256SUMS.txt check and extraction into a scratch folder with an existing `data/` kept (PATH and Start menu steps skipped in the test). The Scoop manifest was not tested (Scoop is not installed on the build machine).
+
 
 ## 1.1 output speed (t/s) per agent
 
