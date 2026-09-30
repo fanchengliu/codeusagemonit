@@ -60,11 +60,14 @@ Object.assign(zh, {
   pConnect: '连接方式', pQuota: '显示的额度', capQuota: '额度', capLocal: '本机用量', capSpeed: '输出速度', capBeta: '（实验性）', docs: '连接说明 →', custom: '自定义', customLong: '自定义平台',
   vSmall: '一个大数字、一条额度条，占一个图标的位置。点数字在额度窗口之间切换，滚轮或 ←/→ 翻页。',
   vMedium: '左边是主额度，右边是其他窗口；只有一个窗口时补充节奏、重置时间和限额重置额度。中尺寸只放额度，不放图表。',
-  vLarge: '完整的额度窗口与节奏估算，加上本机用量：时间段、费用、Token、请求、速度和可以点的柱状图。',
+  vLarge: '完整的额度窗口与节奏估算。有本机日志时加上用量：时间段、费用、Token、请求和可以点的柱状图；能计时的平台还会显示速度。',
   vFull: '所有平台的卡片、每个平台的详情页、第三方中转站页和设置。拖动边缘可以随意调整大小。',
   vFullDim: '默认 420 × 790，可调整',
   deckHint: '点一张卡片，放大看看',
-  cmdStatus: '缓存里的额度与用量，不联网', cmdCost: '每天的费用与 Token，以及各工具的速度', cmdThird: '第三方接口的用量与速度',
+  cmdStatus: '缓存里的额度与用量，不联网', cmdCost: '每天的费用与 Token；能计时的平台另有输出速度', cmdThird: '第三方接口的用量与速度',
+  dsQuota: '可用余额 · DeepSeek 只提供账户余额，没有周期额度，也不读取本机日志。',
+  piQuota: 'Pi 没有账户额度，只统计本机日志里的用量。',
+  noLocal: '这个平台没有本机日志，不统计 Token 用量，也不显示输出速度。',
   viewerPrev: '上一张', viewerNext: '下一张', viewerClose: '关闭',
   pgTop: '首页', pgProviders: '平台', pgBoard: '额度与用量', pgPricing: '计价', pgSizes: '尺寸', pgInstall: '安装', pgPrivacy: '隐私', pgFaq: '问题', pgDownload: '下载',
   themeLight: '浅色', themeDark: '深色', themeSystem: '跟随系统',
@@ -82,12 +85,12 @@ Object.assign(zh, {
 const en = {
   skip: 'Skip to content', navProviders: 'Providers', navBoard: 'Quotas & usage', navPricing: 'Pricing', navSizes: 'Sizes', navInstall: 'Install', navDownload: 'Download',
   chip: 'Prices now sync daily with the vendors', heroA: 'Every AI quota,', heroB: 'at a glance.',
-  heroLead: 'Remaining quota, reset times, token usage and output speed for Codex, Claude, Cursor and 8 more AI coding tools, in one small window in your Windows tray.',
+  heroLead: 'Remaining quota and reset times for Codex, Claude, Cursor and 8 more AI coding tools, in one small window in your Windows tray. Token usage appears where local logs exist; output speed is only for Codex, Claude, ZCode, Grok and OpenCode.',
   download: 'Download installer', downloadZip: 'Portable zip', source: 'View source', quickLabel: 'Or install from the terminal', heroMeta: 'v1.2.0 · Windows 10 / 11 · Installer · MIT', quickMore: 'More ways to install ↓',
   stageHint: 'Try it: switch tools, scroll the panel, hover the bars, open a quota',
   eyProviders: 'Providers', pA: '11 coding tools supported,', pB: 'plus your own endpoint', pLead: 'Reuses the sign-in each tool already has: CLI login, editor session or API key. No browser cookies, no stored passwords.',
   eyBoard: 'Quotas & usage', bA: 'What’s left, what it cost, how fast it ran,', bB: 'in one panel',
-  bLead: 'Quotas first: each window is a 24-cell meter, lit cells are what’s left, and the line below tells you whether your current pace lasts until the reset. Then usage, read straight from local session logs, numbers only: cost, tokens, requests and output speed by hour or by day.',
+  bLead: 'Quotas first: each window is a 24-cell meter, lit cells are what’s left, and the line below tells you whether your current pace lasts until the reset. Where local logs exist, usage is read from them, numbers only: cost, tokens and requests by hour or by day. Output speed is only for Codex, Claude, ZCode, Grok and OpenCode.',
   pToday: 'Today', p7: '7 days', p30: '30 days', colQuota: 'Quotas · left / reset / pace', boardHint: 'Click a quota for details · the white line marks an even pace', colUsage: 'Usage · local logs',
   fCost: 'API-equivalent cost', fReq: 'Requests', fSpeed: 'Output speed', demoData: 'Demo data',
   eyPricing: 'Pricing & speed', prA: 'Accurate numbers,', prB: 'official prices',
@@ -95,13 +98,13 @@ const en = {
   priceTitle: 'The latest models, priced in sync with the vendors', priceSub: 'Official API prices, including long-context tiers, cache reads and writes, and fast-mode multipliers.',
   syncOk: 'In sync', syncDate: 'prices as of', syncEvery: 'Checked for updates every 24 hours', priceSearch: 'Search models, e.g. gpt-6, opus, gemini',
   thModel: 'Model', thIn: 'Input', thOut: 'Output', thCache: 'Cache read', priceUnit: 'USD per 1M tokens · Source: vendors’ official prices, compiled by LiteLLM and models.dev',
-  speedTitle: 'Real output speed', speedSub: 'Output tokens ÷ the whole request time, including time to first token and relay latency, measured per tool.',
+  speedTitle: 'Real output speed', speedSub: 'Output tokens ÷ the whole request time, including time to first token and relay latency. Timed only for Codex, Claude, ZCode, Grok and OpenCode, each on its own.',
   relayTitle: 'Relays add up too', relaySub: 'Switch providers with CC Switch as often as you like; every call is still attributed to its endpoint.', relayOfficial: 'Official', relayA: 'Relay A', relayB: 'Relay B',
   eySizes: 'Sizes', sA: 'Four sizes.', sB: 'One window.', sLead: 'Right-click to switch between small, medium, large and full. Compact sizes sit on the desktop layer, out of your way; every size can be resized.',
   sFull: 'Full', sLarge: 'Large', sMedium: 'Medium', sSmall: 'Small', deckHint: 'Click a card to take a closer look',
   eyInstall: 'Install & CLI', cA: 'One command to install,', cB: 'the same numbers in your terminal',
   cLead: 'Install with Scoop, PowerShell, or setup.exe. Each can add PATH and a Start menu shortcut. The bundled codeusage command shares the app’s cache and settings, meters are 24 cells here too, and --json feeds scripts or a status bar.',
-  recommended: 'Recommended', instZip: 'Manual download', instCli: 'Commands', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command',
+  recommended: 'Recommended', instZip: 'Manual download', instCli: 'Commands', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus output speed where a provider is timed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command',
   eyPrivacy: 'Privacy', vA: 'Your data stays', vB: 'on your PC',
   v1t: 'Numbers only', v1: 'Only tokens, request counts, durations and model names go into a local hourly index. No conversation content.',
   v2t: 'Sign-ins stay put', v2: 'Each tool’s login tokens stay in its own folder. They are read, never copied.',
@@ -114,7 +117,7 @@ const en = {
   fq3: 'Do I have to sign in to every account again?', fa3: 'No. Codex, Claude Code, Cursor, Antigravity and Grok reuse the sign-in already on your PC; DeepSeek, Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.',
   fq4: 'Is the cost a real bill?', fa4: 'No. Cost = tokens in your local logs × official API prices, an API-equivalent reference. Subscriptions are billed monthly and don’t produce this bill.',
   fq8: 'How does the price table stay in sync with official prices?', fa8: 'The repository’s pricing.json is rebuilt every day by GitHub Actions from LiteLLM and models.dev, which track the API prices each vendor publishes. The app checks every 24 hours, downloads and validates a newer table and recalculates with it; if the download fails or you turn it off in settings, it keeps the built-in prices.',
-  fq5: 'How is output speed measured?', fa5: 'Output tokens (incl. thinking) ÷ time from sending the request to its last output, so time to first token and network or relay latency are included. Only requests with at least 50 output tokens count, and each tool is measured on its own.',
+  fq5: 'How is output speed measured?', fa5: 'Output tokens (incl. thinking) ÷ time from sending the request to its last output, so time to first token and network or relay latency are included. Only requests with at least 50 output tokens count. Codex, Claude, ZCode, Grok and OpenCode are each measured on their own; other providers’ logs have no request duration, so no speed is shown.',
   fq6: 'What language is the app? Is there a macOS version?', fa6: 'The app’s interface is in Simplified Chinese and it runs on Windows only. On macOS, try CodexBar, which inspired this project’s interface.',
   dlTitle: 'Put it in your tray', dlAll: 'All releases', feedback: 'Feedback', notices: 'Notices',
   footerNote: 'An independent open-source project, not affiliated with OpenAI, Anthropic, Cursor or any other provider. Names and logos belong to their owners.',
@@ -124,7 +127,10 @@ const en = {
   pConnect: 'Connects with', pQuota: 'Quotas shown', capQuota: 'Quotas', capLocal: 'Local usage', capSpeed: 'Output speed', capBeta: ' (experimental)', docs: 'How to connect →', custom: 'Custom', customLong: 'Custom provider',
   vSmall: 'One big number and one meter, the footprint of an icon. Click the number to cycle quota windows; scroll or ←/→ to page.',
   vMedium: 'The main quota on the left, other windows on the right; a single window adds pace, reset time and reset credits. Medium shows quotas only, no charts.',
-  vLarge: 'Full quota windows with pace, plus local usage: period, cost, tokens, requests, speed and a clickable chart.',
+  vLarge: 'Full quota windows with pace. Where local logs exist: period, cost, tokens, requests and a clickable chart. Speed appears only when that provider’s logs record request time.',
+  dsQuota: 'Available balance. DeepSeek reports a balance only — no quota window and no local logs.',
+  piQuota: 'Pi has no account quota. Local usage only, and no output speed.',
+  noLocal: 'This provider has no local-log scanner, so token usage and output speed are not shown.',
   vFull: 'Cards for every provider, a detail page for each, the third-party endpoints page and settings. Drag the edges to any size.',
   vFullDim: 'Default 420 × 790, resizable',
   viewerPrev: 'Previous', viewerNext: 'Next', viewerClose: 'Close',
@@ -144,12 +150,12 @@ const en = {
 const ja = {
   skip: '本文へ移動', navProviders: 'サービス', navBoard: '利用枠と使用量', navPricing: '料金', navSizes: 'サイズ', navInstall: 'インストール', navDownload: 'ダウンロード',
   chip: '料金表が毎日公式と同期', heroA: '残りの利用枠が', heroB: 'ひと目でわかる',
-  heroLead: 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を、Windows のトレイにある小さなウィンドウひとつで。',
+  heroLead: 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠とリセット時刻を、Windows のトレイにある小さなウィンドウひとつで。ローカルログがあるサービスはトークン使用量を表示し、出力速度は Codex、Claude、ZCode、Grok、OpenCode だけです。',
   download: 'インストーラーをダウンロード', downloadZip: 'インストール不要の zip', source: 'ソースを見る', quickLabel: 'ターミナルから 1 行でインストール', heroMeta: 'v1.2.0 · Windows 10 / 11 · インストーラー · MIT', quickMore: 'ほかのインストール方法 ↓',
   stageHint: '触ってみてください：ツールの切り替え、パネルのスクロール、グラフのホバー、利用枠の展開',
   eyProviders: 'サービス', pA: '11 のコーディングツールに対応', pB: 'あなた自身の API も', pLead: '各ツールの既存のログインを利用：CLI、エディターのセッション、API キー。ブラウザーの Cookie は読まず、パスワードも保存しません。',
   eyBoard: '利用枠と使用量', bA: '残り、費用、速度を', bB: 'ひとつのパネルで',
-  bLead: 'まず利用枠。枠ごとに 24 マスのメーターで、点灯しているのが残り。その下の行で、今のペースでリセットまで持つかがわかります。次に使用量。PC 内のセッションログを直接読み、数値だけを記録。費用・トークン・リクエスト・出力速度を時間別・日別に確認できます。',
+  bLead: 'まず利用枠。枠ごとに 24 マスのメーターで、点灯しているのが残り。その下の行で、今のペースでリセットまで持つかがわかります。次に使用量。ローカルログがあるサービスはセッションログを直接読み、数値だけを記録します。費用・トークン・リクエストを時間別・日別に確認できます。出力速度は Codex、Claude、ZCode、Grok、OpenCode だけです。',
   pToday: '今日', p7: '7 日間', p30: '30 日間', colQuota: '利用枠 · 残り / リセット / ペース', boardHint: '利用枠をクリックで詳細 · 白い線は均等に使った場合の位置', colUsage: '使用量 · ローカルログ',
   fCost: 'API 換算の費用', fReq: 'リクエスト', fSpeed: '出力速度', demoData: 'デモデータ',
   eyPricing: '料金と速度', prA: '正確な計算', prB: '料金は公式に合わせて',
@@ -157,13 +163,13 @@ const ja = {
   priceTitle: '最新モデル、公式と同期した料金', priceSub: '公式 API 単価。長コンテキストの段階料金、キャッシュの読み書き、Fast モードの倍率にも対応。',
   syncOk: '同期済み', syncDate: '料金日付', syncEvery: '24 時間ごとに更新を確認', priceSearch: 'モデルを検索（例：gpt-6、opus、gemini）',
   thModel: 'モデル', thIn: '入力', thOut: '出力', thCache: 'キャッシュ読取', priceUnit: '米ドル / 100 万トークン · 出典：各社の公式料金（LiteLLM・models.dev による集計）',
-  speedTitle: '実際の出力速度', speedSub: '出力トークン ÷ リクエスト全体の所要時間。最初のトークンまでの待ち時間や中継の遅延も含み、ツールごとに計算します。',
+  speedTitle: '実際の出力速度', speedSub: '出力トークン ÷ リクエスト全体の所要時間。最初のトークンまでの待ち時間や中継の遅延も含みます。計測するのは Codex、Claude、ZCode、Grok、OpenCode だけで、それぞれ別に計算します。',
   relayTitle: '中継サービスも正確に', relaySub: 'CC Switch で接続先を切り替えても、呼び出しは接続先ごとに集計されます。', relayOfficial: '公式', relayA: '中継 A', relayB: '中継 B',
   eySizes: 'サイズ', sA: '4 つのサイズ', sB: 'ひとつのウィンドウ', sLead: '右クリックで小・中・大・全体を切り替え。コンパクトなサイズはデスクトップ層に置かれ、作業の邪魔をしません。どのサイズもサイズ変更できます。',
   sFull: '全体', sLarge: '大', sMedium: '中', sSmall: '小', deckHint: 'カードをクリックして拡大表示',
   eyInstall: 'インストールと CLI', cA: '1 行でインストール', cB: 'ターミナルでも同じデータを',
   cLead: 'Scoop、PowerShell、または setup.exe でインストールでき、PATH とスタートメニューに登録されます。同梱の codeusage コマンドはアプリとキャッシュ・設定を共有。メーターはここでも 24 マスで、--json を付ければスクリプトやステータスバーに渡せます。',
-  recommended: 'おすすめ', instZip: '手動ダウンロード', instCli: 'コマンド', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー',
+  recommended: 'おすすめ', instZip: '手動ダウンロード', instCli: 'コマンド', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン。計測できるサービスは出力速度も', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー',
   eyPrivacy: 'プライバシー', vA: 'データは', vB: 'あなたの PC に',
   v1t: '数値だけ', v1: 'トークン数、リクエスト数、所要時間、モデル名だけをローカルの時間別インデックスに記録。会話内容は保存しません。',
   v2t: 'ログインはそのまま', v2: '各ツールのログイントークンは元のフォルダーに残ります。読み取るだけで、コピーしません。',
@@ -176,7 +182,7 @@ const ja = {
   fq3: 'すべてのアカウントに再ログインが必要ですか？', fa3: 'いいえ。Codex、Claude Code、Cursor、Antigravity、Grok は PC 上の既存のログインを利用します。DeepSeek、Kimi、OpenCode、ZCode は API キー、Copilot は GitHub のデバイスログインです。',
   fq4: '表示される費用は実際の請求額ですか？', fa4: 'いいえ。ローカルログのトークン数 × 公式 API 価格で計算した API 換算の参考値です。サブスクリプションは月額課金なので、この金額は請求されません。',
   fq8: '料金表はどうやって公式と同期していますか？', fa8: 'リポジトリの pricing.json は、GitHub Actions が毎日 LiteLLM と models.dev（各社が公開する API 単価を収録）から作り直しています。アプリは 24 時間ごとに確認し、新しい料金表があればダウンロード・検証して再計算します。取得に失敗した場合や設定でオフにした場合は、内蔵の料金表を使い続けます。',
-  fq5: '出力速度はどう計算していますか？', fa5: '出力トークン（思考を含む）÷ リクエスト送信から最後の出力までの時間。最初のトークンまでの待ち時間やネットワーク・中継サービスの遅延も含みます。出力 50 トークン以上のリクエストのみを対象に、ツールごとに計算します。',
+  fq5: '出力速度はどう計算していますか？', fa5: '出力トークン（思考を含む）÷ リクエスト送信から最後の出力までの時間。最初のトークンまでの待ち時間やネットワーク・中継サービスの遅延も含みます。出力 50 トークン以上のリクエストのみが対象です。Codex、Claude、ZCode、Grok、OpenCode はそれぞれ別に計算します。ほかのサービスのログにはリクエスト所要時間がないため、速度は表示しません。',
   fq6: 'アプリの言語は？ macOS 版はありますか？', fa6: 'アプリの画面は簡体字中国語で、Windows 専用です。macOS では、本プロジェクトの画面設計の参考にした CodexBar をお試しください。',
   dlTitle: 'トレイに置いておこう', dlAll: 'すべてのリリース', feedback: 'フィードバック', notices: 'サードパーティ表記',
   footerNote: '独立したオープンソースプロジェクトであり、OpenAI、Anthropic、Cursor などのサービスとは関係ありません。名称とロゴは各所有者に帰属します。',
@@ -186,7 +192,10 @@ const ja = {
   pConnect: '接続方法', pQuota: '表示する利用枠', capQuota: '利用枠', capLocal: 'ローカル使用量', capSpeed: '出力速度', capBeta: '（試験的）', docs: '接続方法 →', custom: 'カスタム', customLong: 'カスタムサービス',
   vSmall: '大きな数字と 1 本のメーター。アイコンひとつ分の広さです。数字をクリックで利用枠を切り替え、ホイールか ←/→ でページ送り。',
   vMedium: '左にメインの利用枠、右にほかの枠。枠が 1 つだけならペース、リセット時刻、リセットクレジットを表示。中サイズは利用枠だけで、グラフはありません。',
-  vLarge: '利用枠とペースに加え、ローカル使用量：期間、費用、トークン、リクエスト、速度、クリックできるグラフ。',
+  vLarge: '利用枠とペース。ローカルログがある場合は使用量も表示します：期間、費用、トークン、リクエスト、クリックできるグラフ。速度はリクエスト所要時間が記録されるサービスだけです。',
+  dsQuota: '利用可能残高。DeepSeek は残高のみで、周期枠もなく、ローカルログも読みません。',
+  piQuota: 'Pi にアカウントの利用枠はありません。ローカル使用量のみで、出力速度はありません。',
+  noLocal: 'このサービスにはローカルログの読み取りがなく、トークン使用量も出力速度も表示しません。',
   vFull: '全サービスのカード、サービスごとの詳細、サードパーティ API のページ、設定。端をドラッグして自由にサイズ変更できます。',
   vFullDim: '既定 420 × 790、サイズ変更可',
   viewerPrev: '前へ', viewerNext: '次へ', viewerClose: '閉じる',
@@ -214,28 +223,33 @@ const PROV_INFO = {
   claude: { kind: ['复用登录', 'Existing sign-in', '既存のログイン'], connect: ['复用 Claude Code 的登录', 'Reuses the Claude Code sign-in', 'Claude Code のログインを利用'], quota: ['5 小时、每周及模型额度', '5-hour, weekly and per-model quotas', '5 時間・週・モデル別の利用枠'], caps: [1, 1, 1] },
   cursor: { kind: ['编辑器会话', 'Editor session', 'エディター'], connect: ['只读 Cursor 编辑器保存的会话', 'Reads the Cursor editor session (read-only)', 'Cursor エディターのセッションを読み取り（読み取りのみ）'], quota: ['套餐总量、Auto 与 API 用量', 'Plan total, Auto and API usage', 'プラン合計・Auto・API の使用量'], caps: [1, 0, 0] },
   antigravity: { kind: ['桌面应用', 'Desktop app', 'デスクトップ'], connect: ['读取正在运行的桌面应用，登录凭据作为回退', 'Talks to the running desktop app; saved sign-in as fallback', '起動中のデスクトップアプリから取得（保存済みログインを予備に使用）'], quota: ['周期与模型额度', 'Period and per-model quotas', '期間・モデル別の利用枠'], caps: [1, 1, 0] },
-  deepseek: { kind: ['API Key', 'API key', 'API キー'], connect: ['API Key（或环境变量 DEEPSEEK_API_KEY）', 'API key (or DEEPSEEK_API_KEY)', 'API キー（または DEEPSEEK_API_KEY）'], quota: ['API 账户余额，按币种分别显示', 'API account balance per currency', '通貨別の API アカウント残高'], caps: [1, 1, 1] },
+  deepseek: { kind: ['API Key', 'API key', 'API キー'], connect: ['API Key（或环境变量 DEEPSEEK_API_KEY）', 'API key (or DEEPSEEK_API_KEY)', 'API キー（または DEEPSEEK_API_KEY）'], quota: ['API 账户余额，按币种分别显示', 'API account balance per currency', '通貨別の API アカウント残高'], caps: [1, 0, 0] },
   grok: { kind: ['复用登录', 'Existing sign-in', '既存のログイン'], connect: ['复用 Grok Build CLI 的登录（grok login）', 'Reuses the Grok Build CLI sign-in (grok login)', 'Grok Build CLI のログインを利用（grok login）'], quota: ['当前账期的订阅额度', 'Subscription allowance for the billing period', '請求期間のサブスクリプション枠'], caps: [1, 1, 1] },
   copilot: { kind: ['设备码', 'Device login', 'デバイス認証'], connect: ['GitHub 设备码登录，或复用官方插件已保存的授权', 'GitHub device login, or an official client’s saved authorisation', 'GitHub デバイスログイン、または公式クライアントの保存済み認証'], quota: ['每月高级请求与对话额度', 'Monthly premium requests and chat', '月間のプレミアムリクエストとチャット枠'], caps: [1, 2, 0] },
-  kimi: { kind: ['API Key', 'API key', 'API キー'], connect: ['Kimi Code API Key，可选国内或国际', 'Kimi Code API key, China or international', 'Kimi Code の API キー（中国版 / 国際版）'], quota: ['5 小时、每周、每月', '5-hour, weekly, monthly', '5 時間・週・月'], caps: [1, 2, 2] },
+  kimi: { kind: ['API Key', 'API key', 'API キー'], connect: ['Kimi Code API Key，可选国内或国际', 'Kimi Code API key, China or international', 'Kimi Code の API キー（中国版 / 国際版）'], quota: ['5 小时、每周、每月', '5-hour, weekly, monthly', '5 時間・週・月'], caps: [1, 2, 0] },
   opencode: { kind: ['API Key', 'API key', 'API キー'], connect: ['OpenCode Go 的 API Key', 'OpenCode Go API key', 'OpenCode Go の API キー'], quota: ['5 小时、每周、每月', '5-hour, weekly, monthly', '5 時間・週・月'], caps: [1, 2, 2] },
   zcode: { kind: ['API Key', 'API key', 'API キー'], connect: ['智谱 / Z.ai API Key（GLM 编码套餐）', 'Zhipu / Z.ai API key (GLM Coding Plan)', 'Zhipu / Z.ai の API キー（GLM Coding Plan）'], quota: ['5 小时、每周、MCP 工具调用', '5-hour, weekly, MCP tool calls', '5 時間・週・MCP ツール呼び出し'], caps: [1, 1, 1] },
-  pi: { kind: ['本机日志', 'Local logs', 'ローカルログ'], connect: ['无需登录', 'No sign-in needed', 'ログイン不要'], quota: ['没有账户额度，只统计本机用量', 'No account quota; local usage only', 'アカウントの利用枠はなく、ローカル使用量のみ'], caps: [0, 1, 1] },
+  pi: { kind: ['本机日志', 'Local logs', 'ローカルログ'], connect: ['无需登录', 'No sign-in needed', 'ログイン不要'], quota: ['没有账户额度，只统计本机用量', 'No account quota; local usage only', 'アカウントの利用枠はなく、ローカル使用量のみ'], caps: [0, 1, 0] },
   custom: { kind: ['JSON 接口', 'JSON endpoint', 'JSON API'], connect: ['任意返回 JSON 的 GET 接口，密钥 DPAPI 加密', 'Any GET endpoint returning JSON; key encrypted with DPAPI', 'JSON を返す任意の GET API（キーは DPAPI で暗号化）'], quota: ['最多 6 个额度窗口，或余额', 'Up to 6 quota windows, or a balance', '最大 6 つの利用枠、または残高'], caps: [1, 0, 0] }
 };
+// caps[1] local logs: UsageScanner.Agents (UsageScan.cs) — no DeepSeek, no Cursor.
+// caps[2] output speed: OutputTiming.Agents (Timing.cs) — codex, claude, zcode, grok, opencode.
+// 2 means the reader exists but was not checked against a real log on the dev machine.
+const hasLocal = id => !!(PROV_INFO[id] && PROV_INFO[id].caps[1]);
+const hasSpeed = id => !!(PROV_INFO[id] && PROV_INFO[id].caps[2]);
 
 // ── Demo data (consistent with the app's --demo mode) ─────────────────
 function prng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
 const NOW = new Date(); NOW.setMinutes(0, 0, 0);
 const HOUR = NOW.getHours();
-// Every tool has a speed here: the demo shows what the app shows once requests carry timings.
+// Illustrative local usage. Speed only for providers in OutputTiming.Agents that this
+// demo charts; Kimi and Pi have logs but no request duration, and DeepSeek has neither.
 const TOOLS = {
   codex: { cost: 477.86, tokens: 233.1e6, today: 25.83, perReq: 38000, speed: 24.2, spread: .14, seed: 7 },
   claude: { cost: 24.59, tokens: 22.35e6, today: .83, perReq: 12000, speed: 89, spread: .12, seed: 11 },
-  kimi: { cost: 21.9, tokens: 18.6e6, today: 1.12, perReq: 15000, speed: 38.5, spread: .15, seed: 41 },
+  kimi: { cost: 21.9, tokens: 18.6e6, today: 1.12, perReq: 15000, seed: 41 },
   zcode: { cost: 20.63, tokens: 34.38e6, today: 1.34, perReq: 67000, speed: 48, spread: .16, seed: 23 },
-  deepseek: { cost: 9.87, tokens: 41.2e6, today: .64, perReq: 26000, speed: 31.2, spread: .18, seed: 53 },
-  pi: { cost: 4.28, tokens: 3.06e6, today: .21, perReq: 21000, speed: 52.4, spread: .12, seed: 31 }
+  pi: { cost: 4.28, tokens: 3.06e6, today: .21, perReq: 21000, seed: 31 }
 };
 const USAGE_IDS = Object.keys(TOOLS);
 function buildSeries(id) {
@@ -254,7 +268,8 @@ function buildSeries(id) {
     x.cost = cfg.cost * share; x.tokens = cfg.tokens * share;
     x.req = x.tokens > 0 ? Math.max(1, Math.round(x.tokens / cfg.perReq * (.85 + x.v * .3))) : 0;
     x.out = x.tokens * .0075;
-    x.speed = x.tokens <= 0 ? null : cfg.speed * (1 - cfg.spread + x.v * cfg.spread * 2);
+    const timed = hasSpeed(id) && cfg.speed;
+    x.speed = !timed || x.tokens <= 0 ? null : cfg.speed * (1 - cfg.spread + x.v * cfg.spread * 2);
     x.sec = x.speed ? x.out / x.speed : 0;
   });
   // Today by hour: a working-day shape up to the current hour.
@@ -268,14 +283,16 @@ function buildSeries(id) {
     const share = w / hw, v = hr();
     const x = { date: d, hourly: true, cost: today.cost * share, tokens: today.tokens * share };
     x.req = x.tokens > 0 ? Math.max(1, Math.round(today.req * share)) : 0;
-    x.out = x.tokens * .0075; x.speed = x.tokens <= 0 ? null : cfg.speed * (1 - cfg.spread + v * cfg.spread * 2); x.sec = x.speed ? x.out / x.speed : 0;
+    x.out = x.tokens * .0075;
+    const timed = hasSpeed(id) && cfg.speed;
+    x.speed = !timed || x.tokens <= 0 ? null : cfg.speed * (1 - cfg.spread + v * cfg.spread * 2); x.sec = x.speed ? x.out / x.speed : 0;
     hours.push(x);
   });
   return { days, hours };
 }
 const SERIES = Object.fromEntries(USAGE_IDS.map(id => [id, buildSeries(id)]));
 const sum = (arr, k) => arr.reduce((s, x) => s + (x[k] || 0), 0);
-const speedOf = (arr, id) => { const sec = sum(arr, 'sec'); return sec >= 1 ? sum(arr, 'out') / sec : TOOLS[id].speed; };
+const speedOf = (arr, id) => { if (!hasSpeed(id) || !TOOLS[id] || !TOOLS[id].speed) return null; const sec = sum(arr, 'sec'); return sec >= 1 ? sum(arr, 'out') / sec : TOOLS[id].speed; };
 
 // Quota windows, as the app shows them. pace: headroom (+) or overspend (−) in points.
 const QUOTAS = {
@@ -335,7 +352,8 @@ function quotaBlock(id, compactMode) {
 }
 function providerCard(id) {
   const q = QUOTAS[id], s = SERIES[id];
-  const foot = s ? `<div class="row faint card-foot"><span class="num">今日 ${usd(s.days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)}</span><span class="num">${compact(TOOLS[id].tokens)} Token · ${tps(speedOf(s.days, id))}</span></div>` : '';
+  const speed = s && speedOf(s.days, id);
+  const foot = s ? `<div class="row faint card-foot"><span class="num">今日 ${usd(s.days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)}</span><span class="num">${compact(TOOLS[id].tokens)} Token${speed != null ? ' · ' + tps(speed) : ''}</span></div>` : '';
   return `<div class="app-card"><div class="card-head">${icon(id)}<b>${P[id].name}</b>${q.plan ? `<span class="plan">${q.plan}</span>` : ''}<span class="faint" style="margin-left:auto" data-fresh>刚刚更新</span></div>${quotaBlock(id, true)}${foot}</div>`;
 }
 function renderPage(id) {
@@ -354,7 +372,7 @@ function renderPage(id) {
     if (s) {
       const max = Math.max(...s.days.map(d => d.cost));
       usage = `<div class="app-card"><div class="row"><b style="font-size:13px">本机用量</b><span class="a-chip">近 30 天</span></div>
-        <div class="row" style="margin-top:10px;align-items:flex-start">${[['费用', usd(TOOLS[id].cost)], ['Token', compact(TOOLS[id].tokens)], ['请求', sum(s.days, 'req').toLocaleString('en-US')], ['速度', tps(speedOf(s.days, id))]].map(([k, v]) => `<div><div class="faint">${k}</div><div class="num" style="font-size:15px;font-weight:600;margin-top:2px">${v}</div></div>`).join('')}</div>
+        <div class="row" style="margin-top:10px;align-items:flex-start">${[['费用', usd(TOOLS[id].cost)], ['Token', compact(TOOLS[id].tokens)], ['请求', sum(s.days, 'req').toLocaleString('en-US')], ...(speedOf(s.days, id) != null ? [['速度', tps(speedOf(s.days, id))]] : [])].map(([k, v]) => `<div><div class="faint">${k}</div><div class="num" style="font-size:15px;font-weight:600;margin-top:2px">${v}</div></div>`).join('')}</div>
         <div class="mini-chart" data-chart="${id}">${s.days.map((d, i) => `<div class="b" data-i="${i}" style="height:${Math.max(1.5, d.cost / max * 100)}%"><i style="height:100%;background:${cv(id)}"></i></div>`).join('')}</div>${miniAxis(s.days)}</div>`;
     }
     html = `<div class="app-card"><div class="card-head">${icon(id)}<b>${P[id].name}</b>${q.plan ? `<span class="plan">${q.plan}</span>` : ''}<span class="faint" style="margin-left:auto" data-fresh>刚刚更新</span></div>${quotaBlock(id, false)}</div>${usage}`;
@@ -371,7 +389,7 @@ body.addEventListener('pointerover', e => {
   const chart = b.parentElement.dataset.chart, i = +b.dataset.i;
   let text;
   if (chart === 'overview') { const parts = USAGE_IDS.map(k => [k, SERIES[k].days[i].cost]).filter(x => x[1] > 0); text = `<b>${dayLabel(SERIES.codex.days[i].date)}</b> · ${usd(parts.reduce((s, x) => s + x[1], 0))}` + parts.map(([k, v]) => `<br>${P[k].name}  ${usd(v)}`).join(''); }
-  else { const d = SERIES[chart].days[i]; const reqN = Math.max(d.tokens > 0 ? 1 : 0, d.req || 0); text = `<b>${dayLabel(d.date)}</b><br>${usd(d.cost)} · ${compact(d.tokens)} Token<br>${reqN.toLocaleString('en-US')} 次请求 · ${tps(d.speed || (d.tokens > 0 ? TOOLS[chart].speed : 0))}`; }
+  else { const d = SERIES[chart].days[i]; const reqN = Math.max(d.tokens > 0 ? 1 : 0, d.req || 0); const spd = d.speed || speedOf([d], chart); text = `<b>${dayLabel(d.date)}</b><br>${usd(d.cost)} · ${compact(d.tokens)} Token<br>${reqN.toLocaleString('en-US')} 次请求${spd != null ? ' · ' + tps(spd) : ''}`; }
   if (!appTip) { appTip = document.createElement('div'); appTip.className = 'app-tip'; body.appendChild(appTip); }
   appTip.innerHTML = text;
   const br = b.getBoundingClientRect(), pr = body.getBoundingClientRect();
@@ -521,8 +539,8 @@ toolPick.innerHTML = BOARD_IDS.map(id => `<button type="button" data-tool="${id}
 function renderBoardQuota(animate) {
   const id = dash.tool, q = QUOTAS[id];
   let html = `<div class="bq-head">${icon(id)}<b>${P[id].name}</b>${q.plan ? `<span class="plan">${q.plan}</span>` : ''}<span class="fresh">刚刚更新</span></div>`;
-  if (q.balance) html += `<div class="q-empty"><strong>${q.balance}</strong>可用余额 · DeepSeek 只提供账户余额，没有周期额度；右边的用量照常统计。</div>`;
-  else if (q.local) html += `<div class="q-empty"><strong>∞</strong>Pi 没有账户额度，只统计本机日志里的用量和输出速度。</div>`;
+  if (q.balance) html += `<div class="q-empty"><strong>${esc(q.balance)}</strong>${esc(t('dsQuota'))}</div>`;
+  else if (q.local) html += `<div class="q-empty"><strong>∞</strong>${esc(t('piQuota'))}</div>`;
   else {
     html += q.windows.map((w, i) => {
       const key = id + i, used = 100 - w.rem, elapsed = Math.max(0, Math.min(100, used + w.pace)), even = 100 - elapsed;
@@ -536,7 +554,7 @@ function renderBoardQuota(animate) {
   if (animate) animateMeters(boardQuota);
 }
 boardQuota.addEventListener('click', e => { const b = e.target.closest('.q-win'); if (!b) return; const k = b.dataset.key; if (!expanded.delete(k)) expanded.add(k); b.setAttribute('aria-expanded', String(expanded.has(k))); });
-function periodBars() { const s = SERIES[dash.tool]; return dash.period === 'today' ? s.hours : dash.period === '7d' ? s.days.slice(-7) : s.days; }
+function periodBars() { const s = SERIES[dash.tool]; if (!s) return []; return dash.period === 'today' ? s.hours : dash.period === '7d' ? s.days.slice(-7) : s.days; }
 const valueOf = (x, m) => m === 'cost' ? x.cost : m === 'tokens' ? x.tokens : (x.speed || 0);
 function countTo(el, to, fmt) {
   if (reduced || !isFinite(to)) { el.textContent = fmt(to); el._v = to; return; }
@@ -546,16 +564,34 @@ function countTo(el, to, fmt) {
   // Background tabs pause animation frames; make sure the final value lands.
   clearTimeout(el._t); el._t = setTimeout(() => { if (el._v === to) el.textContent = fmt(to); }, dur + 120);
 }
+function layoutDashFigs() {
+  const figs = document.querySelector('.dash-figs');
+  if (!figs || figs.hidden) return;
+  const timed = hasSpeed(dash.tool) && !!SERIES[dash.tool];
+  if (timed || matchMedia('(max-width: 760px)').matches) figs.style.removeProperty('grid-template-columns');
+  else figs.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
+}
 function renderDash() {
+  const local = hasLocal(dash.tool), timed = hasSpeed(dash.tool) && !!SERIES[dash.tool];
+  if (!timed && dash.metric === 'speed') dash.metric = 'cost';
   const bars = periodBars(), m = dash.metric;
   $('board-panel').style.setProperty('--c', cv(dash.tool));
   toolPick.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === dash.tool)));
   document.querySelectorAll('#period-seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.period === dash.period)));
+  const figs = document.querySelector('.dash-figs'), speedFig = figs.querySelector('[data-metric="speed"]'), empty = $('usage-empty'), chartWrap = document.querySelector('.dash-chart');
+  empty.hidden = local; empty.textContent = local ? '' : t('noLocal');
+  // .dash-figs and .fig set display in CSS, which beats the hidden attribute.
+  figs.hidden = chartWrap.hidden = !local; speedFig.hidden = !timed;
+  figs.style.display = local ? '' : 'none';
+  chartWrap.style.display = local ? '' : 'none';
+  speedFig.style.display = timed ? '' : 'none';
+  layoutDashFigs();
   document.querySelectorAll('.dash-figs button.fig').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.metric === m)));
+  if (!local) { $('dash-note').textContent = ''; tip.hidden = true; return; }
   countTo($('f-cost'), sum(bars, 'cost'), usd);
   countTo($('f-tokens'), sum(bars, 'tokens'), compact);
   countTo($('f-req'), sum(bars, 'req'), v => Math.round(v).toLocaleString('en-US'));
-  countTo($('f-speed'), speedOf(bars, dash.tool), tps);
+  if (timed) countTo($('f-speed'), speedOf(bars, dash.tool), tps);
   const max = Math.max(1e-9, ...bars.map(x => valueOf(x, m)));
   chart.innerHTML = bars.map((x, i) => `<div class="bar${valueOf(x, m) <= 0 ? ' empty' : ''}${i === bars.length - 1 ? ' now' : ''}" data-i="${i}"><i style="--h:0%"></i></div>`).join('');
   requestAnimationFrame(() => requestAnimationFrame(() => chart.querySelectorAll('.bar').forEach((el, i) => { el.firstChild.style.setProperty('--h', (valueOf(bars[i], m) / max * 100).toFixed(2) + '%'); })));
@@ -572,8 +608,8 @@ function showTip(barEl) {
   chart.querySelectorAll('.hot').forEach(el => el.classList.remove('hot')); barEl.classList.add('hot');
   const label = x.hourly ? `${dayLabel(x.date)} ${pad2(x.date.getHours())}:00` : x.date.toLocaleDateString(lang === 'zh' ? 'zh-CN' : lang === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric', weekday: 'short' });
   const reqN = Math.max(0, Math.round(x.req || 0));
-  const speedN = x.speed || (x.tokens > 0 ? speedOf([x], dash.tool) : 0);
-  tip.innerHTML = `<b>${label}</b><div><span>${t('tipCost')}</span><span>${usd(x.cost)}</span></div><div><span>${t('tipTokens')}</span><span>${compact(x.tokens)}</span></div><div><span>${t('tipReq')}</span><span>${reqN.toLocaleString('en-US')}</span></div><div><span>${t('tipSpeed')}</span><span>${tps(speedN)}</span></div>`;
+  const speedN = x.speed || speedOf([x], dash.tool);
+  tip.innerHTML = `<b>${label}</b><div><span>${t('tipCost')}</span><span>${usd(x.cost)}</span></div><div><span>${t('tipTokens')}</span><span>${compact(x.tokens)}</span></div><div><span>${t('tipReq')}</span><span>${reqN.toLocaleString('en-US')}</span></div>${speedN != null ? `<div><span>${t('tipSpeed')}</span><span>${tps(speedN)}</span></div>` : ''}`;
   const cr = chart.getBoundingClientRect(), br = barEl.getBoundingClientRect(), wrap = chart.parentElement.getBoundingClientRect();
   tip.hidden = false;
   const left = Math.min(wrap.width - tip.offsetWidth / 2 - 4, Math.max(tip.offsetWidth / 2 + 4, br.left - wrap.left + br.width / 2));
@@ -623,7 +659,7 @@ getJson('https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/sourc
 
 // Speed bars: sorted fastest first, filled when the card scrolls into view.
 const speedList = $('speed-list');
-const SPEED_IDS = USAGE_IDS.slice().sort((a, b) => TOOLS[b].speed - TOOLS[a].speed);
+const SPEED_IDS = USAGE_IDS.filter(id => hasSpeed(id) && TOOLS[id].speed).sort((a, b) => TOOLS[b].speed - TOOLS[a].speed);
 speedList.innerHTML = SPEED_IDS.map(id => `<div class="sp-row" style="--c:${cv(id)}"><span class="sp-name">${icon(id)}${P[id].name}</span><span class="sp-track"><i></i></span><span class="sp-val" data-sp="${id}">0 t/s</span></div>`).join('');
 let speedLive = null;
 function fillSpeeds(jitter) {
@@ -650,25 +686,33 @@ const SIZE_PAGES = ['codex', 'claude', 'cursor', 'kimi', 'zcode', 'deepseek', 'p
 const sz = { small: { id: 'codex', wi: 0 }, medium: { id: 'codex', wi: 0 }, large: { id: 'codex', period: '30d', open: -1 }, full: { page: 'overview', period: '30d', id: 'codex' } };
 const EXTRA_USAGE = { cursor: [18.42, 6.2e6, .64, 41.6, 248], antigravity: [11.3, 8.4e6, .48, 36.8, 176], copilot: [7.85, 2.1e6, .22, 29.4, 312], grok: [6.4, 4.7e6, .31, 44.2, 98], opencode: [8.16, 5.4e6, .27, 33.5, 154] };
 function usagePack(id) {
+  if (!hasLocal(id)) return null;
+  const timed = hasSpeed(id);
   if (SERIES[id]) {
-    const days = SERIES[id].days.map(d => ({ date: d.date, hourly: d.hourly, cost: d.cost, tokens: d.tokens, req: Math.max(d.tokens > 0 ? 1 : 0, d.req || 0), speed: d.speed || TOOLS[id].speed }));
-    return { cost: TOOLS[id].cost, tokens: TOOLS[id].tokens, today: TOOLS[id].today, speed: TOOLS[id].speed, req: Math.max(1, sum(days, 'req')), days };
+    const days = SERIES[id].days.map(d => ({ date: d.date, hourly: d.hourly, cost: d.cost, tokens: d.tokens, req: Math.max(d.tokens > 0 ? 1 : 0, d.req || 0), speed: timed ? (d.speed || TOOLS[id].speed) : null }));
+    return { cost: TOOLS[id].cost, tokens: TOOLS[id].tokens, today: TOOLS[id].today, speed: timed ? TOOLS[id].speed : null, req: Math.max(1, sum(days, 'req')), days };
   }
-  const row = EXTRA_USAGE[id] || [4.2, 1.8e6, .18, 27.5, 86];
+  const row = EXTRA_USAGE[id];
+  if (!row) return null;
   const [cost, tokens, today, speed, req] = row;
   const r = prng(id.split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) || 9);
   const weights = SERIES.codex.days.map(() => .35 + r());
   const sumW = weights.reduce((a, b) => a + b, 0) || 1;
-  const days = SERIES.codex.days.map((d, i) => ({ date: d.date, cost: cost * weights[i] / sumW, tokens: tokens * weights[i] / sumW, req: Math.max(1, Math.round(req * weights[i] / sumW)), speed: speed * (.88 + r() * .24) }));
+  const days = SERIES.codex.days.map((d, i) => ({ date: d.date, cost: cost * weights[i] / sumW, tokens: tokens * weights[i] / sumW, req: Math.max(1, Math.round(req * weights[i] / sumW)), speed: timed ? speed * (.88 + r() * .24) : null }));
   days[29].cost = today;
-  return { cost, tokens, today, speed, req, days };
+  return { cost, tokens, today, speed: timed ? speed : null, req, days };
+}
+function metricsHtml(id, rows, pack) {
+  const cells = [['费用', usd(sum(rows, 'cost'))], ['Token', compact(sum(rows, 'tokens'))], ['请求', Math.max(1, Math.round(sum(rows, 'req'))).toLocaleString('en-US')]];
+  if (hasSpeed(id) && pack.speed != null) cells.push(['速度', tps(pack.speed)]);
+  return `<div class="sz-metrics" style="grid-template-columns:repeat(${cells.length},minmax(0,1fr))">${cells.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;
 }
 function periodSlice(pack, period) {
   if (period === '7d') return pack.days.slice(-7);
   if (period === 'today') {
     const today = pack.days[29], r = prng(91), hours = [];
     const last = Math.max(10, HOUR);
-    for (let h = 9; h <= last; h++) hours.push({ date: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate(), h), hourly: true, cost: today.cost / (last - 8), tokens: today.tokens / (last - 8), req: Math.max(1, Math.round((today.req || 6) / (last - 8))), speed: pack.speed * (.9 + r() * .2) });
+    for (let h = 9; h <= last; h++) hours.push({ date: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate(), h), hourly: true, cost: today.cost / (last - 8), tokens: today.tokens / (last - 8), req: Math.max(1, Math.round((today.req || 6) / (last - 8))), speed: pack.speed == null ? null : pack.speed * (.9 + r() * .2) });
     return hours;
   }
   return pack.days;
@@ -687,8 +731,8 @@ function smallHtml() {
     const w = q.windows[st.wi % q.windows.length];
     body = `<button type="button" class="sz-big" data-cycle><b>${w.rem}%</b><span>${w.label}剩余  ${st.wi % q.windows.length + 1}/${q.windows.length}</span></button>${meter(w.rem, st.id)}<p class="sz-reset">${w.reset}后重置</p>`;
   } else if (q.balance) body = `<div class="sz-big"><b>${q.balance.replace('USD ', '$')}</b><span>可用余额</span></div>`;
-  else if (q.local) body = `<div class="sz-big"><b>${compact(pack.tokens)}</b><span>近 30 天 Token</span></div><p class="sz-reset">${pack.req.toLocaleString('en-US')} 次请求 · ${tps(pack.speed)}</p>`;
-  else body = `<div class="sz-big"><b>${tps(pack.speed)}</b><span>本机输出速度</span></div><p class="sz-reset">${pack.req.toLocaleString('en-US')} 次请求 · ${usd(pack.cost)}</p>`;
+  else if (q.local && pack) body = `<div class="sz-big"><b>${compact(pack.tokens)}</b><span>近 30 天 Token</span></div><p class="sz-reset">${pack.req.toLocaleString('en-US')} 次请求</p>`;
+  else body = `<div class="sz-big"><b>—</b><span>尚未连接</span></div>`;
   const dots = SIZE_PAGES.map(id => `<button type="button" data-prov="${id}" aria-pressed="${id === st.id}" aria-label="${P[id].name}"></button>`).join('');
   return `${chrome(st.id, '')}<div class="sz-body">${body}<div class="sz-dots">${dots}</div></div>`;
 }
@@ -701,24 +745,28 @@ function mediumHtml() {
     right = q.windows.map((win, i) => `<button type="button" class="sz-row" data-win="${i}"><span class="when">${win.reset}</span>${win.label} <b>${win.rem}%</b>${meter(win.rem, st.id)}</button>`).join('');
   } else if (q.balance) {
     left = `<div class="sz-big"><b>${q.balance.replace('USD ', '$')}</b><span>可用余额</span></div>`;
-    right = `<div class="sz-row">近 7 天 <b>${usd(pack.today * 4)}</b></div><div class="sz-row">30 天 Token <b>${compact(pack.tokens)}</b></div><div class="sz-row">请求 <b>${pack.req.toLocaleString('en-US')}</b></div><div class="sz-row">输出速度 <b>${tps(pack.speed)}</b></div>`;
-  } else {
+    right = `<div class="sz-row">没有本机日志</div>`;
+  } else if (pack) {
     left = `<div class="sz-big"><b>${usd(pack.cost)}</b><span>近 30 天</span></div><p class="sz-reset">今日 ${usd(pack.today)}</p>`;
-    right = `<div class="sz-row">Token <b>${compact(pack.tokens)}</b></div><div class="sz-row">请求 <b>${pack.req.toLocaleString('en-US')}</b></div><div class="sz-row">输出速度 <b>${tps(pack.speed)}</b></div>`;
+    right = `<div class="sz-row">Token <b>${compact(pack.tokens)}</b></div><div class="sz-row">请求 <b>${pack.req.toLocaleString('en-US')}</b></div>`;
+  } else {
+    left = `<div class="sz-big"><b>—</b><span>尚未连接</span></div>`;
+    right = '';
   }
-  const foot = `今日 ${usd(pack.today)} · 30 天 ${usd(pack.cost)} · ${tps(pack.speed)}`;
+  const foot = pack ? `今日 ${usd(pack.today)} · 30 天 ${usd(pack.cost)}${hasSpeed(st.id) && pack.speed != null ? ' · ' + tps(pack.speed) : ''}` : (q.balance ? `余额 ${q.balance}` : '');
   return `${chrome(st.id, iconBtns(st.id, SIZE_PAGES))}<div class="sz-body"><div class="sz-split"><div>${left}</div><div class="sz-side">${right}</div></div></div><div class="sz-foot"><span>${foot}</span></div>`;
 }
 function largeHtml() {
-  const st = sz.large, q = QUOTAS[st.id], pack = usagePack(st.id), rows = periodSlice(pack, st.period);
-  const totals = { cost: sum(rows, 'cost'), tokens: sum(rows, 'tokens'), req: Math.max(1, sum(rows, 'req')), speed: rows.reduce((s, x) => s + x.speed, 0) / rows.length };
+  const st = sz.large, q = QUOTAS[st.id], pack = usagePack(st.id);
   let quotas = '';
   if (q.windows) quotas = q.windows.map((w, i) => `<button type="button" class="sz-q" data-open="${i}"><div class="lab">${w.label} <b>${w.rem}%</b> 剩余 <span class="when">${w.reset}后重置</span></div>${meter(w.rem, st.id)}${st.open === i ? `<div class="sz-more">${paceText(w)} · 窗口 ${w.len}</div>` : ''}</button>`).join('');
-  else if (q.balance) quotas = `<div class="sz-big"><b>${q.balance.replace('USD ', '$')}</b><span>可用余额 · 右边照常统计本机用量</span></div>`;
+  else if (q.balance) quotas = `<div class="sz-big"><b>${q.balance.replace('USD ', '$')}</b><span>可用余额</span></div>`;
   else if (q.local) quotas = `<p class="sz-reset">没有账户额度 · 只统计本机日志</p>`;
-  else quotas = `<p class="sz-reset">尚未连接 · 下面是本机用量</p>`;
+  else quotas = `<p class="sz-reset">尚未连接</p>`;
   const tabs = SIZE_PAGES.map(id => `<button type="button" data-prov="${id}" aria-selected="${id === st.id}">${icon(id)}<span>${P[id].name}</span></button>`).join('');
-  return `${chrome(st.id, '')}<div class="sz-tabs">${tabs}</div><div class="sz-body sz-scroll">${quotas}<div class="row" style="margin-top:10px"><span class="dim">本机用量</span><div class="sz-periods">${periodsHtml(st.period)}</div></div><div class="sz-metrics"><div><span>费用</span><b>${usd(totals.cost)}</b></div><div><span>Token</span><b>${compact(totals.tokens)}</b></div><div><span>请求</span><b>${Math.round(totals.req).toLocaleString('en-US')}</b></div><div><span>速度</span><b>${tps(totals.speed)}</b></div></div>${barsHtml(rows, cv(st.id))}</div>`;
+  const rows = pack ? periodSlice(pack, st.period) : [];
+  const usage = pack ? `<div class="row" style="margin-top:10px"><span class="dim">本机用量</span><div class="sz-periods">${periodsHtml(st.period)}</div></div>${metricsHtml(st.id, rows, pack)}${barsHtml(rows, cv(st.id))}` : '';
+  return `${chrome(st.id, '')}<div class="sz-tabs">${tabs}</div><div class="sz-body sz-scroll">${quotas}${usage}</div>`;
 }
 function fullHtml() {
   const st = sz.full, page = st.page;
@@ -729,8 +777,10 @@ function fullHtml() {
     const tot = USAGE_IDS.reduce((s, k) => s + TOOLS[k].cost, 0), tok = USAGE_IDS.reduce((s, k) => s + TOOLS[k].tokens, 0), req = USAGE_IDS.reduce((s, k) => s + usagePack(k).req, 0);
     inner = `<div class="app-card"><div class="row"><span class="dim">全部平台 · API 等价费用</span><div class="sz-periods">${periodsHtml(st.period)}</div></div><div class="row" style="margin-top:6px"><span class="big">${usd(st.period === '30d' ? tot : sum(rows, 'cost'))}</span><span class="num">${compact(st.period === '30d' ? tok : sum(rows, 'tokens'))} Token</span></div><div class="faint">${Math.round(req).toLocaleString('en-US')} 次请求</div>${barsHtml(rows, cv('codex'))}</div>${['codex', 'claude', 'cursor', 'kimi'].map(providerCard).join('')}`;
   } else {
-    const q = QUOTAS[page], pack = usagePack(page), rows = periodSlice(pack, st.period);
-    inner = `<div class="app-card"><div class="card-head">${icon(page)}<b>${P[page].name}</b>${q.plan ? `<span class="plan">${q.plan}</span>` : ''}</div>${quotaBlock(page, false)}</div><div class="app-card"><div class="row"><b style="font-size:13px">本机用量</b><div class="sz-periods">${periodsHtml(st.period)}</div></div><div class="sz-metrics"><div><span>费用</span><b>${usd(sum(rows, 'cost'))}</b></div><div><span>Token</span><b>${compact(sum(rows, 'tokens'))}</b></div><div><span>请求</span><b>${Math.max(1, Math.round(sum(rows, 'req'))).toLocaleString('en-US')}</b></div><div><span>速度</span><b>${tps(pack.speed)}</b></div></div>${barsHtml(rows, cv(page))}</div>`;
+    const q = QUOTAS[page], pack = usagePack(page);
+    const rows = pack ? periodSlice(pack, st.period) : [];
+    const usage = pack ? `<div class="app-card"><div class="row"><b style="font-size:13px">本机用量</b><div class="sz-periods">${periodsHtml(st.period)}</div></div>${metricsHtml(page, rows, pack)}${barsHtml(rows, cv(page))}</div>` : '';
+    inner = `<div class="app-card"><div class="card-head">${icon(page)}<b>${P[page].name}</b>${q.plan ? `<span class="plan">${q.plan}</span>` : ''}</div>${quotaBlock(page, false)}</div>${usage}`;
   }
   return `${chrome(page, '')}<div class="sz-tabs">${tabs}</div><div class="sz-body sz-scroll">${inner}</div>`;
 }
@@ -739,7 +789,8 @@ function renderWindow(kind, win) {
   win.innerHTML = html;
   win.dataset.kind = kind;
   const packId = kind === 'full' ? (sz.full.page === 'overview' ? 'codex' : sz.full.page) : sz[kind].id;
-  win._rows = periodSlice(usagePack(packId), (sz[kind].period || '30d'));
+  const pack = usagePack(packId);
+  win._rows = pack ? periodSlice(pack, (sz[kind].period || '30d')) : [];
   win._pack = packId;
 }
 function paintKind(kind) {
@@ -847,7 +898,8 @@ viewerMock.addEventListener('pointerover', e => {
   const win = b.closest('.app'), rows = win._rows || [], x = rows[+b.dataset.i]; if (!x) return;
   let tip = win.querySelector('.sz-tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'sz-tip'; win.appendChild(tip); }
   const when = x.hourly ? `${pad2(x.date.getHours())}:00` : dayLabel(x.date);
-  tip.innerHTML = `<b>${when}</b><br>${usd(x.cost)} · ${compact(x.tokens)} Token<br>${Math.max(0, Math.round(x.req || 0)).toLocaleString('en-US')} 次请求 · ${tps(x.speed || usagePack(win._pack).speed)}`;
+  const spd = x.speed || (usagePack(win._pack) || {}).speed;
+  tip.innerHTML = `<b>${when}</b><br>${usd(x.cost)} · ${compact(x.tokens)} Token<br>${Math.max(0, Math.round(x.req || 0)).toLocaleString('en-US')} 次请求${spd != null ? ' · ' + tps(spd) : ''}`;
   const host = win.getBoundingClientRect(), br = b.getBoundingClientRect();
   const scale = host.width / (win.offsetWidth || host.width) || 1;
   tip.hidden = false;
@@ -964,13 +1016,13 @@ function onScroll() {
 }
 const nav = document.querySelector('.nav');
 addEventListener('scroll', () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(onScroll); }, { passive: true });
-addEventListener('resize', () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(onScroll); });
+addEventListener('resize', () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(onScroll); layoutDashFigs(); });
 
 // ── Language ──────────────────────────────────────────────────────────
 const META = {
   zh: ['codeusagemonit — Windows 上的 AI 编程额度与用量监控', document.querySelector('meta[name="description"]').content],
-  en: ['codeusagemonit — AI coding quotas and usage on Windows', 'A Windows tray app for the remaining quota, reset times, local token usage and output speed of Codex, Claude, Cursor and 8 more AI coding tools. Priced at official API rates, synced daily. Open source; data stays on your PC.'],
-  ja: ['codeusagemonit — Windows で AI コーディングの利用枠と使用量を確認', 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を Windows のトレイで。公式 API 単価で計算し、料金表は毎日同期。オープンソースで、データは PC 内で集計します。']
+  en: ['codeusagemonit — AI coding quotas and usage on Windows', 'A Windows tray app for the remaining quota and reset times of Codex, Claude, Cursor and 8 more AI coding tools. Local token usage where session logs exist; output speed only for Codex, Claude, ZCode, Grok and OpenCode. Priced at official API rates, synced daily. Open source; data stays on your PC.'],
+  ja: ['codeusagemonit — Windows で AI コーディングの利用枠と使用量を確認', 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠とリセット時刻を Windows のトレイで。ローカルログがあるサービスはトークン使用量を、出力速度は Codex、Claude、ZCode、Grok、OpenCode のみ表示します。公式 API 単価で計算し、料金表は毎日同期。オープンソースで、データは PC 内で集計します。']
 };
 let jaFont = false;
 function setLang(value) {
@@ -982,7 +1034,7 @@ function setLang(value) {
   document.querySelectorAll('[data-theme-set]').forEach(b => { const k = { light: 'themeLight', dark: 'themeDark', system: 'themeSystem' }[b.dataset.themeSet]; b.title = b.ariaLabel = t(k); });
   document.querySelectorAll('.lang [data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   document.title = META[lang][0]; document.querySelector('meta[name="description"]').content = META[lang][1];
-  paintPagerLabels(); renderProviders(); renderDash(); renderQuick(); renderInstall();
+  paintPagerLabels(); renderProviders(); renderBoardQuota(false); renderDash(); renderQuick(); renderInstall();
   if (prices.length) { renderVendors(); renderPrices(); }
   $('viewer-prev').ariaLabel = t('viewerPrev'); $('viewer-next').ariaLabel = t('viewerNext'); $('viewer-close').ariaLabel = t('viewerClose');
   if (!viewer.hidden) fillViewer(vIndex);
