@@ -6,7 +6,7 @@
 
 **AI coding quotas and usage, in your Windows tray**
 
-Remaining quota, reset times, token usage and output speed for Codex, Claude, Cursor and 8 more AI coding tools, in one small window.
+Remaining quota and reset times for Codex, Claude, Cursor and 8 more AI coding tools, along with local token usage and output speed, in one small window.
 
 [![Release](https://img.shields.io/github/v/release/fanchengliu/codeusagemonit?style=flat-square&color=38bdf8)](https://github.com/fanchengliu/codeusagemonit/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/fanchengliu/codeusagemonit/total?style=flat-square&color=818cf8)](https://github.com/fanchengliu/codeusagemonit/releases)
@@ -28,14 +28,14 @@ Remaining quota, reset times, token usage and output speed for Codex, Claude, Cu
 
 If you use several AI coding tools, you juggle several quota windows: 5-hour, weekly, monthly, each resetting at a different time. Local session logs sit in different folders, and usage that goes through a third-party relay is hard to track at all.
 
-codeusagemonit puts all of it in the Windows tray. Click the icon to see what's left on each provider, when it resets, and whether your current pace lasts until then. It also totals local usage, API-equivalent cost and output speed. It is a native C# / WPF app with a companion CLI, `codeusage`. Free and open source under the MIT license.
+codeusagemonit puts all of it in the Windows tray. Click the icon to see what's left on each provider, when it resets, and whether the current pace lasts until then. Tools with local logs also get token totals and an API-equivalent cost; some of them show output speed. It is a native C# / WPF app with a companion CLI, `codeusage`. Free and open source under the MIT license.
 
 ## Features
 
 - **Quotas at a glance.** Each quota window is a 24-cell meter; lit cells are what's left. The line below says whether you have headroom or are spending ahead of pace, and estimates when you'll run out. Expand a row for the exact reset time.
-- **Local usage and cost.** Reads each tool's session logs on your PC and counts tokens and requests by hour and by model. Cost is estimated per request from official API prices. Pick any period; click a bar to pin that day's or hour's breakdown.
+- **Local usage and cost.** Reads session logs for tools that keep them on your PC, and counts tokens and requests by hour and by model. Cost is estimated per request from official API prices. Pick any period; click a bar to pin that day's or hour's breakdown.
 - **Prices synced daily.** Ships with official prices for 361 models (compiled from LiteLLM and models.dev), including cache reads and writes, long-context tiers and Codex fast-mode multipliers. The app checks for a newer table every 24 hours; you can turn this off, and it falls back to the built-in table offline.
-- **Real output speed.** Output tokens ÷ the whole request time, including time to first token and relay latency, measured per tool. It shows how fast things feel in use, not a benchmark.
+- **Real output speed.** Output tokens ÷ the whole request time, including time to first token and relay latency. Only tools whose logs record that duration get a speed, and each is measured on its own, never averaged with the others. It shows how fast things feel in use, not a benchmark.
 - **Relay usage.** When Claude Code or Codex talks to a third-party endpoint, that usage appears on a separate "第三方" (third-party) page, attributed to the exact endpoint, even if you switch providers with CC Switch.
 - **Custom providers.** Any GET endpoint that returns JSON (a relay dashboard, your own gateway) can be added with a short JSON definition and gets the same quota meters as built-in providers.
 - **Four sizes.** A full panel plus large, medium and small compact views that sit on the desktop. Right-click to switch; every size can be resized.
@@ -124,7 +124,7 @@ For everything else (period picker, compact-size controls, settings, the custom-
 ```powershell
 codeusage                        # quotas and local usage from the app's cache (offline)
 codeusage usage -p codex,claude  # query quotas live for the given providers
-codeusage cost --days 30         # daily cost and tokens; the last line is each tool's output speed
+codeusage cost --days 30         # daily cost and tokens; the last line lists output speed for tools that record timing
 codeusage thirdparty             # usage through third-party endpoints (relays)
 codeusage providers              # providers, whether they're enabled, and where credentials come from
 codeusage status --json          # JSON output for scripts or a status bar

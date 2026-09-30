@@ -6,7 +6,7 @@
 
 **Windows 托盘里的 AI 编程额度与用量监控**
 
-Codex、Claude、Cursor 等 11 款编程工具的剩余额度、重置时间、Token 用量和输出速度，放在一个小窗口里。
+Codex、Claude、Cursor 等 11 款编程工具的剩余额度和重置时间，连同本机 Token 用量和输出速度，放在一个小窗口里。
 
 [![Release](https://img.shields.io/github/v/release/fanchengliu/codeusagemonit?style=flat-square&color=38bdf8)](https://github.com/fanchengliu/codeusagemonit/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/fanchengliu/codeusagemonit/total?style=flat-square&color=818cf8)](https://github.com/fanchengliu/codeusagemonit/releases)
@@ -25,14 +25,14 @@ Codex、Claude、Cursor 等 11 款编程工具的剩余额度、重置时间、T
 
 同时用好几家 AI 编程工具时，额度窗口各不相同：有 5 小时的，有每周的，有按月的，重置时间也不一样。本机日志散落在各自的目录里，走中转站的用量更是无从查起。
 
-codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看到每个平台还剩多少、什么时候重置、按现在的速度能不能撑到重置；本机用量、API 等价费用和输出速度也一并统计。它是原生 C# / WPF 程序，另附命令行工具 `codeusage`。免费开源，MIT 许可。
+codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看到每个平台还剩多少、什么时候重置、按现在的节奏能不能撑到重置。有本机日志的平台还会统计 Token 用量和 API 等价费用，其中一部分还有输出速度。它是原生 C# / WPF 程序，另附命令行工具 `codeusage`。免费开源，MIT 许可。
 
 ## 主要功能
 
 - **额度一目了然**：每个额度窗口一条 24 格进度条，亮着的是剩余部分；下方提示当前节奏是“有余量”还是“超前消耗”，并估算用尽时间。点开额度行可以看精确的重置时间。
-- **本机用量与费用**：直接读取各工具保存在本机的会话日志，按小时、按模型统计 Token 和请求数，用官方 API 单价逐次请求估算费用。支持自选时间段，柱状图可以点开看某一天或某一小时的明细。
+- **本机用量与费用**：读取有本机会话日志的工具，按小时、按模型统计 Token 和请求数，用官方 API 单价逐次请求估算费用。支持自选时间段，柱状图可以点开看某一天或某一小时的明细。
 - **价目表每天同步**：内置 361 个模型的官方价格（整理自 LiteLLM 与 models.dev），计入缓存读写、长上下文分档和 Codex fast 档倍率。程序每 24 小时检查一次更新，可以关闭，断网时用内置价目。
-- **真实输出速度**：输出 Token ÷ 整个请求耗时，包含首字延迟和中转站延迟，每个工具单独计算。反映的是实际用起来的快慢，不是模型跑分。
+- **真实输出速度**：输出 Token ÷ 整个请求耗时，包含首字延迟和中转站延迟。只对日志里带请求耗时的工具计算，并且各算各的，不跨工具平均。反映的是实际用起来的快慢，不是模型跑分。
 - **中转站用量**：Claude Code 或 Codex 接第三方接口时，用量单独显示在「第三方」页，并归到具体的接口。用 CC Switch 来回切换供应商也能分清。
 - **自定义平台**：任何返回 JSON 的 GET 接口（中转站后台、自建网关等）写一段 JSON 定义就能接入，和内置平台一样显示额度条。
 - **四种尺寸**：完整面板，以及贴在桌面上的大、中、小三种紧凑视图，右键随时切换，每种尺寸都能拖动调整大小。
@@ -121,7 +121,7 @@ irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps
 ```powershell
 codeusage                        # 各平台额度与本机用量（读取桌面版缓存，不联网）
 codeusage usage -p codex,claude  # 实时查询指定平台的额度
-codeusage cost --days 30         # 近 30 天每天的费用和 Token，最后一行是各平台输出速度
+codeusage cost --days 30         # 近 30 天每天的费用和 Token，最后一行列出有计时的平台的输出速度
 codeusage thirdparty             # 第三方接口（中转站）用量
 codeusage providers              # 平台列表、启用状态和凭据来源
 codeusage status --json          # 输出 JSON，便于接进脚本或状态栏
