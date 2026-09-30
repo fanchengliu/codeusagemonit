@@ -584,7 +584,7 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 }
 /* Side by side, the terminal fixes the row and the install card matches it on every tab. */
 @media (min-width: 1121px) {
-  .install-grid { grid-template-rows: 482px; }
+  .install-grid { grid-template-rows: 540px; }
   .install-grid > .inst,
   .install-grid > .term { height: 100%; max-height: 100%; min-height: 0; overflow: hidden; }
   .install-grid > .inst > .inst-body { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
