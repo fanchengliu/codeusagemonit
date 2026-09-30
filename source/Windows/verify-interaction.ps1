@@ -1,4 +1,5 @@
-﻿param([Parameter(Mandatory=$true)][string]$AppDirectory)
+﻿# Default: the app folder two levels above source\Windows (run it against a demo copy).
+param([string]$AppDirectory=(Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
 $ErrorActionPreference='Stop'
 $assemblyRoot=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\WPF'
 Add-Type -Path (Join-Path $assemblyRoot 'UIAutomationClient.dll')

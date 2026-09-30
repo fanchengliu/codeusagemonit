@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 
 namespace CodeUsageMonit {
     // A user-defined provider: one GET request to a JSON endpoint, plus dot-paths that
-    // map the response to quota windows, a balance and identity. Follows the boundary of
-    // CodexBar's declarative custom-provider design: GET only, fixed auth header forms,
-    // the secret never inline (DPAPI file), no redirects, bounded response, typed mapping.
+    // map the response to quota windows, a balance and identity. Deliberately narrow (the
+    // same boundary CodexBar draws for declarative providers): GET only, fixed auth header
+    // forms, the secret never inline (DPAPI file), no redirects, bounded response.
     public sealed class CustomWindow {
         public string Label = "", UsedPercent = "", RemainingPercent = "", Used = "", Limit = "", Remaining = "", ResetsAt = "", ResetInSeconds = "";
         public bool Ratio;

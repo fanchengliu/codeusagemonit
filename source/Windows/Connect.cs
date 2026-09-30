@@ -35,11 +35,13 @@ namespace CodeUsageMonit {
             if (renderDeferred && !(e.NewFocus is ButtonBase)) app.Dispatcher.BeginInvoke(new Action(Render));
         }
 
-        private UIElement ConnectPanel(ProviderState state) {
+        private UIElement ConnectPanel(ProviderState state) { return ConnectPanel(state, false); }
+        // narrow: the compact sizes stack the key box above its button.
+        private UIElement ConnectPanel(ProviderState state, bool narrow) {
             string id = state.Id;
             var panel = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
             if (ProviderCatalog.Custom.ContainsKey(id)) CustomConnect(panel, id);
-            else if (KeyProviders.Contains(id)) KeyConnect(panel, state);
+            else if (KeyProviders.Contains(id)) KeyConnect(panel, state, narrow);
             else if (id == "copilot") CopilotConnect(panel, state);
             else if (id == "codex" || id == "claude" || id == "grok") CliConnect(panel, id);
             else if (id == "cursor" || id == "antigravity") AppConnect(panel, id);
@@ -48,8 +50,7 @@ namespace CodeUsageMonit {
             return panel;
         }
         private Button ConnectButton(string text, bool primary) {
-            var button = new Button { Style = Styled(primary ? "PrimaryButton" : "SecondaryButton"), Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, MaxWidth = IsCompact && activeSize == "small" ? Math.Max(110, window.Width / config.UiScale - 50) : Double.PositiveInfinity, Margin = new Thickness(0, 0, 8, 8) };
-            System.Windows.Automation.AutomationProperties.SetName(button, text); return button;
+            return new Button { Style = Styled(primary ? "PrimaryButton" : "SecondaryButton"), Content = text, Margin = new Thickness(0, 0, 8, 0) };
         }
         private Button CheckButton(string id) {
             var check = ConnectButton("我已登录，刷新", false);
@@ -59,20 +60,19 @@ namespace CodeUsageMonit {
         private static WrapPanel ButtonRow() { return new WrapPanel { Margin = new Thickness(0, 0, 0, 0) }; }
 
         // ── API key providers ─────────────────────────────────────────────
-        private void KeyConnect(StackPanel panel, ProviderState state) {
+        private void KeyConnect(StackPanel panel, ProviderState state, bool narrow) {
             string id = state.Id;
             string env = demo ? "" : Store.KeyEnvironmentName(id, config);
             if (id == "kimi" || id == "zcode") {
                 string current; if (!regionDrafts.TryGetValue(id, out current)) current = id == "kimi" ? config.KimiRegion : config.ZaiRegion;
                 string[][] options = id == "kimi" ? new[] { new[] { "china", "国内" }, new[] { "international", "国际" } } : new[] { new[] { "china", "国内" }, new[] { "global", "国际" } };
                 var row = Row(); row.Margin = new Thickness(0, 0, 0, 8);
-                if (IsCompact && activeSize == "small") { panel.Children.Add(Hint("接口区域", 5)); row.Children.Add(Segmented(options, current, code => regionDrafts[id] = code)); }
-                else AddRow(row, Label("接口区域", 11.5, InkDim), Segmented(options, current, code => regionDrafts[id] = code));
+                AddRow(row, Label("接口区域", 11.5, InkDim), Segmented(options, current, code => regionDrafts[id] = code));
                 panel.Children.Add(row);
             }
             var line = new Grid();
-            if (IsCompact) { line.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); line.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); }
-            else { line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); }
+            line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            if (narrow) { line.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); line.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); }
             var box = new PasswordBox { IsEnabled = !demo, VerticalAlignment = VerticalAlignment.Center, ToolTip = state.Status == "expired" ? "粘贴新的 API Key" : "粘贴 API Key" };
             System.Windows.Automation.AutomationProperties.SetName(box, ProviderCatalog.Name(id) + " API Key");
             string draft; if (keyDrafts.TryGetValue(id, out draft)) box.Password = draft;
@@ -80,11 +80,11 @@ namespace CodeUsageMonit {
             box.LostKeyboardFocus += KeyBoxLostFocus;
             box.KeyDown += delegate(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) { e.Handled = true; SaveKeyFromCard(id, box.Password); } };
             line.Children.Add(box);
-            var save = new Button { Style = Styled("PrimaryButton"), Content = "保存并连接", IsEnabled = !demo, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+            if (narrow) panel.Children.Add(Label(state.Status == "expired" ? "粘贴新的 API Key" : "粘贴 API Key", 10.5, InkDim));
+            var save = new Button { Style = Styled("PrimaryButton"), Content = "保存并连接", IsEnabled = !demo, Margin = narrow ? new Thickness(0, 8, 0, 0) : new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = narrow ? HorizontalAlignment.Left : HorizontalAlignment.Stretch };
             System.Windows.Automation.AutomationProperties.SetName(save, ProviderCatalog.Name(id) + " 保存并连接");
             save.Click += delegate { SaveKeyFromCard(id, box.Password); };
-            if (IsCompact) { Grid.SetRow(save, 1); save.Margin = new Thickness(0, 8, 0, 0); save.HorizontalAlignment = HorizontalAlignment.Left; }
-            else Grid.SetColumn(save, 1);
+            if (narrow) { Grid.SetColumnSpan(box, 2); Grid.SetRow(save, 1); } else Grid.SetColumn(save, 1);
             line.Children.Add(save);
             panel.Children.Add(line);
             panel.Children.Add(Hint(demo ? "演示模式不读取或保存密钥。" : env.Length > 0 ? "正在使用环境变量 " + env + "（优先于这里保存的密钥）。" : "以 Windows DPAPI 加密保存在本机 data 目录，只有当前 Windows 用户能解密。", 6));
@@ -146,7 +146,6 @@ namespace CodeUsageMonit {
                         await Task.Delay(TimeSpan.FromSeconds(Math.Max(5, flow.Pending.Interval)));
                         if (flow.Cancelled) return;
                         string token = await service.PollCopilotLogin(flow.Pending);
-                        if (flow.Cancelled || quitting) return;
                         if (token == null) continue;
                         Store.SetProviderKey("copilot", token);
                         copilotFlow = null; connectNotes.Remove("copilot"); connectionDetails.Remove("copilot");
@@ -183,17 +182,13 @@ namespace CodeUsageMonit {
         // from the registry: a CLI installed after this app started is still found.
         private static bool LaunchCli(string path, string arguments) {
             try {
-                var info = new ProcessStartInfo("cmd.exe", CliArguments(path, arguments, true)) {
+                var info = new ProcessStartInfo("cmd.exe", "/k \"\"" + path + "\"" + (arguments.Length > 0 ? " " + arguments : "") + "\"") {
                     UseShellExecute = false, WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
                 };
                 info.EnvironmentVariables["PATH"] = SearchPath();
                 Process.Start(info);
                 return true;
             } catch { return false; }
-        }
-        // /d disables shell autorun; /s gives quoted paths the same rules for exe and cmd launchers.
-        public static string CliArguments(string path, string arguments, bool keepOpen) {
-            return "/d /s /" + (keepOpen ? "k" : "c") + " \"\"" + path + "\"" + (arguments.Length > 0 ? " " + arguments : "") + "\"";
         }
         private static string SearchPath() {
             var parts = new List<string>();
@@ -235,21 +230,6 @@ namespace CodeUsageMonit {
             panel.Children.Add(Hint(demo ? "演示模式不启动应用。" : path.Length == 0 ? "没有在默认位置找到 " + name + "，请手动打开并登录后刷新。" : "额度读取使用 " + name + " 自己的登录状态，本程序不保存它的密码。", 6));
         }
         private static string FindCursor() {
-            // App Paths supports a custom install location without scanning the disk.
-            foreach (var hive in new[] { Microsoft.Win32.Registry.CurrentUser, Microsoft.Win32.Registry.LocalMachine }) {
-                using (var key = hive.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\App Paths\Cursor.exe")) {
-                    string path = key == null ? "" : Convert.ToString(key.GetValue("")).Trim('"');
-                    if (File.Exists(path)) return path;
-                }
-            }
-            string launcher = FindOnPath("cursor");
-            if (launcher.Length > 0) {
-                string parent = Path.GetDirectoryName(launcher);
-                foreach (string relative in new[] { "Cursor.exe", @"..\..\..\Cursor.exe" }) {
-                    string path = Path.GetFullPath(Path.Combine(parent, relative));
-                    if (File.Exists(path)) return path;
-                }
-            }
             string[] paths = {
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\cursor\Cursor.exe"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Cursor\Cursor.exe")
@@ -260,13 +240,11 @@ namespace CodeUsageMonit {
         // ── Custom providers ──────────────────────────────────────────────
         private void CustomConnect(StackPanel panel, string id) {
             var row = ButtonRow();
-            CustomProvider definition;
-            if (ProviderCatalog.Custom.TryGetValue(id, out definition) && definition.Auth != "none") KeyConnect(panel, states[id]);
-            var edit = ConnectButton("编辑接口定义", false);
+            var edit = ConnectButton("编辑接口与密钥", true);
             edit.IsEnabled = !demo;
             edit.Click += delegate {
                 CustomProvider provider; if (!ProviderCatalog.Custom.TryGetValue(id, out provider)) return;
-                OpenSettings(); OpenCustomEditor(provider);
+                OpenSettings(); if (customEditor == null) OpenCustomEditor(provider);
             };
             var retry = ConnectButton("重试", false);
             retry.Click += delegate { var ignored = RefreshOne(id); };

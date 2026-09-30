@@ -1,6 +1,9 @@
+Applies to: model and price data from https://github.com/anomalyco/models.dev
+(long-context tiers and some model prices compiled into codeusagemonit's pricing.json).
+
 MIT License
 
-Copyright (c) 2025 ryoppippi
+Copyright (c) 2025 models.dev
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

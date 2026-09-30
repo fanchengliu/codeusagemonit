@@ -55,8 +55,11 @@ namespace CodeUsageMonit {
             test("Percentages are bounded and nonnumeric values ignored", () => {
                 var s = new ProviderState(); Parsers.Add(s, "one", -10, null); Parsers.Add(s, "two", 150, null); Parsers.Add(s, "bad", "NaN", null); Require(s.Quotas.Count == 2 && s.Quotas[0].Remaining == 100 && s.Quotas[1].Remaining == 0);
             });
-            test("History uses by-agent rows exactly once and includes cache tokens", () => {
-                var h = HistoryService.Parse(J.Parse("{\"daily\":[{\"period\":\"2026-01-01\",\"totalCost\":9,\"agents\":[{\"agent\":\"codex\",\"totalCost\":2,\"totalTokens\":1000,\"cacheReadTokens\":900},{\"agent\":\"claude\",\"totalCost\":7,\"totalTokens\":500}]}]}")); Require(h.Days.Count == 2 && h.Days.Sum(d => d.Cost) == 9 && h.Days[0].CachedTokens == 900);
+            test("Daily history groups hourly buckets by local day and model", () => {
+                var idx = new LogIndex(); idx.Files.Add(new LogFile { Hours = { { "2026010110||m1", new Bucket { I = 100, C = 900, O = 10, R = 1, D = 2 } }, { "2026010118||m2", new Bucket { I = 50, O = 5, R = 1, D = 1 } } } });
+                // 10:00Z is 18:00 on Jan 1 in UTC+8; 18:00Z is 02:00 on Jan 2.
+                var h = HistoryService.FromIndexes(new Dictionary<string, LogIndex> { { "codex", idx } }, TimeZoneInfo.FindSystemTimeZoneById("China Standard Time"), new DateTime(2026, 1, 2), 30);
+                Require(h.Days.Count == 2 && h.Days[0].Day == "2026-01-01" && h.Days[0].Tokens == 1010 && h.Days[0].CachedTokens == 900 && h.Days[0].Cost == 2 && h.Days[1].Day == "2026-01-02" && h.Days[1].Models[0].Model == "m2" && h.Engine == HistoryService.Engine);
             });
             test("JWT display parsing fails closed on malformed tokens", () => { Require(J.Jwt("bad") == null && J.Jwt("a.!.c") == null); });
             test("Direct proxy selection does not inherit ambient SOCKS settings", () => { Require(ProviderService.ResolveProxy("direct") == ""); });
@@ -94,9 +97,16 @@ namespace CodeUsageMonit {
                 var days = new[] { new DayUsage { Day = "2026-01-13", Tokens = 100 }, new DayUsage { Day = "2026-01-14", Tokens = 200 }, new DayUsage { Day = "2026-01-17", Tokens = 300 }, new DayUsage { Day = "2026-01-19", Tokens = 500 } };
                 var usage = UsageDetails.Window(days, q, now, 0, null, TimeZoneInfo.FindSystemTimeZoneById("China Standard Time")); Require(!usage.Exact && usage.Days.Count == 2 && usage.Tokens == 500);
             });
-            test("History keeps token composition fields from ccusage", () => {
-                var h = HistoryService.Parse(J.Parse("{\"daily\":[{\"period\":\"2026-09-29\",\"agents\":[{\"agent\":\"codex\",\"inputTokens\":1795411,\"outputTokens\":556773,\"cacheReadTokens\":143120640,\"cacheCreationTokens\":0,\"totalTokens\":145472824,\"totalCost\":294.522551}]}]}"));
-                var d = h.Days[0]; Require(d.InputTokens == 1795411 && d.OutputTokens == 556773 && d.CachedTokens == 143120640 && d.InputTokens + d.OutputTokens + d.CachedTokens == d.Tokens);
+            test("Pricing: cache writes, 1-hour writes, whole-request and marginal long-context tiers", () => {
+                Pricing.LoadJson("{\"updated\":\"t\",\"models\":{\"t-model\":{\"in\":10,\"out\":50,\"cr\":1,\"cw\":12.5,\"long\":{\"at\":272000,\"in\":20,\"out\":75,\"cr\":2},\"fast\":2},\"c-model\":{\"in\":3,\"out\":15},\"m-model\":{\"in\":1,\"out\":2,\"long\":{\"at\":200000,\"marginal\":true,\"in\":2,\"out\":4}},\"g-5\":{\"in\":1,\"out\":1}}}");
+                try {
+                    ModelPrice t = Pricing.Find("t-model"), c = Pricing.Find("c-model"), m = Pricing.Find("m-model");
+                    Require(Math.Abs(Pricing.CodexCost(t, 300000, 200000, 0, 1000) - 2.475) < 1e-9 && Math.Abs(Pricing.CodexCost(t, 1000, 900, 0, 10) - 0.0024) < 1e-12 && t.Fast == 2);
+                    Require(Math.Abs(Pricing.Cost(c, new TokenUse { Input = 1000, Output = 100, CacheRead = 10000, CacheWrite5m = 2000, CacheWrite1h = 1000 }) - 0.021) < 1e-12);
+                    Require(Math.Abs(Pricing.Cost(m, new TokenUse { Input = 300000 }) - 0.4) < 1e-12);
+                    Require(Math.Abs(Pricing.Cost(t, new TokenUse { Input = 100000, CacheRead = 200000 }) - (100000 * 20e-6 + 200000 * 2e-6)) < 1e-9);
+                    Require(Pricing.Find("t-model(xhigh)") == t && Pricing.Find("provider/t-model-20260101") == t && Pricing.Find("g-5-4") == null && Pricing.Find("g-5.4") == null && Pricing.Find("g-5-20260101") != null);
+                } finally { Pricing.Load(Path.Combine(Store.Root, "pricing.json")); }
             });
             test("History merge never shrinks a past day and always replaces today", () => {
                 var old = new UsageHistory { Zone = "Z", Days = { new DayUsage { Day = "2026-09-27", Agent = "codex", Tokens = 12000 }, new DayUsage { Day = "2026-09-28", Agent = "codex", Tokens = 10 }, new DayUsage { Day = "2026-09-29", Agent = "codex", Tokens = 999 }, new DayUsage { Day = "2026-08-01", Agent = "codex", Tokens = 5 } } };
@@ -113,36 +123,98 @@ namespace CodeUsageMonit {
                 string nullInfo = "{\"timestamp\":\"2026-09-27T02:13:00.000Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null}}";
                 string b = "{\"timestamp\":\"2026-09-27T03:05:00.000Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":3000,\"cached_input_tokens\":2700,\"output_tokens\":80,\"reasoning_output_tokens\":10,\"total_tokens\":3080},\"last_token_usage\":{\"input_tokens\":2000,\"cached_input_tokens\":1800,\"output_tokens\":30,\"total_tokens\":2030}}}}";
                 byte[] bytes = System.Text.Encoding.UTF8.GetBytes(a + "\n" + repeat + "\n" + noise + "\n" + nullInfo + "\n" + b.Substring(0, 40));
-                var state = new LogFile();
-                long offset; using (var stream = new MemoryStream(bytes)) offset = CodexLogs.Read(state, stream, 0);
-                Require(state.Hours.Count == 1 && state.Hours["2026092702|openai|"].T == 1050 && state.Hours["2026092702|openai|"].R == 1 && offset == bytes.Length - 40);
+                var index = new LogIndex(); var state = new LogFile();
+                long offset; using (var stream = new MemoryStream(bytes)) offset = CodexLogs.Read(index, state, "none", stream, 0);
+                // No turn_context yet: the model falls back to gpt-5, as Codex itself does.
+                Bucket first = state.Hours["2026092702|openai|gpt-5"];
+                Require(state.Hours.Count == 1 && first.Tokens() == 1050 && first.I == 100 && first.C == 900 && first.R == 1 && offset == bytes.Length - 40);
                 byte[] rest = System.Text.Encoding.UTF8.GetBytes(b + "\n");
-                using (var stream = new MemoryStream(rest)) CodexLogs.Read(state, stream, offset);
-                Require(state.Hours["2026092703|openai|"].T == 2030);
+                using (var stream = new MemoryStream(rest)) CodexLogs.Read(index, state, "none", stream, offset);
+                Require(state.Hours["2026092703|openai|gpt-5"].Tokens() == 2030);
             });
             test("Codex buckets carry the session's provider and model; subscription windows skip relays", () => {
                 string meta = "{\"timestamp\":\"2026-09-27T02:00:00.000Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"x\",\"model_provider\":\"custom\"}}";
                 string turn = "{\"timestamp\":\"2026-09-27T02:00:01.000Z\",\"type\":\"turn_context\",\"payload\":{\"model\":\"demo-model\"}}";
+                string tier = "{\"timestamp\":\"2026-09-27T02:00:02.000Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_settings_applied\",\"thread_settings\":{\"service_tier\":\"priority\"}}}";
                 string count = "{\"timestamp\":\"2026-09-27T02:05:00.000Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":500,\"output_tokens\":20},\"last_token_usage\":{\"input_tokens\":500,\"output_tokens\":20}}}}";
                 var state = new LogFile();
-                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(meta + "\n" + turn + "\n" + count + "\n"))) CodexLogs.Read(state, stream, 0);
-                Require(state.Hours.ContainsKey("2026092702|custom|demo-model") && state.Hours["2026092702|custom|demo-model"].T == 520);
+                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(meta + "\n" + turn + "\n" + tier + "\n" + count + "\n"))) CodexLogs.Read(new LogIndex(), state, "none", stream, 0);
+                Require(state.Hours.ContainsKey("2026092702|custom|demo-model") && state.Hours["2026092702|custom|demo-model"].Tokens() == 520 && state.Tier == "fast");
                 var index = new LogIndex { CoveredFrom = "2026-09-01T00:00:00Z" }; index.Files.Add(state);
-                index.Files.Add(new LogFile { Hours = { { "2026092703|openai|demo-model", new Bucket { T = 100, R = 1 } } } });
+                index.Files.Add(new LogFile { Hours = { { "2026092703|openai|demo-model", new Bucket { I = 100, R = 1 } } } });
                 var q = new Quota { WindowSeconds = 604800, ResetUtc = "2026-10-01T00:00:00Z" };
                 var usage = UsageDetails.Window(new DayUsage[0], q, new DateTime(2026, 9, 28, 0, 0, 0, DateTimeKind.Utc), 0, index, TimeZoneInfo.Utc, CodexLogs.IsOfficial);
                 Require(usage.Exact && Math.Abs(usage.Tokens - 100) < 1e-9);
             });
-            test("Claude log entries are de-duplicated by message id + request id", () => {
-                Func<string, string, string, string> line = (id, model, stamp) => "{\"type\":\"assistant\",\"timestamp\":\"" + stamp + "\",\"requestId\":\"req_1\",\"message\":{\"id\":\"" + id + "\",\"model\":\"" + model + "\",\"usage\":{\"input_tokens\":10,\"output_tokens\":5,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":1000}}}";
-                string text = line("msg_a", "demo-claude", "2026-09-27T02:00:00Z") + "\n" + line("msg_a", "demo-claude", "2026-09-27T02:00:01Z") + "\n" + line("msg_b", "<synthetic>", "2026-09-27T02:01:00Z") + "\n" + line("msg_c", "demo-claude", "2026-09-27T03:00:00Z") + "\n";
-                var index = new LogIndex(); var state = new LogFile();
-                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(text))) ClaudeLogs.Read(index, state, stream, 0);
-                Require(state.Hours["2026092702||demo-claude"].T == 1115 && state.Hours["2026092702||demo-claude"].R == 1 && state.Hours["2026092703||demo-claude"].T == 1115 && index.Seen.Count == 2);
+            test("Claude log entries are de-duplicated by message id + request id; the larger copy wins", () => {
+                Func<string, string, string, int, string> line = (id, model, stamp, output) => "{\"type\":\"assistant\",\"timestamp\":\"" + stamp + "\",\"requestId\":\"req_" + id + "\",\"message\":{\"id\":\"" + id + "\",\"model\":\"" + model + "\",\"usage\":{\"input_tokens\":10,\"output_tokens\":" + output + ",\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":1000}}}";
+                string text = line("msg_a", "demo-claude", "2026-09-27T02:00:00Z", 5) + "\n" + line("msg_a", "demo-claude", "2026-09-27T02:00:01Z", 5) + "\n" + line("msg_b", "<synthetic>", "2026-09-27T02:01:00Z", 5) + "\n" + line("msg_c", "demo-claude", "2026-09-27T03:00:00Z", 5) + "\n" + line("msg_c", "demo-claude", "2026-09-27T03:00:02Z", 50) + "\n";
+                var index = new LogIndex(); var state = new LogFile { Name = "s.jsonl" }; index.Files.Add(state);
+                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(text))) ClaudeLogs.Read(index, state, "s.jsonl", stream, 0);
+                Require(state.Hours["2026092702||demo-claude"].Tokens() == 1115 && state.Hours["2026092702||demo-claude"].R == 1 && state.Hours["2026092702||"].Tokens() == 1115 && state.Hours["2026092703||demo-claude"].O == 50 && state.Hours["2026092703||demo-claude"].R == 1);
                 // Without requestId: same id + same timestamp is a copy, a new timestamp is not.
                 string bare = "{\"type\":\"assistant\",\"timestamp\":\"2026-09-27T04:00:00Z\",\"message\":{\"id\":\"msg_d\",\"model\":\"demo-claude\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}";
-                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(bare + "\n" + bare + "\n" + bare.Replace("04:00:00", "04:00:09") + "\n"))) ClaudeLogs.Read(index, state, stream, 0);
-                Require(state.Hours["2026092704|" + ClaudeLogs.NoRequestId + "|demo-claude"].T == 4 && state.Hours["2026092704|" + ClaudeLogs.NoRequestId + "|demo-claude"].R == 2);
+                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(bare + "\n" + bare + "\n" + bare.Replace("04:00:00", "04:00:09") + "\n"))) ClaudeLogs.Read(index, state, "s.jsonl", stream, 0);
+                Require(state.Hours["2026092704|" + ClaudeLogs.NoRequestId + "|demo-claude"].Tokens() == 4 && state.Hours["2026092704|" + ClaudeLogs.NoRequestId + "|demo-claude"].R == 2);
+                // A null id is malformed and skipped; sub-agent progress lines count.
+                string malformed = "{\"type\":\"assistant\",\"timestamp\":\"2026-09-27T05:00:00Z\",\"message\":{\"id\":null,\"model\":\"demo-claude\",\"usage\":{\"input_tokens\":7,\"output_tokens\":7}}}";
+                string progress = "{\"type\":\"progress\",\"sessionId\":\"s1\",\"data\":{\"message\":{\"timestamp\":\"2026-09-27T05:10:00Z\",\"requestId\":\"req_p\",\"message\":{\"id\":\"msg_p\",\"model\":\"demo-claude\",\"usage\":{\"input_tokens\":3,\"output_tokens\":2}}}}}";
+                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(malformed + "\n" + progress + "\n"))) ClaudeLogs.Read(index, state, "s.jsonl", stream, 0);
+                Require(state.Hours["2026092705||demo-claude"].Tokens() == 5);
+            });
+            test("Output speed (Codex): last tool output / prompt → last model item, across reads; short replies skipped", () => {
+                Func<string, string, string> item = (stamp, payload) => "{\"timestamp\":\"2026-09-27T" + stamp + "Z\",\"type\":\"response_item\",\"payload\":{" + payload + "}}";
+                Func<string, int, int, string> count = (stamp, total, last) => "{\"timestamp\":\"2026-09-27T" + stamp + "Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":" + (total * 10) + ",\"output_tokens\":" + total + "},\"last_token_usage\":{\"input_tokens\":" + (last * 10) + ",\"output_tokens\":" + last + "}}}}";
+                string first = String.Join("\n", new[] {
+                    item("10:00:00.000", "\"type\":\"message\",\"role\":\"user\",\"content\":[]"),
+                    "{\"timestamp\":\"2026-09-27T10:00:00.500Z\",\"type\":\"turn_context\",\"payload\":{\"model\":\"demo-model\"}}",
+                    item("10:00:12.000", "\"type\":\"reasoning\",\"summary\":[]") }) + "\n";
+                string rest = String.Join("\n", new[] {
+                    item("10:00:20.000", "\"type\":\"custom_tool_call\",\"name\":\"apply_patch\""),
+                    item("10:00:22.000", "\"type\":\"custom_tool_call_output\",\"output\":\"ok\""),
+                    count("10:00:22.010", 1000, 1000),
+                    item("10:00:40.000", "\"type\":\"reasoning\",\"summary\":[]"),
+                    item("10:00:47.000", "\"type\":\"message\",\"role\":\"assistant\",\"content\":[]"),
+                    count("10:00:47.100", 1500, 500),
+                    item("10:05:00.000", "\"type\":\"message\",\"role\":\"user\",\"content\":[]"),
+                    item("10:05:03.000", "\"type\":\"message\",\"role\":\"assistant\",\"content\":[]"),
+                    count("10:05:03.100", 1520, 20) }) + "\n";
+                var index = new LogIndex(); var state = new LogFile();
+                long offset; using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(first))) offset = CodexLogs.Read(index, state, "none", stream, 0);
+                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rest))) CodexLogs.Read(index, state, "none", stream, offset);
+                Bucket b = state.Hours["2026092710|openai|demo-model"];
+                // 20 s (10:00:00 → 10:00:20) + 25 s (10:00:22 → 10:00:47); the 20-token reply is not timed.
+                Require(b.R == 3 && b.TN == 2 && b.TO == 1500 && Math.Abs(b.TS - 45) < 1e-9 && Math.Abs(b.Speed().Value - 1500 / 45.0) < 1e-9);
+            });
+            test("Output speed (Claude): parent entry → last block, across reads and files; quoted keys in text ignored", () => {
+                Func<string, string, string, string, int, string> block = (id, uuid, parent, stamp, output) => "{\"parentUuid\":\"" + parent + "\",\"type\":\"assistant\",\"requestId\":\"req_" + id + "\",\"message\":{\"id\":\"" + id + "\",\"model\":\"demo-claude\",\"usage\":{\"input_tokens\":10,\"output_tokens\":" + output + "}},\"uuid\":\"" + uuid + "\",\"timestamp\":\"2026-09-27T" + stamp + "Z\"}";
+                string user = "{\"parentUuid\":null,\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"hi\"},\"uuid\":\"u1\",\"timestamp\":\"2026-09-27T11:00:00.000Z\"}";
+                string toolResult = "{\"parentUuid\":\"a2\",\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"tool_result\",\"content\":\"x \\\"uuid\\\":\\\"a1\\\",\\\"timestamp\\\":\\\"2026-09-27T09:00:00Z\\\"\"}]},\"uuid\":\"u2\",\"timestamp\":\"2026-09-27T11:00:30.000Z\"}";
+                string system = "{\"parentUuid\":\"a3\",\"type\":\"system\",\"timestamp\":\"2026-09-27T11:01:00.000Z\",\"uuid\":\"s1\"}";
+                string first = user + "\n" + block("m1", "a1", "u1", "11:00:06.000", 800) + "\n";
+                string rest = String.Join("\n", new[] { block("m1", "a2", "a1", "11:00:10.000", 800), toolResult, block("m2", "a3", "u2", "11:00:45.000", 30), system, block("m3", "a4", "s1", "11:01:20.000", 400) }) + "\n";
+                var index = new LogIndex(); var state = new LogFile { Name = "s.jsonl" }; index.Files.Add(state);
+                long offset; using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(first))) offset = ClaudeLogs.Read(index, state, "s.jsonl", stream, 0);
+                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rest))) ClaudeLogs.Read(index, state, "s.jsonl", stream, offset);
+                Bucket b = state.Hours["2026092711||demo-claude"];
+                // m1: 11:00:00 → 11:00:10 = 10 s; m2 has 30 output tokens (skipped); m3: 11:01:00 → 11:01:20 = 20 s.
+                Require(b.R == 3 && b.TN == 2 && b.TO == 1200 && Math.Abs(b.TS - 30) < 1e-9);
+                // The same responses copied into another file are not timed again.
+                var copy = new LogFile { Name = "t.jsonl" }; index.Files.Add(copy);
+                using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(first + rest))) ClaudeLogs.Read(index, copy, "t.jsonl", stream, 0);
+                Require(copy.Hours.Values.Sum(x => x.TN) == 0 && state.Hours["2026092711||demo-claude"].TN == 2);
+            });
+            test("Output speed (Grok, history): recorded API time per turn; timing reaches the daily rows", () => {
+                string line = "{\"timestamp\":1750000000,\"params\":{\"sessionId\":\"sess-1\",\"update\":{\"sessionUpdate\":\"turn_completed\",\"usage\":{\"modelUsage\":{\"grok-demo\":{\"inputTokens\":100,\"outputTokens\":1000,\"modelCalls\":2,\"apiDurationMs\":20000},\"grok-mini\":{\"inputTokens\":10,\"outputTokens\":60,\"modelCalls\":2,\"apiDurationMs\":3000}}}},\"_meta\":{\"eventId\":\"evt-2\"}}}";
+                var index = new LogIndex(); var file = new LogFile(); index.Files.Add(file);
+                AgentLogs.GrokLine(index, file, line, "s", null);
+                Bucket b = file.Hours["2025061515||grok-demo"], mini = file.Hours["2025061515||grok-mini"];
+                Require(b.TN == 2 && b.TO == 1000 && b.TS == 20 && b.Speed() == 50 && mini.TN == 0);
+                UsageHistory h = HistoryService.FromIndexes(new Dictionary<string, LogIndex> { { "grok", index } }, TimeZoneInfo.Utc, new DateTime(2025, 6, 15), 30);
+                DayUsage row = h.Days.Single();
+                Require(row.TimedRequests == 2 && row.TimedOutput == 1000 && row.TimedSeconds == 20 && row.Models.First(m => m.Model == "grok-demo").TimedSeconds == 20);
+                Require(OutputTiming.Speed(1000, .5) == null && OutputTiming.Text(null) == "—" && OutputTiming.Text(50) == "50 t/s" && OutputTiming.Text(103.4) == "103 t/s" && OutputTiming.Text(9.46) == "9.5 t/s");
+                Require(!OutputTiming.Accept(49, 10) && !OutputTiming.Accept(1000, 601) && OutputTiming.Accept(1000, 20) && OutputTiming.Supported("codex") && !OutputTiming.Supported("antigravity"));
             });
             test("Codex endpoint is read from model_provider, profiles and provider tables", () => {
                 string toml = "model = \"m\"\nmodel_provider = \"custom\"\n[projects.'D:\\x.y']\ntrust_level = \"trusted\"\n[model_providers.\"custom\"]\nname = \"custom\"\nbase_url = \"https://Relay.Example.com/v1\" # comment\n";
@@ -156,26 +228,24 @@ namespace CodeUsageMonit {
                 var log = new EndpointLog();
                 log.Marks.Add(new EndpointMark { App = "claude", Official = true, Since = "2026-09-20T00:00:00Z" });
                 log.Marks.Add(new EndpointMark { App = "claude", Host = "relay.example.com", Key = "abc123", Name = "Relay", Since = "2026-09-25T00:00:00Z" });
-                var claude = new LogIndex(); claude.Files.Add(new LogFile { Hours = { { "2026091810||m", new Bucket { T = 7, R = 1 } }, { "2026092210||m", new Bucket { T = 50, R = 1 } }, { "2026092610||m", new Bucket { T = 300, R = 2 } }, { "2026092310|" + ClaudeLogs.NoRequestId + "|m", new Bucket { T = 20, R = 1 } }, { "2026091010|" + ClaudeLogs.NoRequestId + "|m", new Bucket { T = 5, R = 1 } } } });
-                var codex = new LogIndex(); codex.Files.Add(new LogFile { Hours = { { "2026092610|custom|g", new Bucket { T = 40, R = 1 } }, { "2026092610|openai|g", new Bucket { T = 900, R = 3 } } } });
-                var history = new UsageHistory { Days = { new DayUsage { Day = "2026-09-26", Agent = "claude", Tokens = 350, Cost = 3.5, Models = { new ModelUsage { Model = "m", Tokens = 350, Cost = 3.5 } } } } };
-                var report = ThirdPartyReport.Build(codex, claude, log, history, new DateTime(2026, 9, 29, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Utc);
+                var claude = new LogIndex(); claude.Files.Add(new LogFile { Hours = { { "2026091810||m", new Bucket { I = 7, R = 1 } }, { "2026092210||m", new Bucket { I = 50, R = 1 } }, { "2026092610||m", new Bucket { I = 300, R = 2, D = 3 } }, { "2026092310|" + ClaudeLogs.NoRequestId + "|m", new Bucket { I = 20, R = 1 } }, { "2026091010|" + ClaudeLogs.NoRequestId + "|m", new Bucket { I = 5, R = 1 } } } });
+                var codex = new LogIndex(); codex.Files.Add(new LogFile { Hours = { { "2026092610|custom|g", new Bucket { I = 40, R = 1, U = 40 } }, { "2026092610|openai|g", new Bucket { I = 900, R = 3 } } } });
+                var report = ThirdPartyReport.Build(codex, claude, log, new UsageHistory(), new DateTime(2026, 9, 29, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Utc);
                 var relay = report.Endpoints.First(e => e.App == "claude" && e.Host.Length > 0); var unknown = report.Endpoints.First(e => e.App == "codex");
                 var bare = report.Endpoints.First(e => e.Key == ClaudeLogs.NoRequestId);
                 Require(report.Endpoints.Count == 3 && relay.Current && relay.Month == 300 && relay.Requests == 2 && Math.Abs(relay.CostMonth - 3) < 1e-9 && relay.Week == 300 && relay.Today == 0);
                 // No request-id: a relay even while settings.json looked official, and before tracking.
                 Require(bare.Month == 25 && !bare.Current && unknown.Host == "" && unknown.Month == 40 && unknown.CostPartial && report.ClaudeUnattributed == 7 && report.AppMonth("claude") == 325);
             });
-            test("Exact window clips hour buckets and prices each day by its own rate", () => {
+            test("Exact window clips hour buckets by overlap, tokens and cost alike", () => {
                 var zone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
                 var index = new LogIndex { CoveredFrom = "2026-09-01T00:00:00Z", Updated = "2026-09-29T10:00:00Z" };
-                // 2026-09-27 02:00Z is 10:00 local; the window opens at 02:30Z (10:30 local).
-                index.Files.Add(new LogFile { Name = "a.jsonl", Hours = { { "2026092702|openai|m", new Bucket { T = 1000 } }, { "2026092703|openai|m", new Bucket { T = 2000 } }, { "2026092802|openai|m", new Bucket { T = 4000 } } } });
-                var days = new[] { new DayUsage { Day = "2026-09-27", Tokens = 10000, Cost = 10 }, new DayUsage { Day = "2026-09-28", Tokens = 4000, Cost = 8 } };
+                // The window opens at 02:30Z, halfway through the 02:00Z bucket.
+                index.Files.Add(new LogFile { Name = "a.jsonl", Hours = { { "2026092702|openai|m", new Bucket { I = 1000, D = 1 } }, { "2026092703|openai|m", new Bucket { I = 2000, D = 2 } }, { "2026092802|openai|m", new Bucket { I = 4000, D = 8 } } } });
                 var q = new Quota { WindowSeconds = 604800, ResetUtc = "2026-10-04T02:30:00Z" };
-                var usage = UsageDetails.Window(days, q, new DateTime(2026, 9, 29, 0, 0, 0, DateTimeKind.Utc), 0, index, zone);
-                Require(usage.Exact && Math.Abs(usage.Tokens - 6500) < .001 && Math.Abs(usage.Cost - (2500 * .001 + 4000 * .002)) < 1e-9);
-                Require(!UsageDetails.Window(days, q, new DateTime(2026, 9, 29, 0, 0, 0, DateTimeKind.Utc), 4, index, zone).Exact);
+                var usage = UsageDetails.Window(new DayUsage[0], q, new DateTime(2026, 9, 29, 0, 0, 0, DateTimeKind.Utc), 0, index, zone);
+                Require(usage.Exact && Math.Abs(usage.Tokens - 6500) < .001 && Math.Abs(usage.Cost - 10.5) < 1e-9 && usage.CostComplete);
+                Require(!UsageDetails.Window(new DayUsage[0], q, new DateTime(2026, 9, 29, 0, 0, 0, DateTimeKind.Utc), 4, index, zone).Exact);
             });
             test("Copilot maps percent_remaining, skips placeholders and unlimited pools", () => {
                 var s = Parsers.Copilot(J.Parse("{\"copilot_plan\":\"individual_pro\",\"quota_reset_date\":\"2026-10-01\",\"quota_snapshots\":{\"premium_interactions\":{\"entitlement\":300,\"remaining\":120,\"percent_remaining\":40,\"unlimited\":false},\"chat\":{\"unlimited\":true},\"completions\":{\"entitlement\":0,\"remaining\":0,\"percent_remaining\":0}}}"));
@@ -233,10 +303,13 @@ namespace CodeUsageMonit {
                 Require(back.Count == 1 && back[0].Quotas[0].Remaining == 53 && back[0].Quotas[0].Label == "每周");
             });
             test("Unpriced local usage remains unknown instead of becoming a zero-dollar claim", () => {
-                var h = HistoryService.Parse(J.Parse("{\"daily\":[{\"period\":\"2026-01-01\",\"agents\":[{\"agent\":\"codex\",\"totalTokens\":15}]}]}")); Require(h.Days.Count == 1 && !h.Days[0].CostKnown);
+                var idx = new LogIndex(); idx.Files.Add(new LogFile { Hours = { { "2026010102||x", new Bucket { I = 15, R = 1, U = 15 } } } });
+                var h = HistoryService.FromIndexes(new Dictionary<string, LogIndex> { { "codex", idx } }, TimeZoneInfo.Utc, new DateTime(2026, 1, 1), 30);
+                Require(h.Days.Count == 1 && !h.Days[0].CostKnown && h.Days[0].UnpricedTokens == 15);
             });
             test("Most-used model is ordered by recorded tokens including cache", () => {
-                var h = HistoryService.Parse(J.Parse("{\"daily\":[{\"period\":\"2026-01-01\",\"agents\":[{\"agent\":\"codex\",\"totalTokens\":101,\"modelBreakdowns\":[{\"modelName\":\"test-a\",\"inputTokens\":1,\"cacheReadTokens\":90},{\"modelName\":\"test-b\",\"inputTokens\":10}]}]}]}")); Require(UsageDetails.MainModel(h.Days) == "test-a");
+                var day = new DayUsage { Day = "2026-01-01", Agent = "codex", Models = { new ModelUsage { Model = "test-a", Tokens = 91 }, new ModelUsage { Model = "test-b", Tokens = 10 } } };
+                Require(UsageDetails.MainModel(new[] { day }) == "test-a");
             });
             test("Window migration turns off legacy always-on-top and preserves provider selection", () => {
                 var config = new AppConfig { UiVersion = 0, PinWindow = true, AlwaysOnTop = true, Enabled = new[] { "codex" } };
@@ -247,45 +320,65 @@ namespace CodeUsageMonit {
                 var config = new AppConfig { UiVersion = 2, WindowWidth = Double.NaN, WindowHeight = -10, UiScale = Double.PositiveInfinity, WindowLeft = Double.NaN };
                 WindowFrame.Normalize(config); Require(config.WindowWidth == 420 && config.WindowHeight == 460 && config.UiScale == 1 && !config.WindowLeft.HasValue);
             });
+            test("Display sizes: solid material becomes opaque acrylic, unknown sizes fall back to full", () => {
+                var config = new AppConfig { UiVersion = 2, Material = "solid", SurfaceOpacity = .3, DisplaySize = "huge", CompactProvider = "" };
+                WindowFrame.Normalize(config); Require(config.Material == "acrylic" && config.SurfaceOpacity == 1 && config.DisplaySize == "full" && config.CompactProvider == "overview");
+                config.SurfaceOpacity = Double.NaN; WindowFrame.Normalize(config); Require(config.SurfaceOpacity == WindowFrame.DefaultOpacity);
+            });
+            test("Surface colour: hex parsing, HSV round trip, contrast, invalid config falls back", () => {
+                System.Windows.Media.Color c;
+                Require(MonitorPanel.TryParseHex("#0f1b2d", out c) && MonitorPanel.Hex(c) == "#0F1B2D");
+                Require(MonitorPanel.TryParseHex("abc", out c) && MonitorPanel.Hex(c) == "#AABBCC");
+                Require(!MonitorPanel.TryParseHex("#12345", out c) && !MonitorPanel.TryParseHex("red", out c) && !MonitorPanel.TryParseHex(null, out c));
+                foreach (string hex in new[] { "#15171B", "#000000", "#FFFFFF", "#2A1218", "#0D2226", "#7F3FBF" }) {
+                    double h, s, v; MonitorPanel.TryParseHex(hex, out c); MonitorPanel.ToHsv(c, out h, out s, out v);
+                    Require(MonitorPanel.Hex(MonitorPanel.FromHsv(h, s, v)) == hex);
+                }
+                Require(MonitorPanel.Hex(MonitorPanel.FromHsv(360, 1, 1)) == "#FF0000" && MonitorPanel.Hex(MonitorPanel.FromHsv(120, 1, 1)) == "#00FF00");
+                Require(Math.Abs(MonitorPanel.ContrastRatio(System.Windows.Media.Colors.White, System.Windows.Media.Colors.Black) - 21) < 1e-9);
+                Require(MonitorPanel.ContrastRatio(System.Windows.Media.Color.FromRgb(0xF2, 0xF3, 0xF5), WindowFrame.DefaultTint) > 15);
+                var config = new AppConfig { UiVersion = 2, SurfaceColor = "not a colour" };
+                WindowFrame.Normalize(config); Require(config.SurfaceColor == "#15171B");
+                config.SurfaceColor = "#abc"; WindowFrame.Normalize(config); Require(config.SurfaceColor == "#AABBCC");
+            });
+            test("Per-size geometry keeps valid compact layouts and drops broken ones", () => {
+                var config = new AppConfig { UiVersion = 2 };
+                config.Layouts["small"] = new WindowGeometry { Width = 200, Height = 200, Left = Double.NaN, Top = 40 };
+                config.Layouts["full"] = new WindowGeometry { Width = 400, Height = 400 };
+                config.Layouts["large"] = new WindowGeometry { Width = Double.PositiveInfinity, Height = 400 };
+                WindowFrame.Normalize(config);
+                Require(config.Layouts.Count == 1 && !config.Layouts["small"].Left.HasValue && config.Layouts["small"].Top == 40);
+                config.Layouts = null; WindowFrame.Normalize(config); Require(config.Layouts != null);
+            });
+            test("Every display size's default fits between its resize limits", () => {
+                foreach (string size in new[] { "small", "medium", "large", "full" }) {
+                    System.Windows.Size min = WindowFrame.MinSize(size), def = WindowFrame.DefaultSize(size), max = WindowFrame.MaxSize(size);
+                    Require(min.Width <= def.Width && def.Width <= max.Width && min.Height <= def.Height && def.Height <= max.Height);
+                }
+            });
+            test("Grok turns: per-model usage, cached input split out, recorded cost wins, event ids dedupe", () => {
+                string line = "{\"timestamp\":1750000000,\"params\":{\"sessionId\":\"sess-1\",\"update\":{\"sessionUpdate\":\"turn_completed\",\"usage\":{\"modelUsage\":{\"grok-4.5-build\":{\"inputTokens\":100,\"outputTokens\":20,\"cachedReadTokens\":40,\"reasoningTokens\":10,\"costUsdTicks\":12345678901}}}},\"_meta\":{\"eventId\":\"evt-1\"}}}";
+                var index = new LogIndex(); var file = new LogFile();
+                AgentLogs.GrokLine(index, file, line, "s", null); AgentLogs.GrokLine(index, file, line, "s", null);
+                Bucket b = file.Hours["2025061515||grok-4.5-build"];
+                Require(b.I == 60 && b.C == 40 && b.O == 20 && b.R == 1 && Math.Abs(b.D - 1.2345678901) < 1e-12);
+            });
+            test("Kimi wire records: old StatusUpdate and new turn-scoped usage.record", () => {
+                var index = new LogIndex(); var file = new LogFile();
+                AgentLogs.KimiLine(index, file, "{\"timestamp\":1770983427.123,\"message\":{\"type\":\"StatusUpdate\",\"payload\":{\"token_usage\":{\"input_other\":100,\"output\":50,\"input_cache_read\":10,\"input_cache_creation\":20},\"message_id\":\"msg-1\"}}}", "kimi-for-coding", "s", DateTime.UtcNow);
+                AgentLogs.KimiLine(index, file, "{\"type\":\"usage.record\",\"model\":\"kimi-code/kimi-for-coding\",\"usage\":{\"inputOther\":3064,\"output\":76,\"inputCacheRead\":14848,\"inputCacheCreation\":0},\"usageScope\":\"turn\",\"time\":1782113184943}", "x", "s", DateTime.UtcNow);
+                AgentLogs.KimiLine(index, file, "{\"type\":\"usage.record\",\"model\":\"kimi-code/kimi-for-coding\",\"usage\":{\"inputOther\":5000,\"output\":200},\"usageScope\":\"session\",\"time\":1782113185000}", "x", "s", DateTime.UtcNow);
+                Bucket old = file.Hours["2026021311||kimi-for-coding"];
+                Require(old.I == 100 && old.O == 50 && old.C == 10 && old.W == 20 && file.Hours.Count == 2 && file.Hours.Values.Sum(v => v.R) == 2);
+            });
+            test("Pi assistant messages: a total-only record becomes output, copies count once", () => {
+                var index = new LogIndex(); var file = new LogFile();
+                string line = "{\"type\":\"message\",\"timestamp\":\"2026-01-02T00:00:00.000Z\",\"message\":{\"role\":\"assistant\",\"model\":\"gpt-5\",\"usage\":{\"totalTokens\":333}}}";
+                MoreAgentLogs.PiLine(index, file, line); MoreAgentLogs.PiLine(index, file, line);
+                Bucket b = file.Hours["2026010200||gpt-5"]; Require(b.O == 333 && b.R == 1);
+            });
             test("Antigravity desktop response parses measured model quotas", () => {
                 var state = LocalAntigravity.Parse(J.Parse("{\"userStatus\":{\"cascadeModelConfigData\":{\"clientModelConfigs\":[{\"label\":\"test-model\",\"quotaInfo\":{\"remainingFraction\":0.6,\"resetTime\":\"2026-01-20T00:00:00Z\"}}]}}}")); Require(state.Quotas.Count == 1 && state.Quotas[0].Remaining == 60);
-            });
-            test("Legacy opaque settings migrate to acrylic with zero transparency", () => {
-                var config = J.Serializer().Deserialize<AppConfig>("{\"UiVersion\":2,\"Material\":\"solid\",\"SurfaceOpacity\":0.4,\"Widgets\":[{\"Size\":\"small\"}],\"Enabled\":[\"codex\"]}");
-                WindowFrame.Normalize(config);
-                Require(config.Material == "acrylic" && config.SurfaceOpacity == 1 && config.DisplaySize == "full" && config.Enabled.SequenceEqual(new[] { "codex" }));
-            });
-            test("Transparency accepts both endpoints and rejects invalid alpha", () => {
-                Require(WindowFrame.ClampOpacity(0) == 0 && WindowFrame.ClampOpacity(1) == 1);
-                Require(WindowFrame.ClampOpacity(-.5) == 0 && WindowFrame.ClampOpacity(2) == 1 && WindowFrame.ClampOpacity(Double.NaN) == WindowFrame.DefaultOpacity);
-            });
-            test("Display size and compact geometry survive valid settings and reject invalid values", () => {
-                foreach (string size in MonitorPanel.DisplaySizes) {
-                    var config = new AppConfig { UiVersion = 2, DisplaySize = size, CompactLeft = 45, CompactTop = 90 };
-                    WindowFrame.Normalize(config); Require(config.DisplaySize == size && config.CompactLeft == 45 && config.CompactTop == 90);
-                }
-                var bad = new AppConfig { UiVersion = 2, DisplaySize = "widget", CompactLeft = Double.NaN, CompactTop = Double.PositiveInfinity };
-                WindowFrame.Normalize(bad); Require(bad.DisplaySize == "full" && !bad.CompactLeft.HasValue && !bad.CompactTop.HasValue);
-            });
-            test("Mica migrates to acrylic without changing transparency or layout geometry", () => {
-                var c = new AppConfig { UiVersion = 2, Material = "mica", SurfaceOpacity = .35, DisplaySize = "small" };
-                c.Layouts["small"] = new PanelPlacement { Width = 310, Height = 430, Left = 90, Top = 80 };
-                WindowFrame.Normalize(c); Require(c.Material == "acrylic" && c.SurfaceOpacity == .35 && c.Layouts["small"].Width == 310 && c.Layouts["small"].Top == 80);
-                c.Layouts["medium"] = new PanelPlacement { Width = Double.NaN, Height = Double.PositiveInfinity, Left = Double.NaN };
-                WindowFrame.Normalize(c); Require(c.Layouts["medium"].Width == WindowFrame.DefaultSize("medium").Width && !c.Layouts["medium"].Left.HasValue);
-            });
-            test("Local provider refresh preserves other providers and retained past totals", () => {
-                var other = new DayUsage { Agent = "codex", Day = "2026-01-02", Tokens = 70 };
-                var old = new UsageHistory { Zone = "test", Days = new List<DayUsage> { other, new DayUsage { Agent = "pi", Day = "2026-01-01", Tokens = 100 } } };
-                var next = new UsageHistory { Zone = "test", Days = new List<DayUsage> { new DayUsage { Agent = "codex", Day = "2026-01-02", Tokens = 999 }, new DayUsage { Agent = "pi", Day = "2026-01-01", Tokens = 20 }, new DayUsage { Agent = "pi", Day = "2026-01-02", Tokens = 30 } } };
-                var result = HistoryService.MergeProvider(old, next, "pi", "2026-01-01", "2026-01-02");
-                Require(Object.ReferenceEquals(result.Days.Single(d => d.Agent == "codex"), other) && result.Days.Where(d => d.Agent == "pi").Sum(d => d.Tokens) == 130);
-            });
-            PeriodTests.Add(test);
-            test("Restored compact defaults migrate once while custom and zoomed geometry remain", () => {
-                var c = new AppConfig { UiVersion = 2 }; c.Layouts["small"] = new PanelPlacement { Width = 260, Height = 320 }; c.Layouts["medium"] = new PanelPlacement { Width = 405, Height = 285 };
-                WindowFrame.Normalize(c); Require(c.Layouts["small"].Width == 172 && c.Layouts["small"].Height == 172 && c.Layouts["medium"].Width == 405);
-                c.UiScale = .8; c.Layouts["small"].Width = 150; c.Layouts["small"].Height = 150; WindowFrame.Normalize(c); Require(c.Layouts["small"].Width == 150 && c.LayoutStyleVersion == 8);
             });
             Directory.CreateDirectory(Path.Combine(Store.Root, "verification"));
             File.WriteAllText(Path.Combine(Store.Root, "verification", "tests.json"), J.Serializer().Serialize(new { passed = passed.Count, failed = failed.Count, checks = passed, errors = failed }));

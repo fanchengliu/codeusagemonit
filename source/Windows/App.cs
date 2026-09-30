@@ -22,8 +22,8 @@ using Forms = System.Windows.Forms;
 using Drawing = System.Drawing;
 
 [assembly: AssemblyTitle("codeusagemonit")]
-[assembly: AssemblyDescription("A single-tray Windows usage monitor, adapted from CodexBar")]
-[assembly: AssemblyVersion("0.8.0.0")]
+[assembly: AssemblyDescription("A Windows tray monitor for AI coding assistants' quotas and local usage")]
+[assembly: AssemblyVersion("1.1.0.0")]
 namespace CodeUsageMonit {
     public static class Program {
         private static Mutex mutex;
@@ -66,20 +66,21 @@ namespace CodeUsageMonit {
         private readonly WindowFrame frame;
         private readonly StackPanel body;
         private readonly UniformGrid tabs;
-        private readonly Grid tabHost, settingsHost;
+        private readonly Grid tabHost;
         private readonly FrameworkElement scaleRoot;
         private readonly HashSet<string> refreshingIds = new HashSet<string>();
         private readonly ScrollViewer bodyScroll;
-        private readonly TextBlock status, titleText, refreshGlyph;
+        private readonly TextBlock status, refreshGlyph;
         private readonly Ellipse statusDot;
-        private readonly FrameworkElement logo;
-        private readonly Button refreshButton, pinButton, settingsButton, backButton;
+        private readonly Button refreshButton, pinButton, settingsButton, sizeButton;
         private readonly Forms.NotifyIcon tray;
         private readonly DispatcherTimer refreshTimer, clockTimer;
         private AppConfig config;
         private Dictionary<string, ProviderState> states = new Dictionary<string, ProviderState>();
         private UsageHistory history;
         private LogIndex codexLogs, claudeLogs;
+        // Hourly usage index per agent (tokens by kind + API-equivalent cost), from local logs.
+        private Dictionary<string, LogIndex> usageIndexes = new Dictionary<string, LogIndex>();
         private EndpointLog endpointLog;
         private ThirdPartySummary thirdParty = new ThirdPartySummary();
         private readonly List<FileSystemWatcher> watchers = new List<FileSystemWatcher>();
@@ -94,14 +95,16 @@ namespace CodeUsageMonit {
             config.RefreshMinutes = Math.Max(1, Math.Min(60, config.RefreshMinutes)); if (config.Enabled == null || config.Enabled.Length == 0) config.Enabled = ProviderCatalog.DefaultEnabled;
             if (!demo) RegisterCustomProviders(CustomProviders.Load());
             using (var reader = XmlReader.Create(System.IO.Path.Combine(Store.Root, "Panel.xaml"))) window = (Window)XamlReader.Load(reader);
-            // Tooltips live in popups; register the dark tooltip style application-wide too.
-            foreach (object key in new object[] { typeof(ToolTip), typeof(ContextMenu), typeof(MenuItem), MenuItem.SeparatorStyleKey }) { object style = window.Resources[key]; if (style != null) app.Resources[key] = style; }
+            // Styles are registered application-wide: tooltips and menus live in popups, and
+            // the settings window uses the same controls as the panel.
+            foreach (object key in window.Resources.Keys) app.Resources[key] = window.Resources[key];
             frame = new WindowFrame(window, config, SaveConfig);
-            body = (StackPanel)window.FindName("Body"); tabs = (UniformGrid)window.FindName("Tabs"); tabHost = (Grid)window.FindName("TabHost"); settingsHost = (Grid)window.FindName("SettingsHost");
+            window.SourceInitialized += delegate { ApplyAppearance(); };
+            body = (StackPanel)window.FindName("Body"); tabs = (UniformGrid)window.FindName("Tabs"); tabHost = (Grid)window.FindName("TabHost");
             bodyScroll = (ScrollViewer)window.FindName("BodyScroll"); status = (TextBlock)window.FindName("StatusText"); statusDot = (Ellipse)window.FindName("StatusDot");
-            titleText = (TextBlock)window.FindName("TitleText"); refreshGlyph = (TextBlock)window.FindName("RefreshGlyph"); logo = (FrameworkElement)window.FindName("Logo");
+            refreshGlyph = (TextBlock)window.FindName("RefreshGlyph");
             scaleRoot = (FrameworkElement)window.FindName("ScaleRoot"); compactRoot = (Border)window.FindName("CompactRoot");
-            refreshButton = (Button)window.FindName("RefreshButton"); pinButton = (Button)window.FindName("PinButton"); settingsButton = (Button)window.FindName("SettingsButton"); backButton = (Button)window.FindName("BackButton");
+            refreshButton = (Button)window.FindName("RefreshButton"); pinButton = (Button)window.FindName("PinButton"); settingsButton = (Button)window.FindName("SettingsButton"); sizeButton = (Button)window.FindName("SizeButton");
             foreach (string id in ProviderCatalog.All) states[id] = new ProviderState { Id = id };
             try {
                 foreach (var s in Store.Read<List<ProviderState>>("quota-cache.json")) {
@@ -112,29 +115,31 @@ namespace CodeUsageMonit {
                 }
             } catch { }
             history = Store.Read<UsageHistory>("history.json");
-            codexLogs = demo ? null : Store.Read<LogIndex>("codex-logs.json");
-            claudeLogs = demo ? null : Store.Read<LogIndex>("claude-logs.json");
+            if (!demo) { usageIndexes = UsageScanner.Load(UsageScanner.Agents.Select(a => a.Id)); usageIndexes.TryGetValue("codex", out codexLogs); usageIndexes.TryGetValue("claude", out claudeLogs); }
             endpointLog = demo ? new EndpointLog() : Store.Read<EndpointLog>("endpoints.json");
             if (demo) SeedDemo(); else BuildThirdParty();
             LoadIcons();
             ((Button)window.FindName("HideButton")).Click += delegate { window.Hide(); };
             settingsButton.Click += delegate { OpenSettings(); };
-            backButton.Click += delegate { BackFromSettings(); };
+            sizeButton.Click += delegate { var menu = SizeMenu(); menu.PlacementTarget = sizeButton; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true; };
             refreshButton.Click += async delegate { await Refresh(); };
             pinButton.Click += delegate { config.HideOnDeactivate = !config.HideOnDeactivate; SaveConfig(); UpdatePin(); };
             window.Closing += delegate(object sender, System.ComponentModel.CancelEventArgs e) { if (!quitting) { e.Cancel = true; window.Hide(); } };
             window.Deactivated += delegate {
                 lastDeactivated = DateTime.UtcNow;
                 // Never auto-hide while settings are open: the user may be copying an API key.
-                if (config.HideOnDeactivate && settingsView == null && !RangePickerOpen && !IsCompact) { lastAutoHide = DateTime.UtcNow; window.Hide(); }
+                if (config.HideOnDeactivate && settingsWindow == null && !IsCompact) { lastAutoHide = DateTime.UtcNow; window.Hide(); }
             };
             window.PreviewMouseWheel += delegate(object sender, MouseWheelEventArgs e) {
                 if ((Keyboard.Modifiers & ModifierKeys.Control) != 0) { frame.SetScale(config.UiScale + (e.Delta > 0 ? .05 : -.05), true); UpdateScaleLabel(); e.Handled = true; }
+                // Compact sizes: the wheel pages through overview and providers (not while connecting).
+                else if (IsCompact && compactConnect == null) { CycleCompact(e.Delta < 0 ? 1 : -1); e.Handled = true; }
             };
             window.KeyDown += delegate(object sender, KeyEventArgs e) {
-                if (e.Key == Key.Escape && RangePickerOpen) { CloseRangePicker(); e.Handled = true; return; }
-                if (e.Key == Key.Escape) { if (IsCompact && (compactPage != "summary" || config.CompactProvider != "overview")) CompactBack(); else window.Hide(); e.Handled = true; }
-                if (e.Key == Key.F5) { if (IsCompact && config.CompactProvider != "overview" && (Keyboard.Modifiers & ModifierKeys.Control) == 0) { var ignored = RefreshOne(config.CompactProvider); } else { var ignored = Refresh(); } e.Handled = true; }
+                if (e.Key == Key.Escape) { if (compactConnect != null) CloseCompactConnect(); else window.Hide(); e.Handled = true; }
+                if (e.Key == Key.F5) { var ignored = Refresh(); }
+                // ← / → page through the compact sizes, unless a text box has the keys.
+                if (IsCompact && compactConnect == null && (e.Key == Key.Left || e.Key == Key.Right) && !(Keyboard.FocusedElement is TextBoxBase) && !(Keyboard.FocusedElement is PasswordBox)) { CycleCompact(e.Key == Key.Right ? 1 : -1); e.Handled = true; }
             };
             tray = new Forms.NotifyIcon { Text = "codeusagemonit · 正在读取", Icon = new Drawing.Icon(System.IO.Path.Combine(Store.Root, "app.ico"), Forms.SystemInformation.SmallIconSize), Visible = true };
             tray.MouseClick += delegate(object sender, Forms.MouseEventArgs e) { if (e.Button == Forms.MouseButtons.Left) app.Dispatcher.BeginInvoke(new Action(ToggleFromTray)); };
@@ -142,17 +147,20 @@ namespace CodeUsageMonit {
             refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(config.RefreshMinutes) }; refreshTimer.Tick += async delegate { await Refresh(); };
             clockTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) }; clockTimer.Tick += delegate { if (window.IsVisible && !refreshing) Render(); };
             if (demo) ((FrameworkElement)window.FindName("DemoBadge")).Visibility = Visibility.Visible;
-            // Unhandled background clicks drag; buttons, inputs, and scrollbars keep their own input.
-            compactRoot.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { if (e.ButtonState == MouseButtonState.Pressed) { try { window.DragMove(); } catch (InvalidOperationException) { } } };
-            window.ContextMenu = SizeMenu();
+            // Compact sizes drag from anywhere, the panel from its header. Right-click anywhere
+            // opens the size menu (the window has no native caption, so no system menu).
+            MouseButtonEventHandler drag = delegate(object sender, MouseButtonEventArgs e) { if (e.ButtonState == MouseButtonState.Pressed && e.ClickCount == 1) { try { window.DragMove(); } catch (InvalidOperationException) { } } };
+            compactRoot.MouseLeftButtonDown += drag; ((FrameworkElement)window.FindName("TitleArea")).MouseLeftButtonDown += drag;
+            compactRoot.ContextMenu = SizeMenu(); scaleRoot.ContextMenu = SizeMenu();
+            compactRoot.SizeChanged += delegate { QueueCompactRender(); };
             UpdatePin();
-            if (config.DisplaySize != "full") ApplyDisplaySize(config.DisplaySize); else Render();
+            ApplyDisplaySize(config.DisplaySize);
         }
         private Forms.ContextMenuStrip TrayMenu() {
             var menu = new Forms.ContextMenuStrip { ShowImageMargin = false, Renderer = new Forms.ToolStripProfessionalRenderer(new DarkMenuColors()) { RoundedEdges = false }, ForeColor = Drawing.Color.FromArgb(236, 238, 241), Font = new Drawing.Font("Microsoft YaHei UI", 9f), Padding = new Forms.Padding(2, 4, 2, 4) };
             menu.Items.Add("打开面板", null, delegate { app.Dispatcher.BeginInvoke(new Action(Reveal)); });
             menu.Items.Add("刷新全部额度", null, delegate { app.Dispatcher.BeginInvoke(new Action(() => { var ignored = Refresh(); })); });
-            menu.Items.Add("设置…", null, delegate { app.Dispatcher.BeginInvoke(new Action(() => { Reveal(); OpenSettings(); })); });
+            menu.Items.Add("设置…", null, delegate { app.Dispatcher.BeginInvoke(new Action(OpenSettings)); });
             var sizes = new Forms.ToolStripMenuItem("显示尺寸");
             foreach (string size in DisplaySizes) { string captured = size; var item = new Forms.ToolStripMenuItem(SizeName(size) + (size == "full" ? "面板" : "尺寸")); item.Click += delegate { app.Dispatcher.BeginInvoke(new Action(() => SetDisplaySize(captured))); }; sizes.DropDownItems.Add(item); }
             sizes.DropDownOpening += delegate { foreach (Forms.ToolStripMenuItem item in sizes.DropDownItems) item.Checked = item.Text.StartsWith(SizeName(config.DisplaySize)); };
@@ -235,6 +243,7 @@ namespace CodeUsageMonit {
             foreach (var relay in new[] { new { Usage = relayA, Rate = 1.2e-6 }, new { Usage = relayB, Rate = 2.0e-6 } }) {
                 EndpointUsage u = relay.Usage; u.Today = u.Daily[29]; u.Week = u.Daily.Skip(23).Sum(); u.Month = u.Daily.Sum(); u.Requests = Math.Round(u.Month / 180000);
                 u.CostToday = u.Today * relay.Rate; u.CostWeek = u.Week * relay.Rate; u.CostMonth = u.Month * relay.Rate;
+                u.TimedOutput = u.Month * .007; u.TimedSeconds = u.TimedOutput / (u == relayA ? 71 : 29);
             }
             thirdParty = new ThirdPartySummary {
                 Endpoints = new List<EndpointUsage> { relayA, relayB },
@@ -245,7 +254,11 @@ namespace CodeUsageMonit {
         }
         private static DayUsage DemoDay(string day, string agent, double tokens, double rate, string model) {
             double cached = Math.Round(tokens * .972), input = Math.Round(tokens * .021), output = tokens - cached - input;
-            return new DayUsage { Day = day, Agent = agent, Tokens = tokens, CachedTokens = cached, InputTokens = input, OutputTokens = output, Cost = tokens * rate, Models = new List<ModelUsage> { new ModelUsage { Model = model, Tokens = tokens } } };
+            // Illustrative output speeds (t/s) for the agents whose logs carry durations.
+            double speed = agent == "codex" ? 24 : agent == "claude" ? 88 : agent == "zcode" ? 48 : agent == "grok" ? 52 : agent == "opencode" ? 60 : 0;
+            speed *= 1 + ((day.GetHashCode() & 0xFF) / 255.0 - .5) * .3;
+            double timed = speed > 0 ? Math.Round(output * .9) : 0, seconds = speed > 0 ? timed / speed : 0;
+            return new DayUsage { Day = day, Agent = agent, Tokens = tokens, CachedTokens = cached, InputTokens = input, OutputTokens = output, Cost = tokens * rate, TimedRequests = Math.Round(timed / 900), TimedOutput = timed, TimedSeconds = seconds, Models = new List<ModelUsage> { new ModelUsage { Model = model, Tokens = tokens, TimedOutput = timed, TimedSeconds = seconds } } };
         }
         private void RegisterCustomProviders(IEnumerable<CustomProvider> providers) {
             ProviderCatalog.Custom.Clear();
@@ -282,7 +295,7 @@ namespace CodeUsageMonit {
             if (demo) return;
             try { thirdParty = ThirdPartyReport.Build(codexLogs, claudeLogs, endpointLog, history, DateTime.UtcNow, TimeZoneInfo.Local); } catch { thirdParty = new ThirdPartySummary(); }
         }
-        public void Reveal() { if (!window.IsVisible) { frame.Restore(); window.Show(); } if (!demo) window.Activate(); Render(); }
+        public void Reveal() { if (!window.IsVisible) { frame.Restore(); window.Show(); if (frame.PinnedToDesktop) frame.SendToBottom(); } if (!frame.PinnedToDesktop) window.Activate(); Render(); }
         private void UpdatePin() {
             window.Topmost = config.AlwaysOnTop;
             bool keepOpen = !config.HideOnDeactivate;
@@ -321,48 +334,34 @@ namespace CodeUsageMonit {
         // A full refresh and a single-provider refresh can overlap; only the newest fetch
         // of a provider is applied, so an older result never overwrites a newer one.
         private readonly Dictionary<string, int> fetchSerial = new Dictionary<string, int>();
-        private readonly Dictionary<string, int> singleFetchSerial = new Dictionary<string, int>();
         private int BeginFetch(string id) { int n; fetchSerial.TryGetValue(id, out n); fetchSerial[id] = ++n; return n; }
         private bool Latest(string id, int serial) { int n; return fetchSerial.TryGetValue(id, out n) && n == serial; }
         // Refreshes one provider (card / compact refresh buttons, after connecting).
         private async Task RefreshOne(string id) {
             if (demo) { refreshingIds.Add(id); Render(); await Task.Delay(600); refreshingIds.Remove(id); Render(); return; }
             // May overlap a full refresh: a key saved from a card must not wait for the next cycle.
-            if (!ProviderCatalog.IsKnown(id)) return;
-            int serial = BeginFetch(id); singleFetchSerial[id] = serial;
+            if (refreshingIds.Contains(id) || !ProviderCatalog.IsKnown(id)) return;
             refreshingIds.Add(id); Render();
             try {
-                if (ProviderCatalog.LocalOnly(id)) {
-                    UsageHistory next = await HistoryService.Read();
-                    if (Latest(id, serial)) {
-                        if (next.Error.Length > 0) statusNote = next.Error;
-                        else {
-                            history = HistoryService.MergeProvider(history, next, id, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today));
-                            Store.Write("history.json", history); states[id] = new ProviderState { Id = id, Status = "ready", LastSuccess = DateTime.UtcNow.ToString("o"), Message = "本机历史已更新" };
-                        }
-                    }
-                } else using (var service = new ProviderService(config)) { ProviderState result = await Task.Run(() => service.Fetch(id)); if (Latest(id, serial)) Accept(id, result); }
+                int serial = BeginFetch(id);
+                using (var service = new ProviderService(config)) { ProviderState result = await Task.Run(() => service.Fetch(id)); if (Latest(id, serial)) Accept(id, result); }
                 Store.Write("quota-cache.json", states.Values.ToList()); UpdateTray();
             } catch (Exception e) { statusNote = e is ArgumentException ? e.Message : ProviderCatalog.Name(id) + " 刷新未完成"; }
-            finally {
-                int pending;
-                if (singleFetchSerial.TryGetValue(id, out pending) && pending == serial) { singleFetchSerial.Remove(id); refreshingIds.Remove(id); }
-                Render();
-            }
+            finally { refreshingIds.Remove(id); Render(); }
         }
         private async Task ScanHistory() {
             if (demo || scanning) return;
             scanning = true; Render();
             try {
-                // ccusage (daily $, per-model) and the hourly log indexes run side by side.
-                Task<UsageHistory> read = Task.Run(() => HistoryService.Read());
-                Task<LogIndex> logs = config.Enabled.Contains("codex") || config.ShowThirdParty ? Task.Run(() => CodexLogs.Scan(Store.Read<LogIndex>("codex-logs.json"), DateTime.UtcNow)) : Task.FromResult<LogIndex>(null);
-                Task<LogIndex> claude = config.ShowThirdParty ? Task.Run(() => ClaudeLogs.Scan(Store.Read<LogIndex>("claude-logs.json"), DateTime.UtcNow)) : Task.FromResult<LogIndex>(null);
-                UsageHistory next = await read;
-                if (next.Error.Length == 0) { history = HistoryService.Merge(history, next, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today)); Store.Write("history.json", history); }
-                else history.Error = next.Error;
-                try { LogIndex index = await logs; if (index != null) { codexLogs = index; Store.Write("codex-logs.json", index); } } catch { }
-                try { LogIndex index = await claude; if (index != null) { claudeLogs = index; Store.Write("claude-logs.json", index); } } catch { }
+                // Every enabled agent's local logs (Claude and Codex also for the third-party
+                // page) are read incrementally into hourly indexes; the days derive from them.
+                var ids = UsageScanner.Agents.Select(a => a.Id).Where(id => config.Enabled.Contains(id) || (config.ShowThirdParty && (id == "codex" || id == "claude"))).ToList();
+                Dictionary<string, LogIndex> scanned = await Task.Run(() => UsageScanner.ScanAll(ids, DateTime.UtcNow, true));
+                foreach (var pair in scanned) usageIndexes[pair.Key] = pair.Value;
+                usageIndexes.TryGetValue("codex", out codexLogs); usageIndexes.TryGetValue("claude", out claudeLogs);
+                UsageHistory next = HistoryService.FromIndexes(usageIndexes, TimeZoneInfo.Local, DateTime.Today, 30);
+                history = HistoryService.Merge(history, next, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today));
+                Store.Write("history.json", history);
                 BuildThirdParty();
             }
             catch { history.Error = "本地统计暂时不可用"; }
@@ -392,7 +391,7 @@ namespace CodeUsageMonit {
         }
         private bool StartupEnabled() { using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) return key != null && key.GetValue("codeusagemonit") != null; }
         private void SetStartup(bool enabled) { using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) { if (enabled) key.SetValue("codeusagemonit", "\"" + System.IO.Path.Combine(Store.Root, "codeusagemonit.exe") + "\" --background"); else key.DeleteValue("codeusagemonit", false); } }
-        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; CloseRangePicker(); CloseSettings(); tray.Visible = false; window.Close(); app.Shutdown(); }
-        public void Dispose() { quitting = true; CloseRangePicker(); CloseSettings(); if (copilotFlow != null) copilotFlow.Cancelled = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
+        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; tray.Visible = false; if (settingsWindow != null) settingsWindow.Close(); window.Close(); app.Shutdown(); }
+        public void Dispose() { quitting = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
     }
 }
