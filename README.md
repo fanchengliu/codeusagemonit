@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](./LICENSE)
 [![Website](https://img.shields.io/badge/website-fanchengliu.github.io-818cf8?style=flat-square)](https://fanchengliu.github.io/codeusagemonit/)
 
-[🌐 访问官方展示网站](https://fanchengliu.github.io/codeusagemonit/) · [📖 详细使用说明 (中文)](./使用说明.md) · [⬇ 下载最新版 (v1.2.0)](https://github.com/fanchengliu/codeusagemonit/releases/latest)
+[🌐 访问官方展示网站](https://fanchengliu.github.io/codeusagemonit/) · [📖 详细使用说明 (中文)](./使用说明.md) · [⬇ 下载安装程序 (v1.2.0)](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe)
 
 </div>
 
@@ -69,39 +69,44 @@ codeusage status --json
 
 ## 🚀 快速上手与运行
 
-### 方式一：Scoop（和 Homebrew 的 tap 一样）
+### 方式一：安装程序（推荐）
+
+从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 **codeusagemonit-setup-1.2.0.exe**。可以选择安装目录和盘符，默认是 `%LOCALAPPDATA%\Programs\codeusagemonit`，不需要管理员权限。安装程序会创建开始菜单快捷方式，可选桌面快捷方式、登录时启动，以及把 `codeusage` 加入用户 PATH，并在“Windows 设置 → 应用”里注册卸载。卸载前会询问是否删除设置。再运行新的安装程序就是升级，`%LOCALAPPDATA%\codeusagemonit` 里的设置、密钥和缓存会保留。
+
+### 方式二：Scoop（和 Homebrew 的 tap 一样）
 ```powershell
 scoop bucket add codeusagemonit https://github.com/fanchengliu/codeusagemonit
 scoop install codeusagemonit
 ```
 开始菜单里会出现 codeusagemonit，终端里可以直接用 `codeusage`；`scoop update codeusagemonit` 升级，`data` 文件夹放在 Scoop 的 persist 目录，升级不丢。
 
-### 方式二：PowerShell 一行安装
+### 方式三：PowerShell 一行安装
 ```powershell
 irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps1 | iex
 ```
 下载最新 Release 并核对 SHA-256，装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，把 `codeusage` 加进用户 PATH，创建开始菜单快捷方式；不需要管理员权限，再运行一次就是升级。
 
-### 方式三：下载即用（免安装）
+### 方式四：下载即用（免安装）
 从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 `codeusagemonit-1.2.0-win-x64.zip`，解压后双击运行 `codeusagemonit.exe` 即可。
 
-### 方式四：从源码构建
+### 方式五：从源码构建
 本项目使用 Windows 自带的 .NET Framework 编译器，**无需安装 Visual Studio、Node.js、Rust 或 Python**：
 
 ```powershell
 git clone https://github.com/fanchengliu/codeusagemonit.git
 cd codeusagemonit
 .\source\Windows\build.ps1
+.\source\Windows\build.ps1 -Installer
 ```
 
-构建将在几秒内完成，并在根目录生成单文件可执行程序。
+不带参数时，构建在几秒内完成，并在根目录生成可执行程序。`-Installer` 还需要 [Inno Setup 6.2+](https://jrsoftware.org/isdl.php)，会额外生成 `codeusagemonit-setup-<版本>.exe` 和免安装 zip。说明见 `source/Windows/installer/README.md`。
 
 ---
 
 ## 🔒 隐私与安全性设计
 
 1. **零 Cookie 嗅探**：鉴于 Windows 平台上现代 Chrome 已启用 App-Bound Encryption（应用绑定加密），本工具绝不强行非法提取浏览器会话，而是使用官方 OAuth 设备码、已授权本地 CLI 令牌或用户填写的 API Key。
-2. **硬件级 DPAPI 加密**：所有填写的密钥均通过 Windows `ProtectedData` (DPAPI) 加密保存在 `data/*.key`，只能由当前登录系统的 Windows 用户解密，跨机器复制无效。
+2. **硬件级 DPAPI 加密**：所有填写的密钥均通过 Windows `ProtectedData` (DPAPI) 加密保存在数据目录的 `*.key`，只能由当前登录系统的 Windows 用户解密，跨机器复制无效。安装程序把数据放在 `%LOCALAPPDATA%\codeusagemonit`；zip / Scoop / PowerShell 安装仍使用程序旁边的 `data` 文件夹。
 3. **本地离线扫描**：增量只读扫描本地会话文件，仅提取 Token 计数与模型名称，**绝不读取、不上传、不保存任何对话内容或代码上下文**。
 
 ---

@@ -163,9 +163,108 @@ namespace CodeUsageMonit {
         public static object Jwt(string token) { try { string[] p = token.Split('.'); if (p.Length < 2) return null; string s = p[1].Replace('-', '+').Replace('_', '/'); s += new string('=', (4 - s.Length % 4) % 4); return Parse(Encoding.UTF8.GetString(Convert.FromBase64String(s))); } catch { return null; } }
     }
     public static class Store {
-        public static readonly string Root = AppDomain.CurrentDomain.BaseDirectory;
-        public static string Data = Path.Combine(Root, "data");
+        // Keep in sync with source/Windows/installer/codeusagemonit.iss.
+        public const string InstallRegistryKey = @"Software\codeusagemonit";
+        public const string InstallRegistryValue = "InstallPath";
+        public static readonly string Root = NormalizeDirectory(AppDomain.CurrentDomain.BaseDirectory);
+        // Chosen on first read. EnableDemoMode assigns this before anything reads it, so
+        // --demo never migrates or opens the real data directory.
+        private static string dataPath;
+        public static string Data {
+            get {
+                if (dataPath == null) dataPath = ChooseDataFor(Root, ReadInstallPath(), Environment.GetEnvironmentVariable("CODEUSAGEMONIT_DATA"), UserDataDirectory());
+                return dataPath;
+            }
+            set { dataPath = value; }
+        }
         public static void EnableDemoMode() { Data = Path.Combine(Root, "verification", "demo-data"); }
+        // Zip, Scoop and install.ps1 keep using <exe>\data. setup.exe writes installed.txt
+        // (and HKCU\Software\codeusagemonit\InstallPath); those copies use
+        // %LOCALAPPDATA%\codeusagemonit so Program Files can stay read-only.
+        // portable.txt next to the exe forces <exe>\data even for an installed copy.
+        // CODEUSAGEMONIT_DATA overrides the directory unless portable.txt is present.
+        public static string UserDataDirectory() {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "codeusagemonit");
+        }
+        public static string ResolveData(string root, string installPath, string envData, bool installedMarker, string userData) {
+            string beside = Path.Combine(root ?? "", "data");
+            try { if (File.Exists(Path.Combine(root ?? "", "portable.txt"))) return beside; } catch { }
+            if (!String.IsNullOrWhiteSpace(envData)) { try { return Path.GetFullPath(envData.Trim()); } catch { } }
+            if (installedMarker || PathsEqual(installPath, root)) return String.IsNullOrEmpty(userData) ? beside : userData;
+            return beside;
+        }
+        public static string ChooseDataFor(string root, string installPath, string envData, string userData) {
+            bool marker = false;
+            try { marker = File.Exists(Path.Combine(root, "installed.txt")); } catch { }
+            string chosen = ResolveData(root, installPath, envData, marker, userData);
+            if (!String.IsNullOrEmpty(userData) && PathsEqual(chosen, userData)) TryMigratePortableData(Path.Combine(root, "data"), chosen);
+            return chosen;
+        }
+        public static string ReadInstallPath() {
+            try {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(InstallRegistryKey)) {
+                    if (key == null) return "";
+                    object value = key.GetValue(InstallRegistryValue);
+                    return value == null ? "" : Convert.ToString(value);
+                }
+            } catch { return ""; }
+        }
+        public static bool PathsEqual(string a, string b) {
+            if (String.IsNullOrWhiteSpace(a) || String.IsNullOrWhiteSpace(b)) return false;
+            try { return String.Equals(NormalizeDirectory(a), NormalizeDirectory(b), StringComparison.OrdinalIgnoreCase); } catch { return false; }
+        }
+        // First launch of an installed copy: if the per-user folder is still empty and a
+        // real data directory sits beside the exe (zip or the PowerShell installer), copy it
+        // across and remove the old folder. A junction (Scoop's persist link) is copied and left in place.
+        public static bool TryMigratePortableData(string from, string to) {
+            string staging = null;
+            try {
+                if (String.IsNullOrEmpty(from) || String.IsNullOrEmpty(to) || PathsEqual(from, to)) return false;
+                if (IsNested(from, to) || IsNested(to, from)) return false;
+                if (!Directory.Exists(from)) return false;
+                DirectoryInfo source = new DirectoryInfo(from);
+                bool link = (source.Attributes & FileAttributes.ReparsePoint) != 0;
+                if (Directory.GetFileSystemEntries(from).Length == 0) return false;
+                if (Directory.Exists(to) && Directory.GetFileSystemEntries(to).Length > 0) return false;
+                string parent = Path.GetDirectoryName(NormalizeDirectory(to));
+                if (String.IsNullOrEmpty(parent)) return false;
+                Directory.CreateDirectory(parent);
+                staging = Path.Combine(parent, Path.GetFileName(NormalizeDirectory(to).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) + ".migrating");
+                if (Directory.Exists(staging)) Directory.Delete(staging, true);
+                CopyAll(from, staging);
+                if (Directory.Exists(to)) Directory.Delete(to, true);
+                Directory.Move(staging, to);
+                staging = null;
+                if (!link) { try { Directory.Delete(from, true); } catch { } }
+                return true;
+            } catch {
+                if (staging != null && Directory.Exists(staging)) { try { Directory.Delete(staging, true); } catch { } }
+                return false;
+            }
+        }
+        private static bool IsNested(string parent, string child) {
+            try {
+                string p = NormalizeDirectory(parent).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                string c = NormalizeDirectory(child).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                return c.StartsWith(p, StringComparison.OrdinalIgnoreCase) && !PathsEqual(parent, child);
+            } catch { return false; }
+        }
+        private static void CopyAll(string from, string to) {
+            Directory.CreateDirectory(to);
+            foreach (string file in Directory.GetFiles(from)) File.Copy(file, Path.Combine(to, Path.GetFileName(file)), false);
+            foreach (string dir in Directory.GetDirectories(from)) {
+                DirectoryInfo info = new DirectoryInfo(dir);
+                if ((info.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+                CopyAll(dir, Path.Combine(to, info.Name));
+            }
+        }
+        public static string NormalizeDirectory(string path) {
+            if (String.IsNullOrEmpty(path)) return "";
+            try { path = Path.GetFullPath(path); } catch { }
+            string trimmed = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (trimmed.Length == 2 && trimmed[1] == ':') return trimmed + Path.DirectorySeparatorChar;
+            return trimmed.Length == 0 ? path : trimmed;
+        }
         public static void Write(string name, object value) {
             Directory.CreateDirectory(Data); string path = Path.Combine(Data, name); string temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             File.WriteAllText(temp, J.Serializer().Serialize(value), new UTF8Encoding(false));

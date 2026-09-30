@@ -69,13 +69,14 @@ Object.assign(zh, {
   instScoopNote: '和 Homebrew 的 tap 一样：先把本仓库加成 bucket，再安装。会创建开始菜单快捷方式，并把 codeusage 加进 PATH；data 文件夹放在 Scoop 的 persist 目录，升级不丢。',
   instUpdate: '以后升级', instNoScoop: '还没装 Scoop？先运行：',
   instPs1: '从 GitHub Releases 下载最新版，并核对 SHA-256', instPs2: '装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，不需要管理员权限', instPs3: '把 codeusage 加进用户 PATH，创建开始菜单快捷方式', instPs4: '再运行一次就是升级，data 文件夹保留',
-  instZipBtn: '下载 codeusagemonit-1.2.0-win-x64.zip', instZip1: '完整解压到一个可写的文件夹，例如 D:\\Tools\\codeusagemonit', instZip2: '运行 codeusagemonit.exe；命令行用同目录的 codeusage.exe', instZip3: '升级时用新版本覆盖旧文件，data 文件夹保留'
+  instZipBtn: '下载 codeusagemonit-1.2.0-win-x64.zip', instZip1: '完整解压到一个可写的文件夹，例如 D:\\Tools\\codeusagemonit', instZip2: '运行 codeusagemonit.exe；命令行用同目录的 codeusage.exe', instZip3: '升级时用新版本覆盖旧文件，data 文件夹保留',
+  instSetupBtn: '下载 codeusagemonit-setup-1.2.0.exe', instSetup1: '选择安装位置（默认 %LOCALAPPDATA%\\Programs\\codeusagemonit，也可以换盘符或目录）', instSetup2: '创建开始菜单快捷方式；可选桌面快捷方式、登录时启动、把 codeusage 加入用户 PATH', instSetup3: '设置、密钥和用量缓存在 %LOCALAPPDATA%\\codeusagemonit，升级保留；卸载前会询问是否删除'
 });
 const en = {
   skip: 'Skip to content', navProviders: 'Providers', navBoard: 'Quotas & usage', navPricing: 'Pricing', navSizes: 'Sizes', navInstall: 'Install', navDownload: 'Download',
   chip: 'Prices now sync daily with the vendors', heroA: 'Every AI quota,', heroB: 'at a glance.',
   heroLead: 'Remaining quota, reset times, token usage and output speed for Codex, Claude, Cursor and 8 more AI coding tools, in one small window in your Windows tray.',
-  download: 'Download for Windows', source: 'View source', quickLabel: 'Or install from the terminal', heroMeta: 'v1.2.0 · Windows 10 / 11 · No installer · MIT', quickMore: 'More ways to install ↓',
+  download: 'Download installer', downloadZip: 'Portable zip', source: 'View source', quickLabel: 'Or install from the terminal', heroMeta: 'v1.2.0 · Windows 10 / 11 · Installer · MIT', quickMore: 'More ways to install ↓',
   stageHint: 'Try it: switch tools, scroll the panel, hover the bars, open a quota',
   eyProviders: 'Providers', pA: '11 coding tools supported,', pB: 'plus your own endpoint', pLead: 'Reuses the sign-in each tool already has: CLI login, editor session or API key. No browser cookies, no stored passwords.',
   eyBoard: 'Quotas & usage', bA: 'What’s left, what it cost, how fast it ran,', bB: 'in one panel',
@@ -92,16 +93,16 @@ const en = {
   eySizes: 'Sizes', sA: 'Four sizes.', sB: 'One window.', sLead: 'Right-click to switch between small, medium, large and full. Compact sizes sit on the desktop layer, out of your way; every size can be resized.',
   sFull: 'Full', sLarge: 'Large', sMedium: 'Medium', sSmall: 'Small', deckHint: 'Click a card to take a closer look',
   eyInstall: 'Install & CLI', cA: 'One command to install,', cB: 'the same numbers in your terminal',
-  cLead: 'Install with Scoop or a PowerShell one-liner; it adds itself to PATH and the Start menu. The bundled codeusage command shares the app’s cache and settings, meters are 24 cells here too, and --json feeds scripts or a status bar.',
-  recommended: 'Recommended', instZip: 'Zip', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command', copyShort: 'Copy',
+  cLead: 'Download setup.exe (choose a folder, Start menu, optional desktop shortcut, startup and PATH). Scoop and PowerShell still work. The bundled codeusage command shares the app’s cache and settings, meters are 24 cells here too, and --json feeds scripts or a status bar.',
+  recommended: 'Recommended', instSetup: 'Installer', instZip: 'Zip', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command', copyShort: 'Copy',
   eyPrivacy: 'Privacy', vA: 'Your data stays', vB: 'on your PC',
   v1t: 'Numbers only', v1: 'Only tokens, request counts, durations and model names go into a local hourly index. No conversation content.',
   v2t: 'Sign-ins stay put', v2: 'Each tool’s login tokens stay in its own folder. They are read, never copied.',
   v3t: 'Encrypted keys', v3: 'API keys you enter are encrypted with Windows DPAPI; only your Windows user can decrypt them.',
   v4t: 'No telemetry', v4: 'No server of our own. Quota checks go only to each provider; the price table is fetched from GitHub once a day with no account or usage data, and can be turned off in settings.',
   eyFaq: 'FAQ', fqA: 'Questions',
-  fq1: 'How do I install it? What does it need?', fa1: 'Pick one: Scoop, the PowerShell one-liner, or the zip — extract it into a writable folder (e.g. D:\\Tools) and run codeusagemonit.exe. No installer, Node.js or admin rights; the .NET Framework 4.8 that ships with Windows 10 / 11 is enough.',
-  fq7: 'How do I update or uninstall?', fa7: 'Scoop: scoop update codeusagemonit / scoop uninstall codeusagemonit; data lives in Scoop’s persist folder and survives updates. PowerShell script: run it again to update; to uninstall, delete %LOCALAPPDATA%\\Programs\\codeusagemonit and remove it from your user PATH. Zip: overwrite the old files and keep the data folder.',
+  fq1: 'How do I install it? What does it need?', fa1: 'Download setup.exe: choose a folder, get a Start menu shortcut, and optionally a desktop shortcut, start with Windows, and codeusage on your user PATH. Uninstall from Windows Settings → Apps. The default is a per-user install, so no admin rights. Scoop, the PowerShell one-liner, or the zip (extract into a writable folder and run codeusagemonit.exe) still work. No Node.js; the .NET Framework 4.8 that ships with Windows 10 / 11 is enough.',
+  fq7: 'How do I update or uninstall?', fa7: 'Installer: run the new setup.exe; settings stay in %LOCALAPPDATA%\\codeusagemonit. Uninstall from Windows Settings → Apps, which asks before deleting settings. Scoop: scoop update codeusagemonit / scoop uninstall codeusagemonit; data lives in Scoop’s persist folder and survives updates. PowerShell script: run it again to update; to uninstall, delete the install folder and remove it from your user PATH. Zip: overwrite the old files and keep the data folder.',
   fq2: 'Why does Windows say it “protected your PC”?', fa2: 'The app has no paid code-signing certificate. Click “More info → Run anyway”, or check the download against the SHA-256 below first. Scoop and the PowerShell script check the SHA-256 for you.',
   fq3: 'Do I have to sign in to every account again?', fa3: 'No. Codex, Claude Code, Cursor, Antigravity and Grok reuse the sign-in already on your PC; DeepSeek, Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.',
   fq4: 'Is the cost a real bill?', fa4: 'No. Cost = tokens in your local logs × official API prices, an API-equivalent reference. Subscriptions are billed monthly and don’t produce this bill.',
@@ -125,13 +126,14 @@ const en = {
   instScoopNote: 'Like a Homebrew tap: add this repository as a bucket, then install. You get a Start menu shortcut and codeusage on PATH; the data folder lives in Scoop’s persist directory, so updates keep it.',
   instUpdate: 'Update later', instNoScoop: 'No Scoop yet? Install it first:',
   instPs1: 'Downloads the latest release from GitHub and checks its SHA-256', instPs2: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit, no admin rights', instPs3: 'Adds codeusage to your user PATH and a Start menu shortcut', instPs4: 'Run it again to update; the data folder is kept',
-  instZipBtn: 'Download codeusagemonit-1.2.0-win-x64.zip', instZip1: 'Extract everything into a writable folder, e.g. D:\\Tools\\codeusagemonit', instZip2: 'Run codeusagemonit.exe; use codeusage.exe in the same folder for the CLI', instZip3: 'To update, overwrite with the new version and keep the data folder'
+  instZipBtn: 'Download codeusagemonit-1.2.0-win-x64.zip', instZip1: 'Extract everything into a writable folder, e.g. D:\\Tools\\codeusagemonit', instZip2: 'Run codeusagemonit.exe; use codeusage.exe in the same folder for the CLI', instZip3: 'To update, overwrite with the new version and keep the data folder',
+  instSetupBtn: 'Download codeusagemonit-setup-1.2.0.exe', instSetup1: 'Choose a folder (default %LOCALAPPDATA%\\Programs\\codeusagemonit, or any other drive or directory)', instSetup2: 'Adds a Start menu shortcut, with optional desktop shortcut, start with Windows, and codeusage on your user PATH', instSetup3: 'Settings, keys and the usage cache stay in %LOCALAPPDATA%\\codeusagemonit across updates; uninstall asks before deleting them'
 };
 const ja = {
   skip: '本文へ移動', navProviders: 'サービス', navBoard: '利用枠と使用量', navPricing: '料金', navSizes: 'サイズ', navInstall: 'インストール', navDownload: 'ダウンロード',
   chip: '料金表が毎日公式と同期', heroA: '残りの利用枠が', heroB: 'ひと目でわかる',
   heroLead: 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を、Windows のトレイにある小さなウィンドウひとつで。',
-  download: 'Windows 版をダウンロード', source: 'ソースを見る', quickLabel: 'ターミナルから 1 行でインストール', heroMeta: 'v1.2.0 · Windows 10 / 11 · インストーラー不要 · MIT', quickMore: 'ほかのインストール方法 ↓',
+  download: 'インストーラーをダウンロード', downloadZip: 'インストール不要の zip', source: 'ソースを見る', quickLabel: 'ターミナルから 1 行でインストール', heroMeta: 'v1.2.0 · Windows 10 / 11 · インストーラー · MIT', quickMore: 'ほかのインストール方法 ↓',
   stageHint: '触ってみてください：ツールの切り替え、パネルのスクロール、グラフのホバー、利用枠の展開',
   eyProviders: 'サービス', pA: '11 のコーディングツールに対応', pB: 'あなた自身の API も', pLead: '各ツールの既存のログインを利用：CLI、エディターのセッション、API キー。ブラウザーの Cookie は読まず、パスワードも保存しません。',
   eyBoard: '利用枠と使用量', bA: '残り、費用、速度を', bB: 'ひとつのパネルで',
@@ -148,16 +150,16 @@ const ja = {
   eySizes: 'サイズ', sA: '4 つのサイズ', sB: 'ひとつのウィンドウ', sLead: '右クリックで小・中・大・全体を切り替え。コンパクトなサイズはデスクトップ層に置かれ、作業の邪魔をしません。どのサイズもサイズ変更できます。',
   sFull: '全体', sLarge: '大', sMedium: '中', sSmall: '小', deckHint: 'カードをクリックして拡大表示',
   eyInstall: 'インストールと CLI', cA: '1 行でインストール', cB: 'ターミナルでも同じデータを',
-  cLead: 'Scoop か PowerShell の 1 行でインストールでき、PATH とスタートメニューに自動で登録されます。同梱の codeusage コマンドはアプリとキャッシュ・設定を共有。メーターはここでも 24 マスで、--json を付ければスクリプトやステータスバーに渡せます。',
-  recommended: 'おすすめ', instZip: 'zip', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー', copyShort: 'コピー',
+  cLead: 'setup.exe でインストール（フォルダー、スタートメニュー、任意のデスクトップ、ログオン時起動、PATH）。Scoop と PowerShell も使えます。同梱の codeusage コマンドはアプリとキャッシュ・設定を共有。メーターはここでも 24 マスで、--json を付ければスクリプトやステータスバーに渡せます。',
+  recommended: 'おすすめ', instSetup: 'インストーラー', instZip: 'zip', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー', copyShort: 'コピー',
   eyPrivacy: 'プライバシー', vA: 'データは', vB: 'あなたの PC に',
   v1t: '数値だけ', v1: 'トークン数、リクエスト数、所要時間、モデル名だけをローカルの時間別インデックスに記録。会話内容は保存しません。',
   v2t: 'ログインはそのまま', v2: '各ツールのログイントークンは元のフォルダーに残ります。読み取るだけで、コピーしません。',
   v3t: 'キーは暗号化', v3: '入力した API キーは Windows DPAPI で暗号化。復号できるのは現在の Windows ユーザーだけです。',
   v4t: 'テレメトリーなし', v4: '独自サーバーはありません。利用枠の照会は各サービスにだけ送信。料金表は 1 日 1 回 GitHub から取得し、アカウントや使用量の情報は送りません。設定でオフにできます。',
   eyFaq: 'FAQ', fqA: 'よくある質問',
-  fq1: 'インストール方法と必要な環境は？', fa1: '方法は 3 つ：Scoop、PowerShell の 1 行スクリプト、または zip を書き込み可能なフォルダー（例：D:\\Tools）に展開して codeusagemonit.exe を実行。インストーラー、Node.js、管理者権限は不要。Windows 10 / 11 標準の .NET Framework 4.8 で動きます。',
-  fq7: '更新とアンインストールは？', fa7: 'Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit。データは Scoop の persist フォルダーにあり、更新しても残ります。PowerShell スクリプト：もう一度実行すれば更新。アンインストールは %LOCALAPPDATA%\\Programs\\codeusagemonit を削除し、ユーザー PATH から外します。zip：新しいファイルで上書きし、data フォルダーは残してください。',
+  fq1: 'インストール方法と必要な環境は？', fa1: 'setup.exe がおすすめです。インストール先を選べ、スタートメニューに登録し、デスクトップ、ログオン時の起動、codeusage の PATH 追加は任意です。アンインストールは Windows の設定 → アプリから。既定は現在のユーザー向けで、管理者権限は不要です。Scoop、PowerShell の 1 行、または zip を書き込み可能なフォルダーに展開して実行することもできます。Node.js は不要。Windows 10 / 11 標準の .NET Framework 4.8 で動きます。',
+  fq7: '更新とアンインストールは？', fa7: 'インストーラー：新しい setup.exe を実行すれば更新。設定は %LOCALAPPDATA%\\codeusagemonit に残り、アンインストール時に削除するか確認します。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit。データは persist フォルダーに残ります。PowerShell：もう一度実行すれば更新。アンインストールはインストール先を削除し、ユーザー PATH から外します。zip：新しいファイルで上書きし、data フォルダーは残してください。',
   fq2: '「Windows によって PC が保護されました」と表示されるのは？', fa2: 'コード署名証明書を購入していないためです。「詳細情報 → 実行」を選んでください。下の SHA-256 でファイルを確認することもできます。Scoop と PowerShell スクリプトは SHA-256 を自動で確認します。',
   fq3: 'すべてのアカウントに再ログインが必要ですか？', fa3: 'いいえ。Codex、Claude Code、Cursor、Antigravity、Grok は PC 上の既存のログインを利用します。DeepSeek、Kimi、OpenCode、ZCode は API キー、Copilot は GitHub のデバイスログインです。',
   fq4: '表示される費用は実際の請求額ですか？', fa4: 'いいえ。ローカルログのトークン数 × 公式 API 価格で計算した API 換算の参考値です。サブスクリプションは月額課金なので、この金額は請求されません。',
@@ -181,7 +183,8 @@ const ja = {
   instScoopNote: 'Homebrew の tap と同じく、まずこのリポジトリを bucket として追加してからインストール。スタートメニューのショートカットと PATH 上の codeusage が作られ、data フォルダーは Scoop の persist ディレクトリに置かれるので更新しても残ります。',
   instUpdate: '今後の更新', instNoScoop: 'Scoop が未導入なら先に：',
   instPs1: 'GitHub Releases から最新版をダウンロードし、SHA-256 を確認', instPs2: '%LOCALAPPDATA%\\Programs\\codeusagemonit にインストール（管理者権限不要）', instPs3: 'codeusage をユーザー PATH に追加し、スタートメニューにショートカットを作成', instPs4: 'もう一度実行すれば更新。data フォルダーは保持',
-  instZipBtn: 'codeusagemonit-1.2.0-win-x64.zip をダウンロード', instZip1: '書き込み可能なフォルダー（例：D:\\Tools\\codeusagemonit）にすべて展開', instZip2: 'codeusagemonit.exe を実行。CLI は同じフォルダーの codeusage.exe', instZip3: '更新は新しいバージョンで上書きし、data フォルダーは残す'
+  instZipBtn: 'codeusagemonit-1.2.0-win-x64.zip をダウンロード', instZip1: '書き込み可能なフォルダー（例：D:\\Tools\\codeusagemonit）にすべて展開', instZip2: 'codeusagemonit.exe を実行。CLI は同じフォルダーの codeusage.exe', instZip3: '更新は新しいバージョンで上書きし、data フォルダーは残す',
+  instSetupBtn: 'codeusagemonit-setup-1.2.0.exe をダウンロード', instSetup1: 'インストール先を選べます（既定は %LOCALAPPDATA%\\Programs\\codeusagemonit。別のドライブやフォルダーも可）', instSetup2: 'スタートメニューに登録。デスクトップ、ログオン時の起動、codeusage をユーザー PATH へ追加は任意', instSetup3: '設定・キー・使用量キャッシュは %LOCALAPPDATA%\\codeusagemonit に保存され、更新しても残ります。アンインストール時に削除するか確認します'
 };
 const DICT = { zh, en, ja };
 let lang = 'zh';
@@ -385,6 +388,8 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-copy
 
 // ── Install (hero one-liner + the install panel) ──────────────────────
 const REPO = 'https://github.com/fanchengliu/codeusagemonit';
+const SETUP_URL = REPO + '/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe';
+const ZIP_URL = REPO + '/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip';
 const INSTALL = {
   scoop: ['scoop bucket add codeusagemonit ' + REPO, 'scoop install codeusagemonit'],
   ps: ['irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps1 | iex']
@@ -396,14 +401,17 @@ function renderQuick() {
   const btn = $('quick-copy'); btn.innerHTML = COPY_ICON; btn.dataset.copy = INSTALL[quickKind].join('\n'); btn.title = btn.ariaLabel = t('copyLabel');
 }
 $('quick').addEventListener('click', e => { const b = e.target.closest('[data-quick]'); if (b) { quickKind = b.dataset.quick; renderQuick(); } });
-let instKind = 'scoop';
+let instKind = 'setup';
 function renderInstall() {
   const steps = keys => `<ol class="inst-steps">${keys.map(k => `<li>${esc(t(k))}</li>`).join('')}</ol>`;
-  const html = instKind === 'scoop'
+  const dl = (href, label) => `<a class="btn btn-primary" href="${href}"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t(label))}</a>`;
+  const html = instKind === 'setup'
+    ? dl(SETUP_URL, 'instSetupBtn') + steps(['instSetup1', 'instSetup2', 'instSetup3'])
+    : instKind === 'scoop'
     ? INSTALL.scoop.map(cmdRow).join('') + `<p class="inst-note">${esc(t('instScoopNote'))}</p><p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}<p class="cmd-label">${esc(t('instNoScoop'))}</p>${cmdRow('irm get.scoop.sh | iex')}`
     : instKind === 'ps'
       ? cmdRow(INSTALL.ps[0]) + steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])
-      : `<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>` + steps(['instZip1', 'instZip2', 'instZip3']);
+      : dl(ZIP_URL, 'instZipBtn') + steps(['instZip1', 'instZip2', 'instZip3']);
   const el = $('inst-body'); el.innerHTML = html; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   document.querySelectorAll('[data-inst]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.inst === instKind)));
 }
