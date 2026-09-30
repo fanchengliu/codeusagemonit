@@ -489,14 +489,14 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 .sz-tip { position: absolute; z-index: 6; pointer-events: none; padding: 6px 8px; border-radius: 7px; background: var(--app-tip); border: 1px solid var(--app-line); color: var(--app-ink); font-size: 11px; line-height: 1.45; white-space: nowrap; box-shadow: 0 8px 20px rgba(0, 0, 0, .18); }
 
 /* Install + CLI */
-.install-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 24px; align-items: start; }
-.inst { padding: 8px; }
-.inst-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--fill-2); }
+.install-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 24px; align-items: stretch; }
+.inst { display: flex; flex-direction: column; min-height: 0; padding: 8px; }
+.inst-tabs { display: flex; flex: none; gap: 4px; padding: 4px; border-radius: 14px; background: var(--fill-2); }
 .inst-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; border-radius: 10px; color: var(--ink-3); font-size: 14px; font-weight: 500; transition: color .2s, background .2s, box-shadow .2s; }
 .inst-tabs button:hover { color: var(--ink); }
 .inst-tabs button[aria-selected="true"] { color: var(--ink); background: var(--solid); box-shadow: 0 1px 0 var(--line-2), 0 4px 14px -6px rgba(0, 0, 0, .35); }
 .inst-tabs em { font-style: normal; font-size: 11px; padding: 1px 6px; border-radius: 5px; color: var(--accent); background: var(--accent-soft); }
-.inst-body { padding: 18px 16px 12px; animation: pageIn .35s var(--ease); }
+.inst-body { flex: 1 1 auto; min-height: 0; padding: 18px 16px 12px; animation: pageIn .35s var(--ease); }
 .cmd { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 4px 4px 4px 14px; border-radius: 11px; border: 1px solid var(--line-2); background: var(--bg-2); }
 .cmd:first-child { margin-top: 0; }
 .cmd code { flex: 1; min-width: 0; padding: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.6; color: var(--ink); }
@@ -512,12 +512,12 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 .cmd-use:hover { border-color: var(--line-3); }
 .cmd-use[aria-pressed="true"] { border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 9%, var(--bg-2)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent); }
 .cmd-use .cmd-desc { flex: 1 0 100%; margin: -2px 8px 8px; color: var(--ink-3); font-size: 13.5px; line-height: 1.45; }
-.term { position: relative; border-radius: 14px; overflow: hidden; background: #0C0C0C; border: 1px solid rgba(255, 255, 255, .1); box-shadow: var(--shadow-app); }
+.term { position: relative; display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; background: #0C0C0C; border: 1px solid rgba(255, 255, 255, .1); box-shadow: var(--shadow-app); }
 .term-bar { display: flex; align-items: center; height: 40px; background: #1B1B1D; border-bottom: 1px solid rgba(255, 255, 255, .06); }
 .term-tab { display: flex; align-items: center; gap: 8px; height: 100%; padding: 0 16px; background: #0C0C0C; color: #D6D6D6; font-size: 12.5px; }
 .term-controls { display: flex; margin-left: auto; height: 100%; }
 .term-controls svg { width: 46px; height: 100%; padding: 15px 18px; color: #A0A0A0; }
-.term-body { margin: 0; min-height: 440px; padding: 20px 22px 60px; font-family: "Cascadia Mono", "Cascadia Code", Consolas, var(--mono); font-size: 13px; line-height: 1.7; color: #CCCCCC; white-space: pre; overflow-x: auto; }
+.term-body { flex: 1 1 auto; margin: 0; min-height: 440px; padding: 20px 22px 60px; font-family: "Cascadia Mono", "Cascadia Code", Consolas, var(--mono); font-size: 13px; line-height: 1.7; color: #CCCCCC; white-space: pre; overflow: auto; }
 .term-body .p { color: #9CDCFE; } .term-body .d { color: #6F7680; } .term-body .b { color: #FFFFFF; font-weight: 600; }
 .term-body .caret { display: inline-block; width: .6em; height: 1.1em; vertical-align: -.2em; background: #CCCCCC; animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
@@ -581,6 +581,14 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 1180px) {
   .nav-links a { padding: 8px 9px; }
+}
+/* Side by side, the terminal fixes the row and the install card matches it on every tab. */
+@media (min-width: 1121px) {
+  .install-grid { grid-template-rows: 482px; }
+  .install-grid > .inst,
+  .install-grid > .term { height: 100%; max-height: 100%; min-height: 0; overflow: hidden; }
+  .install-grid > .inst > .inst-body { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
+  .install-grid > .term .term-body { min-height: 0; }
 }
 @media (max-width: 1120px) {
   .hero-grid { grid-template-columns: 1fr; min-height: 0; padding: 56px 0 40px; gap: 48px; }
