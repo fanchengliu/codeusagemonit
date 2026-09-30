@@ -63,14 +63,21 @@ Object.assign(zh, {
   vLarge: '完整的额度窗口与节奏估算，加上本机用量：时间段、费用、Token、请求、速度和可以点的柱状图。',
   vFull: '所有平台的卡片、每个平台的详情页、第三方中转站页和设置。拖动边缘可以随意调整大小。',
   vFullDim: '默认 420 × 790，可调整',
+  deckHint: '点一张卡片，放大看看',
+  cmdStatus: '缓存里的额度与用量，不联网', cmdCost: '每天的费用与 Token，以及各工具的速度', cmdThird: '第三方接口的用量与速度',
+  viewerPrev: '上一张', viewerNext: '下一张', viewerClose: '关闭',
   pgTop: '首页', pgProviders: '平台', pgBoard: '额度与用量', pgPricing: '计价', pgSizes: '尺寸', pgInstall: '安装', pgPrivacy: '隐私', pgFaq: '问题', pgDownload: '下载',
   themeLight: '浅色', themeDark: '深色', themeSystem: '跟随系统',
   vendorAll: '全部', priceShown: '显示 {n} / {total} 款', priceNone: '没有匹配的模型', tagLong: '长上下文 >{k}K', defaultCache: '官方未单列，按输入价的 10% 估算',
   instScoopNote: '和 Homebrew 的 tap 一样：先把本仓库加成 bucket，再安装。会创建开始菜单快捷方式，并把 codeusage 加进 PATH；data 文件夹放在 Scoop 的 persist 目录，升级不丢。',
   instUpdate: '以后升级', instNoScoop: '还没装 Scoop？先运行：',
-  instPs1: '从 GitHub Releases 下载最新版，并核对 SHA-256', instPs2: '装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，不需要管理员权限', instPs3: '把 codeusage 加进用户 PATH，创建开始菜单快捷方式', instPs4: '再运行一次就是升级，data 文件夹保留',
-  instZipBtn: '下载 codeusagemonit-1.2.0-win-x64.zip', instZip1: '完整解压到一个可写的文件夹，例如 D:\\Tools\\codeusagemonit', instZip2: '运行 codeusagemonit.exe；命令行用同目录的 codeusage.exe', instZip3: '升级时用新版本覆盖旧文件，data 文件夹保留',
-  instSetupBtn: '下载 codeusagemonit-setup-1.2.0.exe', instSetup1: '选择安装位置（默认 %LOCALAPPDATA%\\Programs\\codeusagemonit，也可以换盘符或目录）', instSetup2: '创建开始菜单快捷方式；可选桌面快捷方式、登录时启动、把 codeusage 加入用户 PATH', instSetup3: '设置、密钥和用量缓存在 %LOCALAPPDATA%\\codeusagemonit，升级保留；卸载前会询问是否删除'
+  instFootScoop: '开始菜单快捷方式和 PATH 上的 codeusage 会一起装好。data 放在 Scoop 的 persist 目录，升级不丢。还没装 Scoop 时，先运行 <code>irm get.scoop.sh | iex</code>。',
+  instFootPs: '卸载时删除 %LOCALAPPDATA%\\Programs\\codeusagemonit，并从用户 PATH 里去掉它。',
+  instFootZip: '免安装 zip 解压到可写文件夹后直接运行。升级时覆盖旧文件，旁边的 data 文件夹保留。',
+  instFootCli: '加上 <code>--json</code> 输出 JSON，接进脚本或状态栏。<code>codeusage help</code> 查看全部命令。',
+  instPs1: '从 GitHub Releases 下载最新版', instPs2: '装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，不需要管理员权限', instPs3: '把 codeusage 加进用户 PATH，创建开始菜单快捷方式', instPs4: '再运行一次就是升级，data 文件夹保留',
+  instSetupBtn: '下载 codeusagemonit-setup-1.2.0.exe', instZipLink: '或下载免安装 zip',
+  instSetup1: '选择安装位置，默认 %LOCALAPPDATA%\\Programs\\codeusagemonit，也可换目录', instSetup2: '创建开始菜单快捷方式；桌面、开机启动和 PATH 可选', instSetup3: '设置保存在 %LOCALAPPDATA%\\codeusagemonit，升级保留，卸载前会询问'
 });
 const en = {
   skip: 'Skip to content', navProviders: 'Providers', navBoard: 'Quotas & usage', navPricing: 'Pricing', navSizes: 'Sizes', navInstall: 'Install', navDownload: 'Download',
@@ -85,25 +92,25 @@ const en = {
   fCost: 'API-equivalent cost', fReq: 'Requests', fSpeed: 'Output speed', demoData: 'Demo data',
   eyPricing: 'Pricing & speed', prA: 'Accurate numbers,', prB: 'official prices',
   prLead: 'Cost = tokens of each request in your local logs × that model’s official API price. The price table syncs with the vendors once a day and falls back to the built-in copy offline; speed is timed end to end per request; calls through relays are attributed to the exact endpoint.',
-  priceTitle: 'models, priced in sync with the vendors', priceSub: 'Official API prices, including long-context tiers, cache reads and writes, and fast-mode multipliers.',
-  syncOk: 'In sync', syncDate: 'prices as of', syncEvery: 'Checked for updates every 24 hours', priceSearch: 'Search models, e.g. opus, gpt-5.5, glm',
+  priceTitle: 'The latest models, priced in sync with the vendors', priceSub: 'Official API prices, including long-context tiers, cache reads and writes, and fast-mode multipliers.',
+  syncOk: 'In sync', syncDate: 'prices as of', syncEvery: 'Checked for updates every 24 hours', priceSearch: 'Search models, e.g. gpt-6, opus, gemini',
   thModel: 'Model', thIn: 'Input', thOut: 'Output', thCache: 'Cache read', priceUnit: 'USD per 1M tokens · Source: vendors’ official prices, compiled by LiteLLM and models.dev',
   speedTitle: 'Real output speed', speedSub: 'Output tokens ÷ the whole request time, including time to first token and relay latency, measured per tool.',
   relayTitle: 'Relays add up too', relaySub: 'Switch providers with CC Switch as often as you like; every call is still attributed to its endpoint.', relayOfficial: 'Official', relayA: 'Relay A', relayB: 'Relay B',
   eySizes: 'Sizes', sA: 'Four sizes.', sB: 'One window.', sLead: 'Right-click to switch between small, medium, large and full. Compact sizes sit on the desktop layer, out of your way; every size can be resized.',
   sFull: 'Full', sLarge: 'Large', sMedium: 'Medium', sSmall: 'Small', deckHint: 'Click a card to take a closer look',
   eyInstall: 'Install & CLI', cA: 'One command to install,', cB: 'the same numbers in your terminal',
-  cLead: 'Download setup.exe (choose a folder, Start menu, optional desktop shortcut, startup and PATH). Scoop and PowerShell still work. The bundled codeusage command shares the app’s cache and settings, meters are 24 cells here too, and --json feeds scripts or a status bar.',
-  recommended: 'Recommended', instSetup: 'Installer', instZip: 'Zip', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command', copyShort: 'Copy',
+  cLead: 'Install with Scoop, PowerShell, or setup.exe. Each can add PATH and a Start menu shortcut. The bundled codeusage command shares the app’s cache and settings, meters are 24 cells here too, and --json feeds scripts or a status bar.',
+  recommended: 'Recommended', instZip: 'Manual download', instCli: 'Commands', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command',
   eyPrivacy: 'Privacy', vA: 'Your data stays', vB: 'on your PC',
   v1t: 'Numbers only', v1: 'Only tokens, request counts, durations and model names go into a local hourly index. No conversation content.',
   v2t: 'Sign-ins stay put', v2: 'Each tool’s login tokens stay in its own folder. They are read, never copied.',
   v3t: 'Encrypted keys', v3: 'API keys you enter are encrypted with Windows DPAPI; only your Windows user can decrypt them.',
   v4t: 'No telemetry', v4: 'No server of our own. Quota checks go only to each provider; the price table is fetched from GitHub once a day with no account or usage data, and can be turned off in settings.',
   eyFaq: 'FAQ', fqA: 'Questions',
-  fq1: 'How do I install it? What does it need?', fa1: 'Download setup.exe: choose a folder, get a Start menu shortcut, and optionally a desktop shortcut, start with Windows, and codeusage on your user PATH. Uninstall from Windows Settings → Apps. The default is a per-user install, so no admin rights. Scoop, the PowerShell one-liner, or the zip (extract into a writable folder and run codeusagemonit.exe) still work. No Node.js; the .NET Framework 4.8 that ships with Windows 10 / 11 is enough.',
-  fq7: 'How do I update or uninstall?', fa7: 'Installer: run the new setup.exe; settings stay in %LOCALAPPDATA%\\codeusagemonit. Uninstall from Windows Settings → Apps, which asks before deleting settings. Scoop: scoop update codeusagemonit / scoop uninstall codeusagemonit; data lives in Scoop’s persist folder and survives updates. PowerShell script: run it again to update; to uninstall, delete the install folder and remove it from your user PATH. Zip: overwrite the old files and keep the data folder.',
-  fq2: 'Why does Windows say it “protected your PC”?', fa2: 'The app has no paid code-signing certificate. Click “More info → Run anyway”, or check the download against the SHA-256 below first. Scoop and the PowerShell script check the SHA-256 for you.',
+  fq1: 'How do I install it? What does it need?', fa1: 'Download setup.exe (choose a folder and a Start menu shortcut; desktop, startup and PATH are optional; uninstall from Windows Settings → Apps), or use Scoop, the PowerShell one-liner, or the zip extracted into a writable folder. The default needs no admin rights. No Node.js; the .NET Framework 4.8 that ships with Windows 10 / 11 is enough.',
+  fq7: 'How do I update or uninstall?', fa7: 'Installer: run the new setup.exe; settings stay in %LOCALAPPDATA%\\codeusagemonit. Uninstall from Windows Settings → Apps, which asks before deleting settings. Scoop: scoop update codeusagemonit / scoop uninstall codeusagemonit; data lives in Scoop’s persist folder and survives updates. PowerShell script: run it again to update; to uninstall, delete %LOCALAPPDATA%\\Programs\\codeusagemonit and remove it from your user PATH. Zip: overwrite the old files and keep the data folder.',
+  fq2: 'Why does Windows say it “protected your PC”?', fa2: 'The app has no paid code-signing certificate. Click “More info → Run anyway”.',
   fq3: 'Do I have to sign in to every account again?', fa3: 'No. Codex, Claude Code, Cursor, Antigravity and Grok reuse the sign-in already on your PC; DeepSeek, Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.',
   fq4: 'Is the cost a real bill?', fa4: 'No. Cost = tokens in your local logs × official API prices, an API-equivalent reference. Subscriptions are billed monthly and don’t produce this bill.',
   fq8: 'How does the price table stay in sync with official prices?', fa8: 'The repository’s pricing.json is rebuilt every day by GitHub Actions from LiteLLM and models.dev, which track the API prices each vendor publishes. The app checks every 24 hours, downloads and validates a newer table and recalculates with it; if the download fails or you turn it off in settings, it keeps the built-in prices.',
@@ -120,14 +127,19 @@ const en = {
   vLarge: 'Full quota windows with pace, plus local usage: period, cost, tokens, requests, speed and a clickable chart.',
   vFull: 'Cards for every provider, a detail page for each, the third-party endpoints page and settings. Drag the edges to any size.',
   vFullDim: 'Default 420 × 790, resizable',
+  viewerPrev: 'Previous', viewerNext: 'Next', viewerClose: 'Close',
   pgTop: 'Top', pgProviders: 'Providers', pgBoard: 'Quotas & usage', pgPricing: 'Pricing', pgSizes: 'Sizes', pgInstall: 'Install', pgPrivacy: 'Privacy', pgFaq: 'FAQ', pgDownload: 'Download',
   themeLight: 'Light', themeDark: 'Dark', themeSystem: 'Match system',
   vendorAll: 'All', priceShown: '{n} of {total} models', priceNone: 'No matching models', tagLong: 'long ctx >{k}K', defaultCache: 'Not listed; estimated at 10% of the input price',
   instScoopNote: 'Like a Homebrew tap: add this repository as a bucket, then install. You get a Start menu shortcut and codeusage on PATH; the data folder lives in Scoop’s persist directory, so updates keep it.',
   instUpdate: 'Update later', instNoScoop: 'No Scoop yet? Install it first:',
-  instPs1: 'Downloads the latest release from GitHub and checks its SHA-256', instPs2: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit, no admin rights', instPs3: 'Adds codeusage to your user PATH and a Start menu shortcut', instPs4: 'Run it again to update; the data folder is kept',
-  instZipBtn: 'Download codeusagemonit-1.2.0-win-x64.zip', instZip1: 'Extract everything into a writable folder, e.g. D:\\Tools\\codeusagemonit', instZip2: 'Run codeusagemonit.exe; use codeusage.exe in the same folder for the CLI', instZip3: 'To update, overwrite with the new version and keep the data folder',
-  instSetupBtn: 'Download codeusagemonit-setup-1.2.0.exe', instSetup1: 'Choose a folder (default %LOCALAPPDATA%\\Programs\\codeusagemonit, or any other drive or directory)', instSetup2: 'Adds a Start menu shortcut, with optional desktop shortcut, start with Windows, and codeusage on your user PATH', instSetup3: 'Settings, keys and the usage cache stay in %LOCALAPPDATA%\\codeusagemonit across updates; uninstall asks before deleting them'
+  instFootScoop: 'You get a Start menu shortcut and codeusage on PATH. Data lives in Scoop’s persist directory, so updates keep it. No Scoop yet? Run <code>irm get.scoop.sh | iex</code> first.',
+  instFootPs: 'To uninstall, delete %LOCALAPPDATA%\\Programs\\codeusagemonit and remove it from your user PATH.',
+  instFootZip: 'The portable zip runs after you extract it into a writable folder. To update, overwrite the old files and keep the data folder beside them.',
+  instFootCli: 'Add <code>--json</code> for scripts or a status bar. <code>codeusage help</code> lists every command.',
+  instPs1: 'Downloads the latest release from GitHub', instPs2: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit, no admin rights', instPs3: 'Adds codeusage to your user PATH and a Start menu shortcut', instPs4: 'Run it again to update; the data folder is kept',
+  instSetupBtn: 'Download codeusagemonit-setup-1.2.0.exe', instZipLink: 'Or download the portable zip',
+  instSetup1: 'Choose a folder (default %LOCALAPPDATA%\\Programs\\codeusagemonit)', instSetup2: 'Start menu shortcut; desktop, startup and PATH are optional', instSetup3: 'Settings stay in %LOCALAPPDATA%\\codeusagemonit across updates; uninstall asks first'
 };
 const ja = {
   skip: '本文へ移動', navProviders: 'サービス', navBoard: '利用枠と使用量', navPricing: '料金', navSizes: 'サイズ', navInstall: 'インストール', navDownload: 'ダウンロード',
@@ -142,25 +154,25 @@ const ja = {
   fCost: 'API 換算の費用', fReq: 'リクエスト', fSpeed: '出力速度', demoData: 'デモデータ',
   eyPricing: '料金と速度', prA: '正確な計算', prB: '料金は公式に合わせて',
   prLead: '費用 = ローカルログにある各リクエストのトークン数 × そのモデルの公式 API 単価。料金表は 1 日 1 回公式価格と同期し、オフライン時は内蔵の料金表を使います。速度はリクエストごとにエンドツーエンドで計測し、中継サービス経由の呼び出しも接続先ごとに集計します。',
-  priceTitle: 'モデル、公式と同期した料金で計算', priceSub: '公式 API 単価。長コンテキストの段階料金、キャッシュの読み書き、Fast モードの倍率にも対応。',
-  syncOk: '同期済み', syncDate: '料金日付', syncEvery: '24 時間ごとに更新を確認', priceSearch: 'モデルを検索（例：opus、gpt-5.5、glm）',
+  priceTitle: '最新モデル、公式と同期した料金', priceSub: '公式 API 単価。長コンテキストの段階料金、キャッシュの読み書き、Fast モードの倍率にも対応。',
+  syncOk: '同期済み', syncDate: '料金日付', syncEvery: '24 時間ごとに更新を確認', priceSearch: 'モデルを検索（例：gpt-6、opus、gemini）',
   thModel: 'モデル', thIn: '入力', thOut: '出力', thCache: 'キャッシュ読取', priceUnit: '米ドル / 100 万トークン · 出典：各社の公式料金（LiteLLM・models.dev による集計）',
   speedTitle: '実際の出力速度', speedSub: '出力トークン ÷ リクエスト全体の所要時間。最初のトークンまでの待ち時間や中継の遅延も含み、ツールごとに計算します。',
   relayTitle: '中継サービスも正確に', relaySub: 'CC Switch で接続先を切り替えても、呼び出しは接続先ごとに集計されます。', relayOfficial: '公式', relayA: '中継 A', relayB: '中継 B',
   eySizes: 'サイズ', sA: '4 つのサイズ', sB: 'ひとつのウィンドウ', sLead: '右クリックで小・中・大・全体を切り替え。コンパクトなサイズはデスクトップ層に置かれ、作業の邪魔をしません。どのサイズもサイズ変更できます。',
   sFull: '全体', sLarge: '大', sMedium: '中', sSmall: '小', deckHint: 'カードをクリックして拡大表示',
   eyInstall: 'インストールと CLI', cA: '1 行でインストール', cB: 'ターミナルでも同じデータを',
-  cLead: 'setup.exe でインストール（フォルダー、スタートメニュー、任意のデスクトップ、ログオン時起動、PATH）。Scoop と PowerShell も使えます。同梱の codeusage コマンドはアプリとキャッシュ・設定を共有。メーターはここでも 24 マスで、--json を付ければスクリプトやステータスバーに渡せます。',
-  recommended: 'おすすめ', instSetup: 'インストーラー', instZip: 'zip', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー', copyShort: 'コピー',
+  cLead: 'Scoop、PowerShell、または setup.exe でインストールでき、PATH とスタートメニューに登録されます。同梱の codeusage コマンドはアプリとキャッシュ・設定を共有。メーターはここでも 24 マスで、--json を付ければスクリプトやステータスバーに渡せます。',
+  recommended: 'おすすめ', instZip: '手動ダウンロード', instCli: 'コマンド', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー',
   eyPrivacy: 'プライバシー', vA: 'データは', vB: 'あなたの PC に',
   v1t: '数値だけ', v1: 'トークン数、リクエスト数、所要時間、モデル名だけをローカルの時間別インデックスに記録。会話内容は保存しません。',
   v2t: 'ログインはそのまま', v2: '各ツールのログイントークンは元のフォルダーに残ります。読み取るだけで、コピーしません。',
   v3t: 'キーは暗号化', v3: '入力した API キーは Windows DPAPI で暗号化。復号できるのは現在の Windows ユーザーだけです。',
   v4t: 'テレメトリーなし', v4: '独自サーバーはありません。利用枠の照会は各サービスにだけ送信。料金表は 1 日 1 回 GitHub から取得し、アカウントや使用量の情報は送りません。設定でオフにできます。',
   eyFaq: 'FAQ', fqA: 'よくある質問',
-  fq1: 'インストール方法と必要な環境は？', fa1: 'setup.exe がおすすめです。インストール先を選べ、スタートメニューに登録し、デスクトップ、ログオン時の起動、codeusage の PATH 追加は任意です。アンインストールは Windows の設定 → アプリから。既定は現在のユーザー向けで、管理者権限は不要です。Scoop、PowerShell の 1 行、または zip を書き込み可能なフォルダーに展開して実行することもできます。Node.js は不要。Windows 10 / 11 標準の .NET Framework 4.8 で動きます。',
-  fq7: '更新とアンインストールは？', fa7: 'インストーラー：新しい setup.exe を実行すれば更新。設定は %LOCALAPPDATA%\\codeusagemonit に残り、アンインストール時に削除するか確認します。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit。データは persist フォルダーに残ります。PowerShell：もう一度実行すれば更新。アンインストールはインストール先を削除し、ユーザー PATH から外します。zip：新しいファイルで上書きし、data フォルダーは残してください。',
-  fq2: '「Windows によって PC が保護されました」と表示されるのは？', fa2: 'コード署名証明書を購入していないためです。「詳細情報 → 実行」を選んでください。下の SHA-256 でファイルを確認することもできます。Scoop と PowerShell スクリプトは SHA-256 を自動で確認します。',
+  fq1: 'インストール方法と必要な環境は？', fa1: 'setup.exe（インストール先とスタートメニュー、任意のデスクトップ・ログオン時起動・PATH。アンインストールは Windows の設定 → アプリ）、Scoop、PowerShell の 1 行、または zip を書き込み可能なフォルダーに展開して実行できます。既定では管理者権限は不要です。Node.js は不要。Windows 10 / 11 標準の .NET Framework 4.8 で動きます。',
+  fq7: '更新とアンインストールは？', fa7: 'インストーラー：新しい setup.exe を実行すれば更新。設定は %LOCALAPPDATA%\\codeusagemonit に残り、アンインストール時に削除するか確認します。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit。データは persist フォルダーに残ります。PowerShell：もう一度実行すれば更新。アンインストールは %LOCALAPPDATA%\\Programs\\codeusagemonit を削除し、ユーザー PATH から外します。zip：新しいファイルで上書きし、data フォルダーは残してください。',
+  fq2: '「Windows によって PC が保護されました」と表示されるのは？', fa2: 'コード署名証明書を購入していないためです。「詳細情報 → 実行」を選んでください。',
   fq3: 'すべてのアカウントに再ログインが必要ですか？', fa3: 'いいえ。Codex、Claude Code、Cursor、Antigravity、Grok は PC 上の既存のログインを利用します。DeepSeek、Kimi、OpenCode、ZCode は API キー、Copilot は GitHub のデバイスログインです。',
   fq4: '表示される費用は実際の請求額ですか？', fa4: 'いいえ。ローカルログのトークン数 × 公式 API 価格で計算した API 換算の参考値です。サブスクリプションは月額課金なので、この金額は請求されません。',
   fq8: '料金表はどうやって公式と同期していますか？', fa8: 'リポジトリの pricing.json は、GitHub Actions が毎日 LiteLLM と models.dev（各社が公開する API 単価を収録）から作り直しています。アプリは 24 時間ごとに確認し、新しい料金表があればダウンロード・検証して再計算します。取得に失敗した場合や設定でオフにした場合は、内蔵の料金表を使い続けます。',
@@ -177,14 +189,19 @@ const ja = {
   vLarge: '利用枠とペースに加え、ローカル使用量：期間、費用、トークン、リクエスト、速度、クリックできるグラフ。',
   vFull: '全サービスのカード、サービスごとの詳細、サードパーティ API のページ、設定。端をドラッグして自由にサイズ変更できます。',
   vFullDim: '既定 420 × 790、サイズ変更可',
+  viewerPrev: '前へ', viewerNext: '次へ', viewerClose: '閉じる',
   pgTop: 'トップ', pgProviders: 'サービス', pgBoard: '利用枠と使用量', pgPricing: '料金', pgSizes: 'サイズ', pgInstall: 'インストール', pgPrivacy: 'プライバシー', pgFaq: 'FAQ', pgDownload: 'ダウンロード',
   themeLight: 'ライト', themeDark: 'ダーク', themeSystem: 'システムに合わせる',
   vendorAll: 'すべて', priceShown: '{n} / {total} 件', priceNone: '一致するモデルはありません', tagLong: '長コンテキスト >{k}K', defaultCache: '未掲載のため入力単価の 10% で推定',
   instScoopNote: 'Homebrew の tap と同じく、まずこのリポジトリを bucket として追加してからインストール。スタートメニューのショートカットと PATH 上の codeusage が作られ、data フォルダーは Scoop の persist ディレクトリに置かれるので更新しても残ります。',
   instUpdate: '今後の更新', instNoScoop: 'Scoop が未導入なら先に：',
-  instPs1: 'GitHub Releases から最新版をダウンロードし、SHA-256 を確認', instPs2: '%LOCALAPPDATA%\\Programs\\codeusagemonit にインストール（管理者権限不要）', instPs3: 'codeusage をユーザー PATH に追加し、スタートメニューにショートカットを作成', instPs4: 'もう一度実行すれば更新。data フォルダーは保持',
-  instZipBtn: 'codeusagemonit-1.2.0-win-x64.zip をダウンロード', instZip1: '書き込み可能なフォルダー（例：D:\\Tools\\codeusagemonit）にすべて展開', instZip2: 'codeusagemonit.exe を実行。CLI は同じフォルダーの codeusage.exe', instZip3: '更新は新しいバージョンで上書きし、data フォルダーは残す',
-  instSetupBtn: 'codeusagemonit-setup-1.2.0.exe をダウンロード', instSetup1: 'インストール先を選べます（既定は %LOCALAPPDATA%\\Programs\\codeusagemonit。別のドライブやフォルダーも可）', instSetup2: 'スタートメニューに登録。デスクトップ、ログオン時の起動、codeusage をユーザー PATH へ追加は任意', instSetup3: '設定・キー・使用量キャッシュは %LOCALAPPDATA%\\codeusagemonit に保存され、更新しても残ります。アンインストール時に削除するか確認します'
+  instFootScoop: 'スタートメニューのショートカットと PATH 上の codeusage が作られます。data は Scoop の persist に置かれるので更新しても残ります。Scoop が未導入なら先に <code>irm get.scoop.sh | iex</code>。',
+  instFootPs: 'アンインストールは %LOCALAPPDATA%\\Programs\\codeusagemonit を削除し、ユーザー PATH から外します。',
+  instFootZip: 'インストール不要の zip は、書き込み可能なフォルダーに展開して実行します。更新は新しいファイルで上書きし、隣の data フォルダーは残します。',
+  instFootCli: '<code>--json</code> を付けると JSON になり、スクリプトやステータスバーに渡せます。<code>codeusage help</code> で全コマンドを表示。',
+  instPs1: 'GitHub Releases から最新版をダウンロード', instPs2: '%LOCALAPPDATA%\\Programs\\codeusagemonit にインストール（管理者権限不要）', instPs3: 'codeusage をユーザー PATH に追加し、スタートメニューにショートカットを作成', instPs4: 'もう一度実行すれば更新。data フォルダーは保持',
+  instSetupBtn: 'codeusagemonit-setup-1.2.0.exe をダウンロード', instZipLink: 'またはインストール不要の zip',
+  instSetup1: 'インストール先を選択（既定は %LOCALAPPDATA%\\Programs\\codeusagemonit）', instSetup2: 'スタートメニューに登録。デスクトップ、ログオン時起動、PATH は任意', instSetup3: '設定は %LOCALAPPDATA%\\codeusagemonit に残り、更新しても保持。削除前に確認'
 };
 const DICT = { zh, en, ja };
 let lang = 'zh';
@@ -354,7 +371,7 @@ body.addEventListener('pointerover', e => {
   const chart = b.parentElement.dataset.chart, i = +b.dataset.i;
   let text;
   if (chart === 'overview') { const parts = USAGE_IDS.map(k => [k, SERIES[k].days[i].cost]).filter(x => x[1] > 0); text = `<b>${dayLabel(SERIES.codex.days[i].date)}</b> · ${usd(parts.reduce((s, x) => s + x[1], 0))}` + parts.map(([k, v]) => `<br>${P[k].name}  ${usd(v)}`).join(''); }
-  else { const d = SERIES[chart].days[i]; text = `<b>${dayLabel(d.date)}</b><br>${usd(d.cost)} · ${compact(d.tokens)} Token${d.speed ? '<br>输出速度 ' + tps(d.speed) : ''}`; }
+  else { const d = SERIES[chart].days[i]; const reqN = Math.max(d.tokens > 0 ? 1 : 0, d.req || 0); text = `<b>${dayLabel(d.date)}</b><br>${usd(d.cost)} · ${compact(d.tokens)} Token<br>${reqN.toLocaleString('en-US')} 次请求 · ${tps(d.speed || (d.tokens > 0 ? TOOLS[chart].speed : 0))}`; }
   if (!appTip) { appTip = document.createElement('div'); appTip.className = 'app-tip'; body.appendChild(appTip); }
   appTip.innerHTML = text;
   const br = b.getBoundingClientRect(), pr = body.getBoundingClientRect();
@@ -383,7 +400,8 @@ const OK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3
 async function writeClip(text) { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } }
 async function copyText(text, label, restore) { label.textContent = (await writeClip(text)) ? t('copied') : t('copyFailed'); setTimeout(() => { label.textContent = restore(); }, 1600); }
 async function copyIcon(btn, text) { const ok = await writeClip(text); btn.innerHTML = ok ? OK_ICON : COPY_ICON; btn.classList.toggle('ok', ok); btn.title = ok ? t('copied') : t('copyFailed'); setTimeout(() => { btn.innerHTML = COPY_ICON; btn.classList.remove('ok'); btn.title = t('copyLabel'); }, 1600); }
-const cmdRow = text => `<div class="cmd"><code><span class="pr">&gt; </span>${esc(text)}</code><button type="button" class="copy-btn" data-copy="${esc(text)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button></div>`;
+const cmdText = text => esc(text).replace(/\//g, '/<wbr>');
+const cmdRow = text => `<div class="cmd"><code><span class="pr">&gt; </span>${cmdText(text)}</code><button type="button" class="copy-btn" data-copy="${esc(text)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button></div>`;
 document.addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copyIcon(b, b.dataset.copy); });
 
 // ── Install (hero one-liner + the install panel) ──────────────────────
@@ -396,48 +414,103 @@ const INSTALL = {
 };
 let quickKind = 'scoop';
 function renderQuick() {
-  $('quick-code').innerHTML = INSTALL[quickKind].map(l => `<span class="pr">&gt; </span>${esc(l)}`).join('\n');
+  $('quick-code').innerHTML = INSTALL[quickKind].map(l => `<span class="pr">&gt; </span>${cmdText(l)}`).join('\n');
   document.querySelectorAll('[data-quick]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.quick === quickKind)));
   const btn = $('quick-copy'); btn.innerHTML = COPY_ICON; btn.dataset.copy = INSTALL[quickKind].join('\n'); btn.title = btn.ariaLabel = t('copyLabel');
 }
 $('quick').addEventListener('click', e => { const b = e.target.closest('[data-quick]'); if (b) { quickKind = b.dataset.quick; renderQuick(); } });
-let instKind = 'setup';
-function renderInstall() {
+let instKind = 'scoop';
+const USAGE = [
+  { id: 'status', cmd: 'codeusage status', desc: 'cmdStatus' },
+  { id: 'cost', cmd: 'codeusage cost --days 7', desc: 'cmdCost' },
+  { id: 'thirdparty', cmd: 'codeusage thirdparty', desc: 'cmdThird' }
+];
+function usageRows() {
+  return USAGE.map(u => `<div class="cmd cmd-use" data-cmd="${u.id}" role="button" tabindex="0" aria-pressed="${u.id === termCmd}"><code><span class="pr">&gt; </span>${esc(u.cmd)}</code><button type="button" class="copy-btn" data-copy="${esc(u.cmd)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button><p class="cmd-desc">${esc(t(u.desc))}</p></div>`).join('');
+}
+const instGroup = html => `<div class="inst-group">${html}</div>`;
+const instFill = (groups, footKey) => `<div class="inst-fill"><div class="inst-main">${groups}</div><p class="inst-foot">${t(footKey)}</p></div>`;
+const DL_ICON = '<svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function paintInstall(animate) {
   const steps = keys => `<ol class="inst-steps">${keys.map(k => `<li>${esc(t(k))}</li>`).join('')}</ol>`;
-  const dl = (href, label) => `<a class="btn btn-primary" href="${href}"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t(label))}</a>`;
-  const html = instKind === 'setup'
-    ? dl(SETUP_URL, 'instSetupBtn') + steps(['instSetup1', 'instSetup2', 'instSetup3'])
-    : instKind === 'scoop'
-    ? INSTALL.scoop.map(cmdRow).join('') + `<p class="inst-note">${esc(t('instScoopNote'))}</p><p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}<p class="cmd-label">${esc(t('instNoScoop'))}</p>${cmdRow('irm get.scoop.sh | iex')}`
+  const html = instKind === 'scoop'
+    ? instFill(instGroup(INSTALL.scoop.map(cmdRow).join('')) + instGroup(`<p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}`), 'instFootScoop')
     : instKind === 'ps'
-      ? cmdRow(INSTALL.ps[0]) + steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])
-      : dl(ZIP_URL, 'instZipBtn') + steps(['instZip1', 'instZip2', 'instZip3']);
-  const el = $('inst-body'); el.innerHTML = html; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+      ? instFill(instGroup(cmdRow(INSTALL.ps[0])) + instGroup(steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])), 'instFootPs')
+      : instKind === 'zip'
+        ? instFill(instGroup(`<a class="btn btn-primary" href="${SETUP_URL}">${DL_ICON}${esc(t('instSetupBtn'))}</a><p class="inst-alt"><a href="${ZIP_URL}">${esc(t('instZipLink'))}</a></p>`) + instGroup(steps(['instSetup1', 'instSetup2', 'instSetup3'])), 'instFootZip')
+        : instFill(usageRows(), 'instFootCli');
+  const el = $('inst-body');
+  el.innerHTML = html;
+  if (animate) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
   document.querySelectorAll('[data-inst]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.inst === instKind)));
 }
-$('inst-tabs').addEventListener('click', e => { const b = e.target.closest('[data-inst]'); if (b) { instKind = b.dataset.inst; renderInstall(); } });
+let fitting = false;
+function renderInstall() { paintInstall(true); if (!fitting) requestAnimationFrame(fitInstall); }
+$('inst-tabs').addEventListener('click', e => { const b = e.target.closest('[data-inst]'); if (b) { instKind = b.dataset.inst; paintInstall(true); } });
+function termBlock(c) {
+  const prompt = '<span class="p">PS C:\\Users\\you&gt;</span> ';
+  return prompt + esc(c.cmd) + '\n' + c.out().join('\n') + '\n' + prompt;
+}
+function fitInstall() {
+  const grid = document.querySelector('.install-grid');
+  if (!grid) return;
+  const wide = matchMedia('(min-width: 1121px)').matches;
+  if (!wide) { grid.style.removeProperty('--pair-h'); return; }
+  fitting = true;
+  const saved = instKind;
+  grid.classList.add('is-measure');
+  let card = 0;
+  for (const kind of ['scoop', 'ps', 'zip', 'cli']) {
+    instKind = kind;
+    paintInstall(false);
+    card = Math.max(card, document.querySelector('#install .inst').offsetHeight);
+  }
+  instKind = saved;
+  paintInstall(false);
+  const term = document.querySelector('#install .term');
+  const probe = document.createElement('pre');
+  probe.className = 'term-body';
+  probe.style.cssText = 'position:absolute;left:0;right:0;visibility:hidden;height:auto;min-height:0;flex:none;overflow:visible;pointer-events:none;';
+  term.appendChild(probe);
+  let body = 0;
+  for (const c of Object.values(COMMANDS)) { probe.innerHTML = termBlock(c); body = Math.max(body, probe.offsetHeight); }
+  probe.remove();
+  grid.classList.remove('is-measure');
+  fitting = false;
+  const termH = body + document.querySelector('#install .term-bar').offsetHeight + 2;
+  grid.style.setProperty('--pair-h', Math.ceil(Math.max(card, termH)) + 'px');
+}
+addEventListener('resize', () => { if (!fitting) requestAnimationFrame(fitInstall); });
+if (document.fonts) document.fonts.ready.then(() => { if (!fitting) fitInstall(); });
 
-// ── Providers ─────────────────────────────────────────────────────────
-const pGrid = $('p-grid'), pDetail = $('p-detail');
-let pSelected = 'codex';
-const CUSTOM_ICON = '<span class="pi" style="--c:var(--p-custom);background:none;-webkit-mask:none;mask:none;display:grid;place-items:center;color:var(--p-custom)"><svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>';
+// ── Providers: name + the connection method the app actually uses ─────
+// Checked against source/Windows Connect.cs, Core.cs, LocalAntigravity.cs,
+// CustomProviders.cs and docs/providers/*.md.
+const AUTH = {
+  codex: ['OAuth', 'OAuth', 'OAuth'],
+  claude: ['OAuth', 'OAuth', 'OAuth'],
+  cursor: ['本地会话 · Cookie', 'Local session · Cookie', 'ローカルセッション · Cookie'],
+  antigravity: ['本地服务 · OAuth', 'Local service · OAuth', 'ローカルサービス · OAuth'],
+  deepseek: ['API Key', 'API key', 'API キー'],
+  grok: ['CLI 会话', 'CLI session', 'CLI セッション'],
+  copilot: ['OAuth 设备流', 'OAuth device flow', 'OAuth デバイスフロー'],
+  kimi: ['API Key', 'API key', 'API キー'],
+  opencode: ['API Key', 'API key', 'API キー'],
+  zcode: ['API Key', 'API key', 'API キー'],
+  pi: ['本地文件', 'Local files', 'ローカルファイル'],
+  custom: ['API Key · 自定义', 'API key · Custom', 'API キー · カスタム']
+};
+const PROVIDER_NAME = { custom: ['自定义接口', 'Custom endpoint', 'カスタム API'] };
 function renderProviders() {
-  pGrid.innerHTML = [...IDS, 'custom'].map(id => `<button type="button" class="p-tile" role="tab" data-p="${id}" aria-selected="${id === pSelected}" style="--c:${cv(id)}">${id === 'custom' ? CUSTOM_ICON : icon(id)}<span class="name">${id === 'custom' ? t('custom') : P[id].name}</span><span class="kind">${esc(PROV_INFO[id].kind[LI()])}</span></button>`).join('');
-  renderProviderDetail();
+  $('p-grid').innerHTML = [...IDS, 'custom'].map(id => {
+    const name = PROVIDER_NAME[id] ? PROVIDER_NAME[id][LI()] : P[id].name;
+    const mark = id === 'custom'
+      ? '<span class="provider-mark" aria-hidden="true"><span class="plus">+</span></span>'
+      : `<span class="provider-mark" aria-hidden="true"><img src="assets/icons/${id}.svg" alt="" width="32" height="32"></span>`;
+    return `<li><a class="provider-item" href="${REPO}/blob/main/docs/providers/${id}.md">${mark}<span><strong>${esc(name)}</strong><small>${esc(AUTH[id][LI()])}</small></span></a></li>`;
+  }).join('');
 }
-function renderProviderDetail() {
-  const id = pSelected, info = PROV_INFO[id], li = LI();
-  const name = id === 'custom' ? t('customLong') : P[id].name;
-  const cap = (on, label) => `<span class="cap ${on === 1 ? 'yes' : on === 2 ? 'yes beta' : 'no'}">${label}${on === 2 ? t('capBeta') : ''}</span>`;
-  pDetail.style.setProperty('--c', cv(id));
-  pDetail.innerHTML = `<div class="p-anim"><div class="card-head">${id === 'custom' ? CUSTOM_ICON.replace('--c:var(--p-custom)', '--c:var(--p-custom);width:40px;height:40px') : icon(id)}<h3>${name}</h3></div>
-    <div class="kv"><div><span>${t('pConnect')}</span><p>${esc(info.connect[li])}</p></div><div><span>${t('pQuota')}</span><p>${esc(info.quota[li])}</p></div></div>
-    <div class="caps">${cap(info.caps[0], t('capQuota'))}${cap(info.caps[1], t('capLocal'))}${cap(info.caps[2], t('capSpeed'))}</div>
-    <a class="doc" href="${REPO}/blob/main/docs/providers/${id}.md">${t('docs')}</a></div>`;
-}
-function pickProvider(b) { pSelected = b.dataset.p; pGrid.querySelectorAll('.p-tile').forEach(x => x.setAttribute('aria-selected', String(x === b))); renderProviderDetail(); }
-pGrid.addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (b) pickProvider(b); });
-pGrid.addEventListener('pointerover', e => { const b = e.target.closest('[data-p]'); if (b && b.dataset.p !== pSelected && matchMedia('(pointer: fine)').matches) pickProvider(b); });
 
 // ── Board: one tool's quotas and usage ────────────────────────────────
 const BOARD_IDS = ['codex', 'claude', 'kimi', 'zcode', 'deepseek', 'pi'];
@@ -498,7 +571,9 @@ function showTip(barEl) {
   const bars = periodBars(), x = bars[+barEl.dataset.i]; if (!x) return;
   chart.querySelectorAll('.hot').forEach(el => el.classList.remove('hot')); barEl.classList.add('hot');
   const label = x.hourly ? `${dayLabel(x.date)} ${pad2(x.date.getHours())}:00` : x.date.toLocaleDateString(lang === 'zh' ? 'zh-CN' : lang === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric', weekday: 'short' });
-  tip.innerHTML = `<b>${label}</b><div><span>${t('tipCost')}</span><span>${usd(x.cost)}</span></div><div><span>${t('tipTokens')}</span><span>${compact(x.tokens)}</span></div><div><span>${t('tipReq')}</span><span>${x.req.toLocaleString('en-US')}</span></div><div><span>${t('tipSpeed')}</span><span>${x.speed ? tps(x.speed) : '—'}</span></div>`;
+  const reqN = Math.max(0, Math.round(x.req || 0));
+  const speedN = x.speed || (x.tokens > 0 ? speedOf([x], dash.tool) : 0);
+  tip.innerHTML = `<b>${label}</b><div><span>${t('tipCost')}</span><span>${usd(x.cost)}</span></div><div><span>${t('tipTokens')}</span><span>${compact(x.tokens)}</span></div><div><span>${t('tipReq')}</span><span>${reqN.toLocaleString('en-US')}</span></div><div><span>${t('tipSpeed')}</span><span>${tps(speedN)}</span></div>`;
   const cr = chart.getBoundingClientRect(), br = barEl.getBoundingClientRect(), wrap = chart.parentElement.getBoundingClientRect();
   tip.hidden = false;
   const left = Math.min(wrap.width - tip.offsetWidth / 2 - 4, Math.max(tip.offsetWidth / 2 + 4, br.left - wrap.left + br.width / 2));
@@ -513,7 +588,7 @@ chart.addEventListener('click', e => { const b = e.target.closest('.bar'); if (b
 const VENDORS = ['all', 'anthropic', 'openai', 'google', 'xai', 'deepseek', 'moonshot', 'zhipu', 'qwen'];
 const VENDOR_NAME = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', xai: 'xAI', deepseek: 'DeepSeek', moonshot: 'Kimi', zhipu: 'GLM', qwen: 'Qwen' };
 const vendorOf = key => { const n = key.split('/').pop(); return /^claude/.test(n) ? 'anthropic' : /^(gpt|o\d|codex|chatgpt)/.test(n) ? 'openai' : /^gemini/.test(n) ? 'google' : /^grok/.test(n) ? 'xai' : /^deepseek/.test(n) ? 'deepseek' : /^(kimi|moonshot)/.test(n) ? 'moonshot' : /^glm/.test(n) ? 'zhipu' : /^(qwen|qwq)/.test(n) ? 'qwen' : 'other'; };
-const FEATURED = ['claude-opus-5-5', 'claude-fable-5-1', 'claude-sonnet-5-5', 'gpt-5.5', 'gpt-5.3-codex', 'gemini-3.1-pro-preview', 'deepseek-v4-pro', 'kimi-k2.7-code', 'glm-5.2', 'claude-haiku-4-5', 'gpt-5.4-mini', 'gemini-3.5-flash', 'qwen3-coder-plus'];
+const FEATURED = ['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-sonnet-5-5', 'gemini-3.1-pro-preview', 'gemini-3.8-flash', 'gpt-5.6-sol', 'gpt-5.5', 'gpt-5.3-codex', 'deepseek-v4-pro', 'kimi-k2.7-code', 'glm-5.2', 'claude-haiku-4-5', 'qwen3-coder-plus'];
 // Shown if pricing.json cannot be fetched (e.g. the page opened from disk).
 const PRICE_FALLBACK = { updated: '2026-09-30', models: { 'claude-opus-5-5': { in: 4, out: 20, cr: .2, cw: 5, fast: 2 }, 'claude-fable-5-1': { in: 10, out: 50, cr: .25, cw: 12.5 }, 'claude-sonnet-5-5': { in: 2, out: 10, cr: .2, cw: 2.5 }, 'gpt-5.5': { in: 5, out: 30, cr: .5, long: { at: 272000 }, fast: 2.5 }, 'gpt-5.3-codex': { in: 1.75, out: 14, cr: .175, fast: 2 }, 'gemini-3.1-pro-preview': { in: 2, out: 12, cr: .2, long: { at: 200000 }, fast: 1.8 }, 'deepseek-v4-pro': { in: 1.32, out: 3.96, cr: .044 }, 'kimi-k2.7-code': { in: .95, out: 4, cr: .19 }, 'glm-5.2': { in: 1.4, out: 4.4, cr: .28 }, 'claude-haiku-4-5': { in: 1, out: 5, cr: .1, cw: 1.25 }, 'gpt-5.4-mini': { in: .75, out: 4.5, cr: .075, fast: 2 }, 'gemini-3.5-flash': { in: 1.5, out: 9, cr: .15, fast: 1.8 }, 'qwen3-coder-plus': { in: 1, out: 5 } } };
 let prices = [], priceVendor = 'all', priceQ = '';
@@ -521,7 +596,7 @@ function loadPrices(json) {
   const rank = k => { const i = FEATURED.indexOf(k); return i < 0 ? 999 : i; };
   prices = Object.entries(json.models).map(([key, v]) => ({ key, v, vendor: vendorOf(key), rank: rank(key) }))
     .sort((a, b) => a.rank - b.rank || VENDORS.indexOf(a.vendor) - VENDORS.indexOf(b.vendor) || a.key.localeCompare(b.key, 'en', { numeric: true }));
-  $('price-count').textContent = prices.length; $('price-date').textContent = (json.updated || '—').slice(0, 10);
+  $('price-date').textContent = String(json.updated || '').slice(0, 10) || '2026-09-30';
   renderVendors(); renderPrices();
 }
 function renderVendors() {
@@ -536,7 +611,6 @@ function renderPrices() {
     const cr = v.cr != null ? money(v.cr) : `<span class="none" title="${esc(t('defaultCache'))}">${money(v.in * .1)}*</span>`;
     return `<tr><td title="${esc(key)}">${esc(key)}${tags}</td><td>${money(v.in)}</td><td>${money(v.out)}</td><td>${cr}</td></tr>`;
   }).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--ink-3);font-family:var(--sans)">${t('priceNone')}</td></tr>`;
-  $('price-shown').textContent = t('priceShown').replace('{n}', rows.length).replace('{total}', prices.length);
 }
 $('vendors').addEventListener('click', e => { const b = e.target.closest('[data-vendor]'); if (!b) return; priceVendor = b.dataset.vendor; renderVendors(); renderPrices(); });
 $('price-q').addEventListener('input', e => { priceQ = e.target.value.trim(); renderPrices(); });
@@ -571,25 +645,135 @@ function paintRelay() { flows.forEach((f, i) => f.classList.toggle('on', i === r
 paintRelay();
 if (!reduced) setInterval(() => { if (document.hidden) return; relayOn = [1, 0, 1, 2][(Date.now() / 2600 | 0) % 4]; paintRelay(); }, 2600);
 
-// ── Sizes: stacked deck + pop-out viewer (FLIP) ───────────────────────
-const SIZES = [
-  { key: 'small', src: 'assets/small.png', w: 300, dim: '172 × 172', title: 'sSmall', text: 'vSmall' },
-  { key: 'medium', src: 'assets/medium.png', w: 620, dim: '360 × 180', title: 'sMedium', text: 'vMedium' },
-  { key: 'large', src: 'assets/large.png', w: 440, dim: '360 × 430', title: 'sLarge', text: 'vLarge' },
-  { key: 'full', src: 'assets/overview.png', w: 0, dim: 'vFullDim', title: 'sFull', text: 'vFull' }
+// ── Sizes: interactive window mocks (small / medium / large / full) ──
+const SIZE_PAGES = ['codex', 'claude', 'cursor', 'kimi', 'zcode', 'deepseek', 'pi'];
+const sz = { small: { id: 'codex', wi: 0 }, medium: { id: 'codex', wi: 0 }, large: { id: 'codex', period: '30d', open: -1 }, full: { page: 'overview', period: '30d', id: 'codex' } };
+const EXTRA_USAGE = { cursor: [18.42, 6.2e6, .64, 41.6, 248], antigravity: [11.3, 8.4e6, .48, 36.8, 176], copilot: [7.85, 2.1e6, .22, 29.4, 312], grok: [6.4, 4.7e6, .31, 44.2, 98], opencode: [8.16, 5.4e6, .27, 33.5, 154] };
+function usagePack(id) {
+  if (SERIES[id]) {
+    const days = SERIES[id].days.map(d => ({ date: d.date, hourly: d.hourly, cost: d.cost, tokens: d.tokens, req: Math.max(d.tokens > 0 ? 1 : 0, d.req || 0), speed: d.speed || TOOLS[id].speed }));
+    return { cost: TOOLS[id].cost, tokens: TOOLS[id].tokens, today: TOOLS[id].today, speed: TOOLS[id].speed, req: Math.max(1, sum(days, 'req')), days };
+  }
+  const row = EXTRA_USAGE[id] || [4.2, 1.8e6, .18, 27.5, 86];
+  const [cost, tokens, today, speed, req] = row;
+  const r = prng(id.split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) || 9);
+  const weights = SERIES.codex.days.map(() => .35 + r());
+  const sumW = weights.reduce((a, b) => a + b, 0) || 1;
+  const days = SERIES.codex.days.map((d, i) => ({ date: d.date, cost: cost * weights[i] / sumW, tokens: tokens * weights[i] / sumW, req: Math.max(1, Math.round(req * weights[i] / sumW)), speed: speed * (.88 + r() * .24) }));
+  days[29].cost = today;
+  return { cost, tokens, today, speed, req, days };
+}
+function periodSlice(pack, period) {
+  if (period === '7d') return pack.days.slice(-7);
+  if (period === 'today') {
+    const today = pack.days[29], r = prng(91), hours = [];
+    const last = Math.max(10, HOUR);
+    for (let h = 9; h <= last; h++) hours.push({ date: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate(), h), hourly: true, cost: today.cost / (last - 8), tokens: today.tokens / (last - 8), req: Math.max(1, Math.round((today.req || 6) / (last - 8))), speed: pack.speed * (.9 + r() * .2) });
+    return hours;
+  }
+  return pack.days;
+}
+const barsHtml = (rows, color) => { const max = Math.max(...rows.map(d => d.cost), .01); return `<div class="mini-chart">${rows.map((d, i) => `<button type="button" class="b" data-i="${i}" style="height:${Math.max(8, d.cost / max * 100)}%"><i style="height:100%;background:${color}"></i></button>`).join('')}</div>`; };
+const periodsHtml = (cur) => ['today', '7d', '30d'].map(p => `<button type="button" data-period="${p}" aria-pressed="${p === cur}">${p === 'today' ? '当天' : p === '7d' ? '近 7 天' : '近 30 天'}</button>`).join('');
+const iconBtns = (cur, ids) => `<div class="sz-icons">${ids.map(id => `<button type="button" data-prov="${id}" aria-pressed="${id === cur}" aria-label="${P[id].name}">${icon(id)}</button>`).join('')}</div>`;
+function chrome(id, right) {
+  const name = id === 'overview' ? '概览' : P[id].name;
+  return `<div class="sz-head">${id === 'overview' ? OVERVIEW_ICON : icon(id)}<span class="sz-name">${name}</span>${right || ''}</div>`;
+}
+function smallHtml() {
+  const st = sz.small, q = QUOTAS[st.id], pack = usagePack(st.id);
+  let body;
+  if (q.windows) {
+    const w = q.windows[st.wi % q.windows.length];
+    body = `<button type="button" class="sz-big" data-cycle><b>${w.rem}%</b><span>${w.label}剩余  ${st.wi % q.windows.length + 1}/${q.windows.length}</span></button>${meter(w.rem, st.id)}<p class="sz-reset">${w.reset}后重置</p>`;
+  } else if (q.balance) body = `<div class="sz-big"><b>${q.balance.replace('USD ', '$')}</b><span>可用余额</span></div>`;
+  else if (q.local) body = `<div class="sz-big"><b>${compact(pack.tokens)}</b><span>近 30 天 Token</span></div><p class="sz-reset">${pack.req.toLocaleString('en-US')} 次请求 · ${tps(pack.speed)}</p>`;
+  else body = `<div class="sz-big"><b>${tps(pack.speed)}</b><span>本机输出速度</span></div><p class="sz-reset">${pack.req.toLocaleString('en-US')} 次请求 · ${usd(pack.cost)}</p>`;
+  const dots = SIZE_PAGES.map(id => `<button type="button" data-prov="${id}" aria-pressed="${id === st.id}" aria-label="${P[id].name}"></button>`).join('');
+  return `${chrome(st.id, '')}<div class="sz-body">${body}<div class="sz-dots">${dots}</div></div>`;
+}
+function mediumHtml() {
+  const st = sz.medium, q = QUOTAS[st.id], pack = usagePack(st.id);
+  let left, right;
+  if (q.windows) {
+    const w = q.windows[st.wi % q.windows.length];
+    left = `<button type="button" class="sz-big" data-cycle><b>${w.rem}%</b><span>${w.label}剩余</span></button><p class="sz-reset">${w.reset}后重置</p>`;
+    right = q.windows.map((win, i) => `<button type="button" class="sz-row" data-win="${i}"><span class="when">${win.reset}</span>${win.label} <b>${win.rem}%</b>${meter(win.rem, st.id)}</button>`).join('');
+  } else if (q.balance) {
+    left = `<div class="sz-big"><b>${q.balance.replace('USD ', '$')}</b><span>可用余额</span></div>`;
+    right = `<div class="sz-row">近 7 天 <b>${usd(pack.today * 4)}</b></div><div class="sz-row">30 天 Token <b>${compact(pack.tokens)}</b></div><div class="sz-row">请求 <b>${pack.req.toLocaleString('en-US')}</b></div><div class="sz-row">输出速度 <b>${tps(pack.speed)}</b></div>`;
+  } else {
+    left = `<div class="sz-big"><b>${usd(pack.cost)}</b><span>近 30 天</span></div><p class="sz-reset">今日 ${usd(pack.today)}</p>`;
+    right = `<div class="sz-row">Token <b>${compact(pack.tokens)}</b></div><div class="sz-row">请求 <b>${pack.req.toLocaleString('en-US')}</b></div><div class="sz-row">输出速度 <b>${tps(pack.speed)}</b></div>`;
+  }
+  const foot = `今日 ${usd(pack.today)} · 30 天 ${usd(pack.cost)} · ${tps(pack.speed)}`;
+  return `${chrome(st.id, iconBtns(st.id, SIZE_PAGES))}<div class="sz-body"><div class="sz-split"><div>${left}</div><div class="sz-side">${right}</div></div></div><div class="sz-foot"><span>${foot}</span></div>`;
+}
+function largeHtml() {
+  const st = sz.large, q = QUOTAS[st.id], pack = usagePack(st.id), rows = periodSlice(pack, st.period);
+  const totals = { cost: sum(rows, 'cost'), tokens: sum(rows, 'tokens'), req: Math.max(1, sum(rows, 'req')), speed: rows.reduce((s, x) => s + x.speed, 0) / rows.length };
+  let quotas = '';
+  if (q.windows) quotas = q.windows.map((w, i) => `<button type="button" class="sz-q" data-open="${i}"><div class="lab">${w.label} <b>${w.rem}%</b> 剩余 <span class="when">${w.reset}后重置</span></div>${meter(w.rem, st.id)}${st.open === i ? `<div class="sz-more">${paceText(w)} · 窗口 ${w.len}</div>` : ''}</button>`).join('');
+  else if (q.balance) quotas = `<div class="sz-big"><b>${q.balance.replace('USD ', '$')}</b><span>可用余额 · 右边照常统计本机用量</span></div>`;
+  else if (q.local) quotas = `<p class="sz-reset">没有账户额度 · 只统计本机日志</p>`;
+  else quotas = `<p class="sz-reset">尚未连接 · 下面是本机用量</p>`;
+  const tabs = SIZE_PAGES.map(id => `<button type="button" data-prov="${id}" aria-selected="${id === st.id}">${icon(id)}<span>${P[id].name}</span></button>`).join('');
+  return `${chrome(st.id, '')}<div class="sz-tabs">${tabs}</div><div class="sz-body sz-scroll">${quotas}<div class="row" style="margin-top:10px"><span class="dim">本机用量</span><div class="sz-periods">${periodsHtml(st.period)}</div></div><div class="sz-metrics"><div><span>费用</span><b>${usd(totals.cost)}</b></div><div><span>Token</span><b>${compact(totals.tokens)}</b></div><div><span>请求</span><b>${Math.round(totals.req).toLocaleString('en-US')}</b></div><div><span>速度</span><b>${tps(totals.speed)}</b></div></div>${barsHtml(rows, cv(st.id))}</div>`;
+}
+function fullHtml() {
+  const st = sz.full, page = st.page;
+  const tabs = ['overview', ...IDS].map(id => `<button type="button" data-page="${id}" aria-selected="${id === page}">${id === 'overview' ? '概览' : P[id].name}</button>`).join('');
+  let inner;
+  if (page === 'overview') {
+    const rows = periodSlice(usagePack('codex'), st.period);
+    const tot = USAGE_IDS.reduce((s, k) => s + TOOLS[k].cost, 0), tok = USAGE_IDS.reduce((s, k) => s + TOOLS[k].tokens, 0), req = USAGE_IDS.reduce((s, k) => s + usagePack(k).req, 0);
+    inner = `<div class="app-card"><div class="row"><span class="dim">全部平台 · API 等价费用</span><div class="sz-periods">${periodsHtml(st.period)}</div></div><div class="row" style="margin-top:6px"><span class="big">${usd(st.period === '30d' ? tot : sum(rows, 'cost'))}</span><span class="num">${compact(st.period === '30d' ? tok : sum(rows, 'tokens'))} Token</span></div><div class="faint">${Math.round(req).toLocaleString('en-US')} 次请求</div>${barsHtml(rows, cv('codex'))}</div>${['codex', 'claude', 'cursor', 'kimi'].map(providerCard).join('')}`;
+  } else {
+    const q = QUOTAS[page], pack = usagePack(page), rows = periodSlice(pack, st.period);
+    inner = `<div class="app-card"><div class="card-head">${icon(page)}<b>${P[page].name}</b>${q.plan ? `<span class="plan">${q.plan}</span>` : ''}</div>${quotaBlock(page, false)}</div><div class="app-card"><div class="row"><b style="font-size:13px">本机用量</b><div class="sz-periods">${periodsHtml(st.period)}</div></div><div class="sz-metrics"><div><span>费用</span><b>${usd(sum(rows, 'cost'))}</b></div><div><span>Token</span><b>${compact(sum(rows, 'tokens'))}</b></div><div><span>请求</span><b>${Math.max(1, Math.round(sum(rows, 'req'))).toLocaleString('en-US')}</b></div><div><span>速度</span><b>${tps(pack.speed)}</b></div></div>${barsHtml(rows, cv(page))}</div>`;
+  }
+  return `${chrome(page, '')}<div class="sz-tabs">${tabs}</div><div class="sz-body sz-scroll">${inner}</div>`;
+}
+function renderWindow(kind, win) {
+  const html = kind === 'small' ? smallHtml() : kind === 'medium' ? mediumHtml() : kind === 'large' ? largeHtml() : fullHtml();
+  win.innerHTML = html;
+  win.dataset.kind = kind;
+  const packId = kind === 'full' ? (sz.full.page === 'overview' ? 'codex' : sz.full.page) : sz[kind].id;
+  win._rows = periodSlice(usagePack(packId), (sz[kind].period || '30d'));
+  win._pack = packId;
+}
+function paintKind(kind) {
+  document.querySelectorAll(`#deck .deck-card[data-size="${kind}"] .app`).forEach(win => renderWindow(kind, win));
+  const live = $('viewer-app');
+  if (live && live.dataset.kind === kind) renderWindow(kind, live);
+}
+// Design sizes of the four windows. Deck cards scale these in CSS; the viewer scales them to the viewport.
+const SIZE_DESIGN = { small: [220, 250], medium: [560, 230], large: [440, 560], full: [480, 700] };
+const SIZE_META = [
+  { key: 'small', maxW: 280, dim: '172 × 172', title: 'sSmall', text: 'vSmall' },
+  { key: 'medium', maxW: 640, dim: '360 × 180', title: 'sMedium', text: 'vMedium' },
+  { key: 'large', maxW: 440, dim: '360 × 430', title: 'sLarge', text: 'vLarge' },
+  { key: 'full', maxW: 460, dim: 'vFullDim', title: 'sFull', text: 'vFull' }
 ];
-const viewer = $('viewer'), vImg = $('viewer-img'), deck = $('deck');
-let vIndex = -1, lastCard = null;
-$('viewer-dots').innerHTML = SIZES.map(() => '<i></i>').join('');
-function sizeWidth(s) {
-  const narrow = innerWidth < 760, maxH = innerHeight * (narrow ? .55 : .8);
-  if (s.key === 'full') return Math.round(Math.min(maxH, 780) * 480 / 840);
-  if (s.key === 'large') return Math.round(Math.min(s.w, maxH * 360 / 430, innerWidth - 48));
-  return Math.min(s.w, innerWidth - 48);
+const viewer = $('viewer'), viewerMock = $('viewer-mock'), deck = $('deck');
+let vIndex = 0, lastCard = null;
+$('viewer-dots').innerHTML = SIZE_META.map(() => '<i></i>').join('');
+function layoutViewer() {
+  const s = SIZE_META[vIndex], [dw, dh] = SIZE_DESIGN[s.key];
+  const narrow = innerWidth < 760;
+  const maxH = Math.max(160, innerHeight * (narrow ? .42 : .76));
+  const maxW = Math.max(140, narrow ? innerWidth - 40 : Math.min(s.maxW, innerWidth - 460));
+  const scale = Math.min(maxW / dw, maxH / dh);
+  viewerMock.style.setProperty('--vw', Math.round(dw * scale) + 'px');
+  viewerMock.style.setProperty('--vh', Math.round(dh * scale) + 'px');
+  viewerMock.style.setProperty('--sz-w', dw + 'px');
+  viewerMock.style.setProperty('--sz-h', dh + 'px');
+  viewerMock.style.setProperty('--sz-s', String(scale));
 }
 function fillViewer(i) {
-  const s = SIZES[i]; vIndex = i;
-  vImg.src = s.src; vImg.style.setProperty('--vw', sizeWidth(s) + 'px');
+  const s = SIZE_META[i]; vIndex = i;
+  layoutViewer();
+  renderWindow(s.key, $('viewer-app'));
   $('viewer-dim').textContent = s.dim.startsWith('v') ? t(s.dim) : s.dim;
   $('viewer-title').textContent = t(s.title);
   $('viewer-text').textContent = t(s.text);
@@ -597,43 +781,94 @@ function fillViewer(i) {
   deck.querySelectorAll('.deck-card').forEach(c => c.classList.toggle('away', c.dataset.size === s.key));
 }
 function flipFrom(card) {
-  const from = card.querySelector('img').getBoundingClientRect(), to = vImg.getBoundingClientRect();
+  const from = card.querySelector('.deck-shot').getBoundingClientRect(), to = viewerMock.getBoundingClientRect();
   if (reduced || !to.width) return;
-  vImg.style.transition = 'none';
-  vImg.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
-  void vImg.offsetWidth;
-  vImg.style.transition = 'transform .55s cubic-bezier(.2,.75,.2,1)'; vImg.style.transform = 'none';
+  viewerMock.style.transition = 'none';
+  viewerMock.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
+  void viewerMock.offsetWidth;
+  viewerMock.style.transition = 'transform .55s cubic-bezier(.2,.75,.2,1)';
+  viewerMock.style.transform = 'none';
 }
 function openViewer(card) {
-  lastCard = card; const i = SIZES.findIndex(s => s.key === card.dataset.size);
-  viewer.hidden = false; fillViewer(i);
-  const go = () => { flipFrom(card); requestAnimationFrame(() => viewer.classList.add('open')); viewer.querySelector('.viewer-close').focus({ preventScroll: true }); };
-  vImg.complete ? go() : vImg.addEventListener('load', go, { once: true });
+  lastCard = card;
+  const i = SIZE_META.findIndex(s => s.key === card.dataset.size);
+  viewer.hidden = false;
+  fillViewer(i);
   document.body.style.overflow = 'hidden';
+  const go = () => { flipFrom(card); requestAnimationFrame(() => viewer.classList.add('open')); $('viewer-close').focus({ preventScroll: true }); };
+  requestAnimationFrame(() => requestAnimationFrame(go));
 }
 function closeViewer() {
   if (viewer.hidden) return;
-  const card = deck.querySelector(`[data-size="${SIZES[vIndex].key}"]`), done = () => { viewer.hidden = true; viewer.classList.remove('open'); vImg.style.transform = ''; vImg.style.transition = ''; deck.querySelectorAll('.away').forEach(c => c.classList.remove('away')); document.body.style.overflow = ''; (lastCard || card)?.focus({ preventScroll: true }); };
+  const card = deck.querySelector(`[data-size="${SIZE_META[vIndex].key}"]`);
+  const done = () => { viewer.hidden = true; viewer.classList.remove('open'); viewerMock.style.transform = ''; viewerMock.style.transition = ''; deck.querySelectorAll('.away').forEach(c => c.classList.remove('away')); document.body.style.overflow = ''; (lastCard || card)?.focus({ preventScroll: true }); };
   viewer.classList.remove('open');
   if (reduced || !card) return done();
-  const from = vImg.getBoundingClientRect(), to = card.querySelector('img').getBoundingClientRect();
-  vImg.style.transition = 'transform .45s cubic-bezier(.4,0,.2,1)';
-  vImg.style.transform = `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${to.width / from.width})`;
+  const from = viewerMock.getBoundingClientRect(), to = card.querySelector('.deck-shot').getBoundingClientRect();
+  viewerMock.style.transition = 'transform .45s cubic-bezier(.4,0,.2,1)';
+  viewerMock.style.transform = `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${to.width / Math.max(1, from.width)})`;
   setTimeout(done, 430);
 }
 function stepViewer(d) {
-  const i = (vIndex + d + SIZES.length) % SIZES.length;
-  vImg.style.transition = 'opacity .18s'; vImg.style.opacity = '0';
-  setTimeout(() => { fillViewer(i); vImg.style.transform = 'none'; vImg.onload = () => { vImg.style.opacity = '1'; }; if (vImg.complete) vImg.style.opacity = '1'; }, 180);
+  const i = (vIndex + d + SIZE_META.length) % SIZE_META.length;
+  if (reduced) { fillViewer(i); return; }
+  viewerMock.style.transition = 'opacity .18s'; viewerMock.style.opacity = '0';
+  setTimeout(() => { fillViewer(i); viewerMock.style.transform = 'none'; viewerMock.style.opacity = '1'; }, 180);
+}
+function mountDeck() {
+  document.querySelectorAll('#deck .deck-card').forEach(card => renderWindow(card.dataset.size, card.querySelector('.app')));
 }
 deck.addEventListener('click', e => { const c = e.target.closest('.deck-card'); if (c) openViewer(c); });
 viewer.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeViewer(); });
 $('viewer-prev').addEventListener('click', () => stepViewer(-1));
 $('viewer-next').addEventListener('click', () => stepViewer(1));
-document.addEventListener('keydown', e => { if (viewer.hidden) return; if (e.key === 'Escape') closeViewer(); else if (e.key === 'ArrowLeft') stepViewer(-1); else if (e.key === 'ArrowRight') stepViewer(1); });
-addEventListener('resize', () => { if (!viewer.hidden) vImg.style.setProperty('--vw', sizeWidth(SIZES[vIndex]) + 'px'); });
-// Deep links: #size-small / -medium / -large / -full open that view.
-function openFromHash() { const m = /^#size-(small|medium|large|full)$/.exec(location.hash); if (!m) return; const card = deck.querySelector('[data-size="' + m[1] + '"]'); card.scrollIntoView({ block: 'center', behavior: 'instant' }); openViewer(card); }
+document.addEventListener('keydown', e => {
+  if (viewer.hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeViewer(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); stepViewer(-1); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); stepViewer(1); }
+});
+viewerMock.addEventListener('click', e => {
+  const win = e.target.closest('#viewer-app'); if (!win) return;
+  const kind = win.dataset.kind, st = sz[kind];
+  const page = e.target.closest('[data-page]'), period = e.target.closest('[data-period]'), prov = e.target.closest('[data-prov]'), row = e.target.closest('[data-win]'), open = e.target.closest('[data-open]');
+  if (page) sz.full.page = page.dataset.page;
+  else if (period) st.period = period.dataset.period;
+  else if (prov) { st.id = prov.dataset.prov; st.wi = 0; if ('open' in st) st.open = -1; }
+  else if (e.target.closest('[data-cycle]')) { const q = QUOTAS[st.id]; if (q && q.windows) st.wi = (st.wi + 1) % q.windows.length; }
+  else if (row) st.wi = +row.dataset.win;
+  else if (open) st.open = st.open === +open.dataset.open ? -1 : +open.dataset.open;
+  else return;
+  e.stopPropagation();
+  paintKind(kind);
+});
+viewerMock.addEventListener('pointerover', e => {
+  const b = e.target.closest('.mini-chart .b'); if (!b) return;
+  const win = b.closest('.app'), rows = win._rows || [], x = rows[+b.dataset.i]; if (!x) return;
+  let tip = win.querySelector('.sz-tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'sz-tip'; win.appendChild(tip); }
+  const when = x.hourly ? `${pad2(x.date.getHours())}:00` : dayLabel(x.date);
+  tip.innerHTML = `<b>${when}</b><br>${usd(x.cost)} · ${compact(x.tokens)} Token<br>${Math.max(0, Math.round(x.req || 0)).toLocaleString('en-US')} 次请求 · ${tps(x.speed || usagePack(win._pack).speed)}`;
+  const host = win.getBoundingClientRect(), br = b.getBoundingClientRect();
+  const scale = host.width / (win.offsetWidth || host.width) || 1;
+  tip.hidden = false;
+  tip.style.left = Math.min(win.offsetWidth - 8, Math.max(8, (br.left - host.left + br.width / 2) / scale)) + 'px';
+  tip.style.top = Math.max(8, (br.top - host.top) / scale - 8) + 'px';
+  tip.style.transform = 'translate(-50%, -100%)';
+});
+viewerMock.addEventListener('pointerout', e => {
+  if (!e.target.closest('.mini-chart .b')) return;
+  const tip = e.target.closest('.app')?.querySelector('.sz-tip');
+  if (tip && !e.relatedTarget?.closest?.('.mini-chart .b')) tip.hidden = true;
+});
+addEventListener('resize', () => { if (!viewer.hidden) layoutViewer(); });
+function openFromHash() {
+  const m = /^#size-(small|medium|large|full|all)$/.exec(location.hash);
+  if (!m) return;
+  document.getElementById('sizes').scrollIntoView({ block: 'center' });
+  if (m[1] === 'all') return;
+  const card = deck.querySelector('[data-size="' + m[1] + '"]');
+  if (card) openViewer(card);
+}
 addEventListener('hashchange', openFromHash);
 
 // ── Terminal (mirrors codeusage output) ───────────────────────────────
@@ -648,10 +883,8 @@ function quotaLines(id, plan) {
   lines.push(`<span style="color:${P[id].c};font-weight:600">${P[id].name}</span>  ${dim(plan)}  ${dim('de•••@example.com')}`);
   q.windows.forEach(w => {
     lines.push('  ' + esc(padR(w.label, lw)) + bold(padL(w.rem + '%', 6)) + ' 剩余  ' + bar(w.rem, P[id].c) + '  ' + dim(w.reset.replace(' ', '') + '后重置'));
-    lines.push('  ' + ' '.repeat(lw) + (w.pace >= 0 ? col('余量 ' + w.pace + '%', '#7AD3A8') + dim(' · 按当前速度可持续到重置') : col('超前消耗 ' + -w.pace + '%', '#F2B36B') + dim(' · ' + (w.empty || ''))));
   });
-  if (q.credits) lines.push('  ' + esc(padR('限额重置', lw)) + q.credits + ' 次可用');
-  lines.push('  ' + dim(`今日 ${usd(SERIES[id].days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)} · ${compact(TOOLS[id].tokens)} Token · ${tps(speedOf(SERIES[id].days, id))}（API 等价）`));
+  lines.push('  ' + dim(`今日 ${usd(SERIES[id].days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)} · ${compact(TOOLS[id].tokens)} Token · ${tps(speedOf(SERIES[id].days, id))}`));
   return lines;
 }
 function costLines() {
@@ -661,7 +894,7 @@ function costLines() {
   lines.push(dim(padR('日期', 8) + ids.map(id => padL(P[id].name, 12)).join('') + padL('合计', 12) + padL('Token', 10)));
   days.forEach(i => {
     const cells = ids.map(id => SERIES[id].days[i].cost), toks = ids.reduce((s, id) => s + SERIES[id].days[i].tokens, 0);
-    lines.push(esc(padR(md(SERIES.codex.days[i].date), 8) + ids.map(id => padL(SERIES[id].days[i].tokens > 0 ? usd(SERIES[id].days[i].cost) : '—', 12)).join('')) + bold(padL(usd(cells.reduce((a, b) => a + b, 0)), 12)) + dim(padL(compact(toks), 10)));
+    lines.push(esc(padR(md(SERIES.codex.days[i].date), 8) + ids.map(id => padL(usd(SERIES[id].days[i].cost), 12)).join('')) + bold(padL(usd(cells.reduce((a, b) => a + b, 0)), 12)) + dim(padL(compact(toks), 10)));
   });
   const tot = ids.map(id => days.reduce((s, i) => s + SERIES[id].days[i].cost, 0));
   lines.push(bold(padR('合计', 8) + tot.map(v => padL(usd(v), 12)).join('') + padL(usd(tot.reduce((a, b) => a + b, 0)), 12) + padL(compact(days.reduce((s, i) => s + ids.reduce((x, id) => x + SERIES[id].days[i].tokens, 0), 0)), 10)));
@@ -669,7 +902,7 @@ function costLines() {
   return lines;
 }
 const COMMANDS = {
-  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.2 · ${stamp()} · 缓存 · 2 分钟前 · 价目 ${$('price-date').textContent}`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
+  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.2.0 · ${stamp()} · 缓存 · 2 分钟前`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
   cost: { cmd: 'codeusage cost --days 7', out: costLines },
   thirdparty: { cmd: 'codeusage thirdparty', out: () => [bold('第三方 API 用量') + dim('（本机日志；服务商的周/月限额无法得知）'), '',
     `<span style="color:${P.claude.c};font-weight:600">示例中转 A</span>` + col('  使用中', '#5CC8E0') + '  ' + dim('Claude Code · relay-a.example.com'),
@@ -690,10 +923,23 @@ async function runTerm() {
   for (const line of c.out()) { if (run !== termRun) return; html += line + '\n'; termBody.innerHTML = html + '<span class="caret"></span>'; await sleep(55); }
   termBody.innerHTML = html + prompt + '<span class="caret"></span>';
 }
-$('cmd-list').addEventListener('click', e => { const b = e.target.closest('[data-cmd]'); if (!b) return; termCmd = b.dataset.cmd; document.querySelectorAll('#cmd-list [data-cmd]').forEach(x => x.setAttribute('aria-selected', String(x === b))); runTerm(); });
+function selectCmd(id) {
+  termCmd = id;
+  document.querySelectorAll('.cmd-use').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.cmd === id)));
+  runTerm();
+}
+$('inst-body').addEventListener('click', e => {
+  if (e.target.closest('[data-copy]')) return;
+  const row = e.target.closest('.cmd-use');
+  if (row) selectCmd(row.dataset.cmd);
+});
+$('inst-body').addEventListener('keydown', e => {
+  const row = e.target.closest('.cmd-use');
+  if (!row || e.target.closest('[data-copy]') || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); selectCmd(row.dataset.cmd);
+});
 new IntersectionObserver(([entry], obs) => { if (entry.isIntersecting && !termSeen) { termSeen = true; runTerm(); obs.disconnect(); } }, { threshold: .35 }).observe(termBody);
 $('copy-cmd').addEventListener('click', e => copyText(COMMANDS[termCmd].cmd, e.currentTarget, () => t('copy')));
-$('copy-sha').addEventListener('click', e => copyText(e.currentTarget.querySelector('code').textContent, e.currentTarget.querySelector('em'), () => t('copyShort')));
 
 // ── Section pager (right edge) and nav state ──────────────────────────
 const sections = [...document.querySelectorAll('[data-pager]')], pager = $('pager'), navLinks = [...document.querySelectorAll('.nav-links a')];
@@ -738,6 +984,7 @@ function setLang(value) {
   document.title = META[lang][0]; document.querySelector('meta[name="description"]').content = META[lang][1];
   paintPagerLabels(); renderProviders(); renderDash(); renderQuick(); renderInstall();
   if (prices.length) { renderVendors(); renderPrices(); }
+  $('viewer-prev').ariaLabel = t('viewerPrev'); $('viewer-next').ariaLabel = t('viewerNext'); $('viewer-close').ariaLabel = t('viewerClose');
   if (!viewer.hidden) fillViewer(vIndex);
   try { localStorage.setItem('codeusagemonit-language', lang); } catch { }
 }
@@ -752,7 +999,7 @@ const revealer = new IntersectionObserver(entries => entries.forEach(entry => {
 document.querySelectorAll('.reveal').forEach(el => revealer.observe(el));
 
 // ── Start ─────────────────────────────────────────────────────────────
-renderTabs(); renderPage('overview'); renderBoardQuota(false);
+renderTabs(); renderPage('overview'); renderBoardQuota(false); mountDeck();
 setTimeout(openFromHash, 300);
 let saved; try { saved = localStorage.getItem('codeusagemonit-language'); } catch { }
 setLang(saved || (/^ja/i.test(navigator.language) ? 'ja' : /^zh/i.test(navigator.language) ? 'zh' : 'en'));

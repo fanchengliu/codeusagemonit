@@ -24,7 +24,7 @@
 
 `codeusagemonit` 是一个独立实现的 Windows 原生桌面托盘程序与配套 CLI 工具：
 * **零 Electron 依赖，仅 551 KB**：采用原生 C# 5.0 / WPF 开发，启动冷启时间 < 40ms，内存占用通常低于 45 MB。
-* **11+ 主流平台全景覆盖**：官方支持 **Codex、Claude Code、Cursor、Antigravity、GitHub Copilot、DeepSeek、Grok、Kimi Code、OpenCode Go、ZCode、Pi**，并支持自定义 JSON HTTP 网关。
+* **11+ 主流平台全景覆盖**：官方支持 **Codex、Claude Code、Cursor、Antigravity、GitHub Copilot、DeepSeek、Grok、Kimi Code、OpenCode Go、ZCode、Pi**，并支持自定义 JSON HTTP 网关。Cursor 在套餐总量、Auto、API / 手动模型之外，另显示包含在套餐内的 **Grok Bot 每周额度**（查询失败不影响其余三项，主额度仍是套餐总量）。
 * **四种自适应桌面形态**：同一个程序支持 **完整面板**、**大尺寸小组件**、**中尺寸双栏**、**小号悬浮挂件**，随心所欲放置在桌面或置顶。
 * **真实输出速度统计 (t/s)**：端到端计算网络延迟、首字时间及推理耗时的真实输出速度，一眼看清谁在暗中偷降频。
 * **361 款模型，与官方同步计价**：价目表整理自 LiteLLM 与 models.dev 收录的各厂商官方 API 单价，由 GitHub Actions 每天重建；软件每 24 小时检查一次并自动更新（可在设置中关闭，断网时使用内置价目）。支持长上下文阶梯分档（>272K 翻倍）与缓存写入折扣，不虚报、不漏算。

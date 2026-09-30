@@ -6,7 +6,7 @@
 
 ## 数据来源
 
-读取 `%APPDATA%/Cursor/User/globalStorage/state.vscdb` 中的 `cursorAuth/accessToken` 和缓存邮箱。根据这个编辑器会话生成 `WorkosCursorSessionToken` Cookie 请求头，向 `cursor.com/api/usage-summary` 查询。**不读取浏览器 Cookie 数据库。**
+读取 `%APPDATA%/Cursor/User/globalStorage/state.vscdb` 中的 `cursorAuth/accessToken` 和缓存邮箱。根据这个编辑器会话生成 `WorkosCursorSessionToken` Cookie 请求头，向 `cursor.com/api/usage-summary` 查询套餐总量、Auto、API / 手动模型。同一会话再 `POST cursor.com/api/dashboard/get-sand-usage-status`（`Origin: https://cursor.com`）读取 **Grok Bot** 的每周额度；该请求失败或没有包含额度时，其余三项照常显示。**不读取浏览器 Cookie 数据库。**
 
 ## 连接步骤
 
@@ -16,7 +16,8 @@
 
 ## 可以查看什么
 
-- 套餐总量、Auto、API / 手动模型的剩余比例。
+- 套餐总量、Auto、API / 手动模型的剩余比例。套餐总量仍是托盘和额度窗口的主额度。
+- Grok Bot · 每周：已用比例与下次重置时间。仅当接口返回有效数据且 `hasNonZeroIncludedLimit` 为 true 时，显示在 Cursor 卡片的最后一行。
 - 账期结束时间、重置倒计时、套餐与账户标识。
 
 ## 限制
@@ -37,4 +38,4 @@
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Cursor / NativeCredentials.SqliteText）、`Connect.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Cursor / Parsers.CursorGrokBot / NativeCredentials.SqliteText）、`Connect.cs`。服务商接口或客户端格式变化时可能需要更新。

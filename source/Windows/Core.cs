@@ -334,6 +334,22 @@ namespace CodeUsageMonit {
             Add(s, "套餐总量", J.Get(p, "totalPercentUsed"), reset, duration); Add(s, "Auto", J.Get(p, "autoPercentUsed"), reset, duration); Add(s, "API / 手动模型", J.Get(p, "apiPercentUsed"), reset, duration);
             s.Plan = s.Plan.Length == 0 ? "Cursor" : "Cursor " + CultureInfo.InvariantCulture.TextInfo.ToTitleCase(s.Plan); return s;
         }
+        // Shown under the plan meters. Not labeled "每周" on its own, so headline pickers
+        // that look for that exact label keep 套餐总量.
+        public const string CursorGrokLabel = "Grok Bot · 每周";
+        // POST cursor.com/api/dashboard/get-sand-usage-status. Appended only when the
+        // account has a non-zero included Grok Bot allowance and a numeric usage percent.
+        public static void CursorGrokBot(ProviderState state, object root) {
+            if (state == null || root == null) return;
+            object included = J.Get(root, "hasNonZeroIncludedLimit");
+            if (!(included is bool) || !(bool)included) return;
+            if (!J.Num(root, "usagePercent").HasValue) return;
+            object reset = J.Get(root, "nextResetTimestampUtc");
+            double window = 604800;
+            DateTimeOffset start, end;
+            if (DateTimeOffset.TryParse(J.Str(root, "currentPeriodStart"), out start) && DateTimeOffset.TryParse(J.Str(reset), out end) && end > start) window = (end - start).TotalSeconds;
+            Add(state, CursorGrokLabel, J.Get(root, "usagePercent"), reset, window);
+        }
         public static ProviderState DeepSeek(object root) {
             var s = new ProviderState { Id = "deepseek", Plan = "API 余额" };
             foreach (object b in J.Arr(J.Get(root, "balance_infos"))) { double? n = J.Num(b, "total_balance"); string c = J.Str(b, "currency"); if (n.HasValue && c.Length > 0) s.Balances.Add(new Balance { Currency = c, Amount = n.Value }); }
@@ -525,7 +541,15 @@ namespace CodeUsageMonit {
                     case "cursor": {
                         string db = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Cursor\User\globalStorage\state.vscdb");
                         string token = NativeCredentials.SqliteText(db, "cursorAuth/accessToken"); Need(token, id); object claims = J.Jwt(token); string sub = J.Str(claims, "sub"); if (sub.Contains("|")) sub = sub.Substring(sub.LastIndexOf('|') + 1); Need(sub, id);
-                        s = Parsers.Cursor(await Request("https://cursor.com/api/usage-summary", null, sub + "%3A%3A" + token, null, new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" } }).ConfigureAwait(false));
+                        string cookie = sub + "%3A%3A" + token;
+                        var headers = new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" } };
+                        s = Parsers.Cursor(await Request("https://cursor.com/api/usage-summary", null, cookie, null, headers).ConfigureAwait(false));
+                        // Grok Bot is a separate weekly allowance. A missing or rejected call
+                        // must not turn the whole Cursor provider into an error.
+                        try {
+                            var sandHeaders = new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" }, { "Origin", "https://cursor.com" }, { "Referer", "https://cursor.com/dashboard" }, { "Accept", "application/json" } };
+                            Parsers.CursorGrokBot(s, await Request("https://cursor.com/api/dashboard/get-sand-usage-status", null, cookie, "{}", sandHeaders).ConfigureAwait(false));
+                        } catch { }
                         s.Account = NativeCredentials.SqliteText(db, "cursorAuth/cachedEmail"); break;
                     }
                     case "deepseek": {

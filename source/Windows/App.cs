@@ -214,7 +214,13 @@ namespace CodeUsageMonit {
                 }
                 states[id] = state;
             }
-            states["cursor"].Quotas.Add(new Quota { Label = "API / 手动模型", Used = 96, ResetUtc = DateTime.UtcNow.AddDays(3).AddHours(5).ToString("o"), WindowSeconds = 2592000 });
+            states["cursor"].Plan = "Cursor Pro";
+            states["cursor"].Quotas.Clear();
+            string cursorReset = DateTime.UtcNow.AddDays(3).AddHours(5).ToString("o");
+            states["cursor"].Quotas.Add(new Quota { Label = "套餐总量", Used = 20, ResetUtc = cursorReset, WindowSeconds = 2592000 });
+            states["cursor"].Quotas.Add(new Quota { Label = "Auto", Used = 12, ResetUtc = cursorReset, WindowSeconds = 2592000 });
+            states["cursor"].Quotas.Add(new Quota { Label = "API / 手动模型", Used = 96, ResetUtc = cursorReset, WindowSeconds = 2592000 });
+            states["cursor"].Quotas.Add(new Quota { Label = Parsers.CursorGrokLabel, Used = 69, ResetUtc = DateTime.UtcNow.AddDays(1).ToString("o"), WindowSeconds = 604800 });
             states["grok"] = new ProviderState { Id = "grok", Status = "setup", Message = ProviderCatalog.Help("grok") };
             states["copilot"].Plan = "Copilot Pro"; states["copilot"].Quotas.Clear();
             states["copilot"].Quotas.Add(new Quota { Label = "高级请求", Used = 42, ResetUtc = DateTime.UtcNow.AddDays(11).ToString("o"), WindowSeconds = 2592000 });
@@ -371,7 +377,7 @@ namespace CodeUsageMonit {
         }
         private void UpdateTray() {
             string text = "codeusagemonit";
-            foreach (string id in new[] { "codex", "claude", "cursor" }) { ProviderState s = states[id]; Quota q = s.Quotas.FirstOrDefault(x => x.Label == "每周") ?? s.Quotas.FirstOrDefault(); if (s.Status == "ready" && q != null && config.Enabled.Contains(id)) text += "\n" + ProviderCatalog.Name(id) + " " + q.Remaining.ToString("0") + "%"; }
+            foreach (string id in new[] { "codex", "claude", "cursor" }) { ProviderState s = states[id]; Quota q = UsageDetails.Primary(s); if (s.Status == "ready" && q != null && config.Enabled.Contains(id)) text += "\n" + ProviderCatalog.Name(id) + " " + q.Remaining.ToString("0") + "%"; }
             tray.Text = text.Length <= 63 ? text : text.Substring(0, 63);
         }
         private void LoadIcons() {
