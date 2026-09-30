@@ -222,6 +222,8 @@ button.app-icon:hover { background: var(--app-hover); color: var(--app-ink); }
 
 /* Replica pieces */
 .row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.sz .row { flex-wrap: nowrap; }
+.sz .row > span, .sz .q-line .row > span, .sz .sz-q .lab, .sz .card-head, .sz .card-head b, .sz .a-chip { white-space: nowrap; }
 .app .dim { color: var(--app-dim); } .app .faint { color: var(--app-faint); }
 .big { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .num { font-variant-numeric: tabular-nums; }
@@ -405,25 +407,23 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 .size-row { display: flex; align-items: flex-end; justify-content: center; gap: 22px; width: max-content; max-width: none; flex: none; transform-origin: bottom center; }
 .size-stage[data-mode="all"] .sz-body { overflow: hidden; }
 .size-slot { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: none; min-width: 0; }
-.size-slot .app { width: 100%; min-width: 0; }
 .size-slot .cap { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+/* Each window is laid out at a fixed width (the full one matches the hero panel),
+   then scaled into the slot so labels stay on one line. */
+.sz-frame { position: relative; width: 100%; overflow: hidden; }
+.size-slot .sz-frame .app { position: absolute; left: 50%; top: 0; width: var(--sz-w, 440px); height: var(--sz-h, 640px); transform: translateX(-50%) scale(var(--sz-s, 1)); transform-origin: top center; }
 .size-stage[data-mode="all"] .size-slot[data-size="small"] { width: 200px; }
 .size-stage[data-mode="all"] .size-slot[data-size="medium"] { width: 360px; }
 .size-stage[data-mode="all"] .size-slot[data-size="large"] { width: 280px; }
-.size-stage[data-mode="all"] .size-slot[data-size="full"] { width: 250px; }
-.size-stage[data-mode="all"] .size-slot[data-size="small"] .app { height: 200px; }
-.size-stage[data-mode="all"] .size-slot[data-size="medium"] .app { height: 200px; }
-.size-stage[data-mode="all"] .size-slot[data-size="large"] .app { height: 360px; }
-.size-stage[data-mode="all"] .size-slot[data-size="full"] .app { height: 460px; }
+.size-stage[data-mode="all"] .size-slot[data-size="full"] { width: 290px; }
 .size-stage[data-mode="all"] .sz-tabs span { display: none; }
+.size-stage:not([data-mode="all"]) .size-row { width: 100%; }
 .size-stage:not([data-mode="all"]) .size-slot { display: none; }
-.size-stage:not([data-mode="all"]) .size-slot.on { display: flex; width: min(440px, 100%); }
-.size-stage[data-mode="small"] .size-slot.on { width: min(280px, 100%); }
-.size-stage[data-mode="medium"] .size-slot.on { width: min(720px, 100%); }
-.size-stage[data-mode="small"] .app { height: 280px; }
-.size-stage[data-mode="medium"] .app { height: 260px; }
-.size-stage[data-mode="large"] .app { height: 560px; }
-.size-stage[data-mode="full"] .app { height: 640px; }
+.size-stage:not([data-mode="all"]) .size-slot.on { display: flex; }
+.size-stage[data-mode="small"] .size-slot.on { width: min(220px, 100%); }
+.size-stage[data-mode="medium"] .size-slot.on { width: min(560px, 100%); }
+.size-stage[data-mode="large"] .size-slot.on { width: min(440px, 100%); }
+.size-stage[data-mode="full"] .size-slot.on { width: min(480px, 100%); }
 .size-note { text-align: center; color: var(--ink-2); font-size: 16px; line-height: 1.7; margin: 28px auto 0; max-width: 40em; min-height: 3.2em; }
 .sz { display: flex; flex-direction: column; text-align: left; }
 .sz-head, .sz-foot { display: flex; align-items: center; gap: 8px; flex: none; }
@@ -454,10 +454,11 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 .sz-tabs button .pi { width: 14px; height: 14px; }
 .sz-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
 .sz-metrics div { min-width: 0; }
-.sz-metrics span { display: block; color: var(--app-faint); font-size: 10.5px; }
-.sz-metrics b { display: block; margin-top: 1px; font-size: 13px; font-variant-numeric: tabular-nums; }
-.sz-periods { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--app-hover); }
-.sz-periods button { height: 22px; padding: 0 8px; border-radius: 6px; color: var(--app-dim); font-size: 11px; background: transparent; }
+.sz-metrics span { display: block; color: var(--app-faint); font-size: 10.5px; white-space: nowrap; }
+.sz-metrics b { display: block; margin-top: 1px; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sz-foot, .sz-name, .sz-big b, .sz-big span { white-space: nowrap; }
+.sz-periods { display: inline-flex; flex: none; gap: 2px; padding: 2px; border-radius: 8px; background: var(--app-hover); white-space: nowrap; }
+.sz-periods button { flex: none; height: 22px; padding: 0 8px; border-radius: 6px; color: var(--app-dim); font-size: 11px; background: transparent; white-space: nowrap; }
 .sz-periods button[aria-pressed="true"] { background: var(--app-sel); color: var(--app-ink); }
 .sz-q { display: block; width: 100%; text-align: left; margin-top: 8px; padding: 4px 2px; background: none; color: inherit; }
 .sz-q .lab { font-size: 12px; }
@@ -602,13 +603,7 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
   .size-stage[data-mode="all"] .size-slot[data-size="small"] { width: min(240px, 100%); }
   .size-stage[data-mode="all"] .size-slot[data-size="medium"] { width: 100%; }
   .size-stage[data-mode="all"] .size-slot[data-size="large"],
-  .size-stage[data-mode="all"] .size-slot[data-size="full"] { width: min(340px, 100%); }
-  .size-stage[data-mode="all"] .size-slot[data-size="small"] .app,
-  .size-stage[data-mode="all"] .size-slot[data-size="medium"] .app { height: 240px; }
-  .size-stage[data-mode="all"] .size-slot[data-size="large"] .app { height: 460px; }
-  .size-stage[data-mode="all"] .size-slot[data-size="full"] .app { height: 520px; }
-  .size-stage[data-mode="medium"] .app { height: 280px; }
-  .size-stage[data-mode="large"] .app, .size-stage[data-mode="full"] .app { height: 520px; }
+  .size-stage[data-mode="all"] .size-slot[data-size="full"] { width: min(400px, 100%); }
   .facts { grid-template-columns: 1fr; }
   .term-body { font-size: 11.5px; padding: 16px 16px 60px; min-height: 380px; }
   .sp-row { grid-template-columns: 90px minmax(0, 1fr) 62px; }

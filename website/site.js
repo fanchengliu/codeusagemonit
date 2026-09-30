@@ -673,6 +673,22 @@ function renderSlot(slot) {
   slot._rows = periodSlice(usagePack(packId), (sz[kind].period || sz.full.period || '30d'));
   slot._pack = packId;
 }
+// Laid out at these sizes, then scaled into the slot. Full matches the hero panel (440px)
+// plus room for the period switch, so labels stay on one line at every viewport.
+const SIZE_DESIGN = { small: [220, 250], medium: [560, 230], large: [440, 560], full: [480, 700] };
+function fitSlots() {
+  document.querySelectorAll('#size-row .size-slot').forEach(slot => {
+    const frame = slot.querySelector('.sz-frame');
+    if (!frame || getComputedStyle(slot).display === 'none') return;
+    const [dw, dh] = SIZE_DESIGN[slot.dataset.size];
+    const avail = frame.clientWidth;
+    const scale = avail > 0 ? Math.min(1, avail / dw) : 1;
+    frame.style.setProperty('--sz-w', dw + 'px');
+    frame.style.setProperty('--sz-h', dh + 'px');
+    frame.style.setProperty('--sz-s', String(scale));
+    frame.style.height = Math.ceil(dh * scale) + 'px';
+  });
+}
 function paintSizeNote() {
   const key = { all: 'sNoteAll', small: 'vSmall', medium: 'vMedium', large: 'vLarge', full: 'vFull' }[sz.mode];
   $('size-note').textContent = t(key);
@@ -680,6 +696,7 @@ function paintSizeNote() {
 }
 function fitSizes() {
   const stage = $('size-stage'), row = $('size-row'), fit = $('size-fit');
+  fitSlots();
   row.style.transform = 'none';
   if (stage.dataset.mode !== 'all' || matchMedia('(max-width: 760px)').matches) { fit.style.height = 'auto'; return; }
   const need = row.scrollWidth, avail = fit.clientWidth;
@@ -697,7 +714,7 @@ function selectSize(mode, focus) {
   requestAnimationFrame(fitSizes);
 }
 function mountSizes() {
-  $('size-row').innerHTML = SIZE_KEYS.map(k => `<div class="size-slot on" data-size="${k}"><div class="app sz"></div><span class="cap" data-cap="${k}"></span></div>`).join('');
+  $('size-row').innerHTML = SIZE_KEYS.map(k => `<div class="size-slot on" data-size="${k}"><div class="sz-frame"><div class="app sz"></div></div><span class="cap" data-cap="${k}"></span></div>`).join('');
   document.querySelectorAll('#size-row .size-slot').forEach(renderSlot);
   selectSize('all');
 }
@@ -726,10 +743,13 @@ $('size-row').addEventListener('pointerover', e => {
   let tip = slot.querySelector('.sz-tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'sz-tip'; slot.querySelector('.app').appendChild(tip); }
   const when = x.hourly ? `${pad2(x.date.getHours())}:00` : dayLabel(x.date);
   tip.innerHTML = `<b>${when}</b><br>${usd(x.cost)} · ${compact(x.tokens)} Token<br>${Math.max(0, Math.round(x.req || 0)).toLocaleString('en-US')} 次请求 · ${tps(x.speed || usagePack(slot._pack).speed)}`;
-  const host = slot.querySelector('.app').getBoundingClientRect(), br = b.getBoundingClientRect();
+  const hostEl = slot.querySelector('.app'), host = hostEl.getBoundingClientRect(), br = b.getBoundingClientRect();
+  const scale = host.width / (hostEl.offsetWidth || host.width) || 1;
   tip.hidden = false;
-  const left = Math.min(host.width - 8, Math.max(8, br.left - host.left + br.width / 2));
-  tip.style.left = left + 'px'; tip.style.top = Math.max(8, br.top - host.top - 8) + 'px'; tip.style.transform = 'translate(-50%, -100%)';
+  const left = (br.left - host.left + br.width / 2) / scale;
+  const top = (br.top - host.top) / scale;
+  tip.style.left = Math.min(hostEl.offsetWidth - 8, Math.max(8, left)) + 'px';
+  tip.style.top = Math.max(8, top - 8) + 'px'; tip.style.transform = 'translate(-50%, -100%)';
 });
 $('size-row').addEventListener('pointerout', e => { if (!e.target.closest('.mini-chart .b')) return; const tip = e.target.closest('.size-slot')?.querySelector('.sz-tip'); if (tip && !e.relatedTarget?.closest?.('.mini-chart .b')) tip.hidden = true; });
 addEventListener('resize', () => fitSizes());
