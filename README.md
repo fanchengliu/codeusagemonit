@@ -84,7 +84,7 @@ scoop install codeusagemonit
 ```powershell
 irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps1 | iex
 ```
-下载最新 Release 并核对 SHA-256，装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，把 `codeusage` 加进用户 PATH，创建开始菜单快捷方式；不需要管理员权限，再运行一次就是升级。
+下载最新 Release 并自动校验完整性，装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，把 `codeusage` 加进用户 PATH，创建开始菜单快捷方式；不需要管理员权限，再运行一次就是升级。
 
 ### 方式四：下载即用（免安装）
 从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 `codeusagemonit-1.2.0-win-x64.zip`，解压后双击运行 `codeusagemonit.exe` 即可。
