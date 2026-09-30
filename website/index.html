@@ -201,29 +201,41 @@
   </div>
 </section>
 
-<!-- 04 Sizes: a stacked deck; click a card to open it -->
+<!-- 04 Sizes: stacked deck of theme-following window mocks; click a card to open it -->
 <section class="section" id="sizes" data-pager="pgSizes">
   <div class="wrap">
     <div class="head reveal">
       <p class="eyebrow"><b>04</b><span data-i18n="eySizes">尺寸</span></p>
-      <h2><span data-i18n="sA">从桌角到全景</span><span class="h2-dim" data-i18n="sB">一个窗口</span></h2>
+      <h2><span data-i18n="sA">四种尺寸</span><span class="h2-dim" data-i18n="sB">一个窗口</span></h2>
       <p class="body" data-i18n="sLead">右键切换小、中、大、完整。紧凑尺寸待在桌面层，不挡工作窗口；每种尺寸都能拖动调整大小。</p>
     </div>
-    <div class="size-tabs reveal" role="tablist" id="size-tabs" aria-label="尺寸">
-      <button type="button" role="tab" data-size="all" aria-selected="true" data-i18n="sAll">全部</button>
-      <button type="button" role="tab" data-size="small" aria-selected="false" data-i18n="sSmall">小</button>
-      <button type="button" role="tab" data-size="medium" aria-selected="false" data-i18n="sMedium">中</button>
-      <button type="button" role="tab" data-size="large" aria-selected="false" data-i18n="sLarge">大</button>
-      <button type="button" role="tab" data-size="full" aria-selected="false" data-i18n="sFull">完整</button>
+    <div class="deck reveal" id="deck">
+      <button type="button" class="deck-card" data-size="full"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sFull">完整</b></span></button>
+      <button type="button" class="deck-card" data-size="large"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sLarge">大</b></span></button>
+      <button type="button" class="deck-card" data-size="medium"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sMedium">中</b></span></button>
+      <button type="button" class="deck-card" data-size="small"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sSmall">小</b></span></button>
     </div>
-    <div class="size-stage reveal" id="size-stage" data-mode="all">
-      <div class="size-fit" id="size-fit">
-        <div class="size-row" id="size-row"></div>
-      </div>
-    </div>
-    <p class="size-note reveal" id="size-note"></p>
+    <p class="deck-hint reveal" data-i18n="deckHint">点一张卡片，放大看看</p>
   </div>
 </section>
+
+<div class="viewer" id="viewer" hidden>
+  <div class="viewer-backdrop" data-close></div>
+  <div class="viewer-frame" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
+    <div class="viewer-mock" id="viewer-mock"><div class="sz-frame"><div class="app sz" id="viewer-app"></div></div></div>
+    <div class="viewer-info">
+      <p class="viewer-dim" id="viewer-dim"></p>
+      <h3 id="viewer-title"></h3>
+      <p id="viewer-text"></p>
+      <div class="viewer-nav">
+        <button type="button" class="round" id="viewer-prev" aria-label="上一张"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="viewer-dots" id="viewer-dots"></span>
+        <button type="button" class="round" id="viewer-next" aria-label="下一张"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+    <button type="button" class="round viewer-close" id="viewer-close" data-close aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  </div>
+</div>
 
 <!-- 05 Install + CLI -->
 <section class="section" id="install" data-pager="pgInstall">
@@ -234,20 +246,14 @@
       <p class="body" data-i18n="cLead">用 Scoop 或 PowerShell 一行安装，自动加入 PATH、创建开始菜单快捷方式。随附的 codeusage 命令和桌面版共用缓存与设置，额度条在终端里同样是 24 格，加 --json 就能接进脚本或状态栏。</p>
     </div>
     <div class="install-grid">
-      <div class="reveal">
-        <div class="panel inst">
-          <div class="inst-tabs" role="tablist" aria-label="Install" id="inst-tabs">
-            <button type="button" role="tab" data-inst="scoop" aria-selected="true">Scoop <em data-i18n="recommended">推荐</em></button>
-            <button type="button" role="tab" data-inst="ps" aria-selected="false">PowerShell</button>
-            <button type="button" role="tab" data-inst="zip" aria-selected="false" data-i18n="instZip">手动下载</button>
-          </div>
-          <div class="inst-body" id="inst-body" role="tabpanel"></div>
+      <div class="panel inst reveal">
+        <div class="inst-tabs" role="tablist" aria-label="Install" id="inst-tabs">
+          <button type="button" role="tab" data-inst="scoop" aria-selected="true">Scoop <em data-i18n="recommended">推荐</em></button>
+          <button type="button" role="tab" data-inst="ps" aria-selected="false">PowerShell</button>
+          <button type="button" role="tab" data-inst="zip" aria-selected="false" data-i18n="instZip">手动下载</button>
+          <button type="button" role="tab" data-inst="cli" aria-selected="false" data-i18n="instCli">使用命令</button>
         </div>
-        <div class="cmd-list" role="tablist" aria-label="Commands" id="cmd-list">
-          <button type="button" role="tab" data-cmd="status" aria-selected="true"><code>codeusage status</code><span data-i18n="cmdStatus">缓存里的额度与用量，不联网</span></button>
-          <button type="button" role="tab" data-cmd="cost" aria-selected="false"><code>codeusage cost --days 7</code><span data-i18n="cmdCost">每天的费用与 Token，以及各工具的速度</span></button>
-          <button type="button" role="tab" data-cmd="thirdparty" aria-selected="false"><code>codeusage thirdparty</code><span data-i18n="cmdThird">第三方接口的用量与速度</span></button>
-        </div>
+        <div class="inst-body" id="inst-body" role="tabpanel"></div>
       </div>
       <div class="term reveal">
         <div class="term-bar">
@@ -287,7 +293,7 @@
     <div class="faq reveal">
       <details><summary data-i18n="fq1">怎么安装？需要什么运行环境？</summary><p data-i18n="fa1">三种方式任选：Scoop、PowerShell 一行脚本，或下载 zip 解压到一个可写的文件夹（例如 D:\Tools）直接运行 codeusagemonit.exe。不需要安装程序、Node.js 或管理员权限，Windows 10 / 11 自带的 .NET Framework 4.8 就够了。</p></details>
       <details><summary data-i18n="fq7">怎么升级和卸载？</summary><p data-i18n="fa7">Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit，数据放在 Scoop 的 persist 目录，升级不丢。PowerShell 脚本：再运行一次就是升级；卸载时删除 %LOCALAPPDATA%\Programs\codeusagemonit 并从用户 PATH 里去掉它。zip 版：用新版本覆盖旧文件即可，data 文件夹保留。</p></details>
-      <details><summary data-i18n="fq2">为什么提示“Windows 已保护你的电脑”？</summary><p data-i18n="fa2">程序没有购买代码签名证书。点“更多信息 → 仍要运行”即可；也可以先用下方的 SHA-256 核对下载的文件。Scoop 和 PowerShell 脚本会自动核对 SHA-256。</p></details>
+      <details><summary data-i18n="fq2">为什么提示“Windows 已保护你的电脑”？</summary><p data-i18n="fa2">程序没有购买代码签名证书。点“更多信息 → 仍要运行”即可。</p></details>
       <details><summary data-i18n="fq3">需要把账号重新登录一遍吗？</summary><p data-i18n="fa3">不需要。Codex、Claude Code、Cursor、Antigravity、Grok 直接复用本机已有的登录；DeepSeek、Kimi、OpenCode、ZCode 填 API Key；Copilot 用 GitHub 设备码登录。</p></details>
       <details><summary data-i18n="fq4">显示的费用是真实账单吗？</summary><p data-i18n="fa4">不是。费用 = 本机日志里的 Token × 官方 API 单价，是 API 等价参考；订阅套餐按月费计费，不会产生这笔账单。</p></details>
       <details><summary data-i18n="fq8">价目表怎么和官方同步？</summary><p data-i18n="fa8">项目仓库里的 pricing.json 每天由 GitHub Actions 从 LiteLLM 与 models.dev 重新整理（二者收录各厂商官网公布的 API 单价）。软件每 24 小时检查一次，有新版本就下载并校验，然后按新价目重算；下载失败或在设置里关掉时，继续用内置价目。</p></details>
@@ -312,7 +318,6 @@
         </a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases" data-i18n="dlAll">全部版本</a>
       </div>
-      <button type="button" class="sha" id="copy-sha" title="复制 SHA-256"><span>SHA-256</span><code>ef2c9412d3205da697fe942726a90c8ccfd09036a2f21eae9f09ceaa84093bda</code><em data-i18n="copyShort">复制</em></button>
     </div>
   </div>
 </section>

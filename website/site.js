@@ -63,13 +63,19 @@ Object.assign(zh, {
   vLarge: '完整的额度窗口与节奏估算，加上本机用量：时间段、费用、Token、请求、速度和可以点的柱状图。',
   vFull: '所有平台的卡片、每个平台的详情页、第三方中转站页和设置。拖动边缘可以随意调整大小。',
   vFullDim: '默认 420 × 790，可调整',
-  sNoteAll: '四种尺寸并排，配色跟着网站走。点「小 / 中 / 大 / 完整」后可以切换平台、时间范围，悬停柱子看明细。',
+  deckHint: '点一张卡片，放大看看',
+  cmdStatus: '缓存里的额度与用量，不联网', cmdCost: '每天的费用与 Token，以及各工具的速度', cmdThird: '第三方接口的用量与速度',
+  viewerPrev: '上一张', viewerNext: '下一张', viewerClose: '关闭',
   pgTop: '首页', pgProviders: '平台', pgBoard: '额度与用量', pgPricing: '计价', pgSizes: '尺寸', pgInstall: '安装', pgPrivacy: '隐私', pgFaq: '问题', pgDownload: '下载',
   themeLight: '浅色', themeDark: '深色', themeSystem: '跟随系统',
   vendorAll: '全部', priceShown: '显示 {n} / {total} 款', priceNone: '没有匹配的模型', tagLong: '长上下文 >{k}K', defaultCache: '官方未单列，按输入价的 10% 估算',
   instScoopNote: '和 Homebrew 的 tap 一样：先把本仓库加成 bucket，再安装。会创建开始菜单快捷方式，并把 codeusage 加进 PATH；data 文件夹放在 Scoop 的 persist 目录，升级不丢。',
   instUpdate: '以后升级', instNoScoop: '还没装 Scoop？先运行：',
-  instPs1: '从 GitHub Releases 下载最新版，并核对 SHA-256', instPs2: '装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，不需要管理员权限', instPs3: '把 codeusage 加进用户 PATH，创建开始菜单快捷方式', instPs4: '再运行一次就是升级，data 文件夹保留',
+  instFootScoop: '开始菜单快捷方式和 PATH 上的 codeusage 会一起装好。data 放在 Scoop 的 persist 目录，升级不丢。还没装 Scoop 时，先运行 <code>irm get.scoop.sh | iex</code>。',
+  instFootPs: '不需要管理员权限。再运行一次就是升级，data 文件夹保留。',
+  instFootZip: '免安装。升级时用新版本覆盖旧文件，data 文件夹保留。',
+  instFootCli: '加上 <code>--json</code> 输出 JSON，接进脚本或状态栏。<code>codeusage help</code> 查看全部命令。',
+  instPs1: '从 GitHub Releases 下载最新版', instPs2: '装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，不需要管理员权限', instPs3: '把 codeusage 加进用户 PATH，创建开始菜单快捷方式', instPs4: '再运行一次就是升级，data 文件夹保留',
   instZipBtn: '下载 codeusagemonit-1.2.0-win-x64.zip', instZip1: '完整解压到一个可写的文件夹，例如 D:\\Tools\\codeusagemonit', instZip2: '运行 codeusagemonit.exe；命令行用同目录的 codeusage.exe', instZip3: '升级时用新版本覆盖旧文件，data 文件夹保留'
 });
 const en = {
@@ -90,11 +96,11 @@ const en = {
   thModel: 'Model', thIn: 'Input', thOut: 'Output', thCache: 'Cache read', priceUnit: 'USD per 1M tokens · Source: vendors’ official prices, compiled by LiteLLM and models.dev',
   speedTitle: 'Real output speed', speedSub: 'Output tokens ÷ the whole request time, including time to first token and relay latency, measured per tool.',
   relayTitle: 'Relays add up too', relaySub: 'Switch providers with CC Switch as often as you like; every call is still attributed to its endpoint.', relayOfficial: 'Official', relayA: 'Relay A', relayB: 'Relay B',
-  eySizes: 'Sizes', sA: 'From the corner to the full view,', sB: 'one window.', sLead: 'Right-click to switch between small, medium, large and full. Compact sizes sit on the desktop layer, out of your way; every size can be resized.',
-  sAll: 'All', sFull: 'Full', sLarge: 'Large', sMedium: 'Medium', sSmall: 'Small', sNoteAll: 'Four sizes, side by side, in the same theme as this page. Open small, medium, large or full to switch tools and periods, and hover a bar for details.',
+  eySizes: 'Sizes', sA: 'Four sizes.', sB: 'One window.', sLead: 'Right-click to switch between small, medium, large and full. Compact sizes sit on the desktop layer, out of your way; every size can be resized.',
+  sFull: 'Full', sLarge: 'Large', sMedium: 'Medium', sSmall: 'Small', deckHint: 'Click a card to take a closer look',
   eyInstall: 'Install & CLI', cA: 'One command to install,', cB: 'the same numbers in your terminal',
   cLead: 'Install with Scoop or a PowerShell one-liner; it adds itself to PATH and the Start menu. The bundled codeusage command shares the app’s cache and settings, meters are 24 cells here too, and --json feeds scripts or a status bar.',
-  recommended: 'Recommended', instZip: 'Manual download', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command', copyShort: 'Copy',
+  recommended: 'Recommended', instZip: 'Manual download', instCli: 'Commands', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command',
   eyPrivacy: 'Privacy', vA: 'Your data stays', vB: 'on your PC',
   v1t: 'Numbers only', v1: 'Only tokens, request counts, durations and model names go into a local hourly index. No conversation content.',
   v2t: 'Sign-ins stay put', v2: 'Each tool’s login tokens stay in its own folder. They are read, never copied.',
@@ -103,7 +109,7 @@ const en = {
   eyFaq: 'FAQ', fqA: 'Questions',
   fq1: 'How do I install it? What does it need?', fa1: 'Pick one: Scoop, the PowerShell one-liner, or the zip — extract it into a writable folder (e.g. D:\\Tools) and run codeusagemonit.exe. No installer, Node.js or admin rights; the .NET Framework 4.8 that ships with Windows 10 / 11 is enough.',
   fq7: 'How do I update or uninstall?', fa7: 'Scoop: scoop update codeusagemonit / scoop uninstall codeusagemonit; data lives in Scoop’s persist folder and survives updates. PowerShell script: run it again to update; to uninstall, delete %LOCALAPPDATA%\\Programs\\codeusagemonit and remove it from your user PATH. Zip: overwrite the old files and keep the data folder.',
-  fq2: 'Why does Windows say it “protected your PC”?', fa2: 'The app has no paid code-signing certificate. Click “More info → Run anyway”, or check the download against the SHA-256 below first. Scoop and the PowerShell script check the SHA-256 for you.',
+  fq2: 'Why does Windows say it “protected your PC”?', fa2: 'The app has no paid code-signing certificate. Click “More info → Run anyway”.',
   fq3: 'Do I have to sign in to every account again?', fa3: 'No. Codex, Claude Code, Cursor, Antigravity and Grok reuse the sign-in already on your PC; DeepSeek, Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.',
   fq4: 'Is the cost a real bill?', fa4: 'No. Cost = tokens in your local logs × official API prices, an API-equivalent reference. Subscriptions are billed monthly and don’t produce this bill.',
   fq8: 'How does the price table stay in sync with official prices?', fa8: 'The repository’s pricing.json is rebuilt every day by GitHub Actions from LiteLLM and models.dev, which track the API prices each vendor publishes. The app checks every 24 hours, downloads and validates a newer table and recalculates with it; if the download fails or you turn it off in settings, it keeps the built-in prices.',
@@ -119,13 +125,18 @@ const en = {
   vMedium: 'The main quota on the left, other windows on the right; a single window adds pace, reset time and reset credits. Medium shows quotas only, no charts.',
   vLarge: 'Full quota windows with pace, plus local usage: period, cost, tokens, requests, speed and a clickable chart.',
   vFull: 'Cards for every provider, a detail page for each, the third-party endpoints page and settings. Drag the edges to any size.',
-  vFullDim: 'Default 420 × 790, resizable', sNoteAll: 'Four sizes, side by side, in the same theme as this page. Open small, medium, large or full to switch tools and periods, and hover a bar for details.',
+  vFullDim: 'Default 420 × 790, resizable',
+  viewerPrev: 'Previous', viewerNext: 'Next', viewerClose: 'Close',
   pgTop: 'Top', pgProviders: 'Providers', pgBoard: 'Quotas & usage', pgPricing: 'Pricing', pgSizes: 'Sizes', pgInstall: 'Install', pgPrivacy: 'Privacy', pgFaq: 'FAQ', pgDownload: 'Download',
   themeLight: 'Light', themeDark: 'Dark', themeSystem: 'Match system',
   vendorAll: 'All', priceShown: '{n} of {total} models', priceNone: 'No matching models', tagLong: 'long ctx >{k}K', defaultCache: 'Not listed; estimated at 10% of the input price',
   instScoopNote: 'Like a Homebrew tap: add this repository as a bucket, then install. You get a Start menu shortcut and codeusage on PATH; the data folder lives in Scoop’s persist directory, so updates keep it.',
   instUpdate: 'Update later', instNoScoop: 'No Scoop yet? Install it first:',
-  instPs1: 'Downloads the latest release from GitHub and checks its SHA-256', instPs2: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit, no admin rights', instPs3: 'Adds codeusage to your user PATH and a Start menu shortcut', instPs4: 'Run it again to update; the data folder is kept',
+  instFootScoop: 'You get a Start menu shortcut and codeusage on PATH. Data lives in Scoop’s persist directory, so updates keep it. No Scoop yet? Run <code>irm get.scoop.sh | iex</code> first.',
+  instFootPs: 'No admin rights. Run it again to update; the data folder is kept.',
+  instFootZip: 'No installer. To update, overwrite with the new version and keep the data folder.',
+  instFootCli: 'Add <code>--json</code> for scripts or a status bar. <code>codeusage help</code> lists every command.',
+  instPs1: 'Downloads the latest release from GitHub', instPs2: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit, no admin rights', instPs3: 'Adds codeusage to your user PATH and a Start menu shortcut', instPs4: 'Run it again to update; the data folder is kept',
   instZipBtn: 'Download codeusagemonit-1.2.0-win-x64.zip', instZip1: 'Extract everything into a writable folder, e.g. D:\\Tools\\codeusagemonit', instZip2: 'Run codeusagemonit.exe; use codeusage.exe in the same folder for the CLI', instZip3: 'To update, overwrite with the new version and keep the data folder'
 };
 const ja = {
@@ -146,11 +157,11 @@ const ja = {
   thModel: 'モデル', thIn: '入力', thOut: '出力', thCache: 'キャッシュ読取', priceUnit: '米ドル / 100 万トークン · 出典：各社の公式料金（LiteLLM・models.dev による集計）',
   speedTitle: '実際の出力速度', speedSub: '出力トークン ÷ リクエスト全体の所要時間。最初のトークンまでの待ち時間や中継の遅延も含み、ツールごとに計算します。',
   relayTitle: '中継サービスも正確に', relaySub: 'CC Switch で接続先を切り替えても、呼び出しは接続先ごとに集計されます。', relayOfficial: '公式', relayA: '中継 A', relayB: '中継 B',
-  eySizes: 'サイズ', sA: '隅から全景まで', sB: 'ひとつのウィンドウ', sLead: '右クリックで小・中・大・全体を切り替え。コンパクトなサイズはデスクトップ層に置かれ、作業の邪魔をしません。どのサイズもサイズ変更できます。',
-  sAll: 'すべて', sFull: '全体', sLarge: '大', sMedium: '中', sSmall: '小', sNoteAll: '4 つのサイズを並べて表示。配色はこのページのテーマに従います。小・中・大・全体を開くと、ツールや期間の切り替え、棒グラフのホバーができます。',
+  eySizes: 'サイズ', sA: '4 つのサイズ', sB: 'ひとつのウィンドウ', sLead: '右クリックで小・中・大・全体を切り替え。コンパクトなサイズはデスクトップ層に置かれ、作業の邪魔をしません。どのサイズもサイズ変更できます。',
+  sFull: '全体', sLarge: '大', sMedium: '中', sSmall: '小', deckHint: 'カードをクリックして拡大表示',
   eyInstall: 'インストールと CLI', cA: '1 行でインストール', cB: 'ターミナルでも同じデータを',
   cLead: 'Scoop か PowerShell の 1 行でインストールでき、PATH とスタートメニューに自動で登録されます。同梱の codeusage コマンドはアプリとキャッシュ・設定を共有。メーターはここでも 24 マスで、--json を付ければスクリプトやステータスバーに渡せます。',
-  recommended: 'おすすめ', instZip: '手動ダウンロード', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー', copyShort: 'コピー',
+  recommended: 'おすすめ', instZip: '手動ダウンロード', instCli: 'コマンド', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー',
   eyPrivacy: 'プライバシー', vA: 'データは', vB: 'あなたの PC に',
   v1t: '数値だけ', v1: 'トークン数、リクエスト数、所要時間、モデル名だけをローカルの時間別インデックスに記録。会話内容は保存しません。',
   v2t: 'ログインはそのまま', v2: '各ツールのログイントークンは元のフォルダーに残ります。読み取るだけで、コピーしません。',
@@ -159,7 +170,7 @@ const ja = {
   eyFaq: 'FAQ', fqA: 'よくある質問',
   fq1: 'インストール方法と必要な環境は？', fa1: '方法は 3 つ：Scoop、PowerShell の 1 行スクリプト、または zip を書き込み可能なフォルダー（例：D:\\Tools）に展開して codeusagemonit.exe を実行。インストーラー、Node.js、管理者権限は不要。Windows 10 / 11 標準の .NET Framework 4.8 で動きます。',
   fq7: '更新とアンインストールは？', fa7: 'Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit。データは Scoop の persist フォルダーにあり、更新しても残ります。PowerShell スクリプト：もう一度実行すれば更新。アンインストールは %LOCALAPPDATA%\\Programs\\codeusagemonit を削除し、ユーザー PATH から外します。zip：新しいファイルで上書きし、data フォルダーは残してください。',
-  fq2: '「Windows によって PC が保護されました」と表示されるのは？', fa2: 'コード署名証明書を購入していないためです。「詳細情報 → 実行」を選んでください。下の SHA-256 でファイルを確認することもできます。Scoop と PowerShell スクリプトは SHA-256 を自動で確認します。',
+  fq2: '「Windows によって PC が保護されました」と表示されるのは？', fa2: 'コード署名証明書を購入していないためです。「詳細情報 → 実行」を選んでください。',
   fq3: 'すべてのアカウントに再ログインが必要ですか？', fa3: 'いいえ。Codex、Claude Code、Cursor、Antigravity、Grok は PC 上の既存のログインを利用します。DeepSeek、Kimi、OpenCode、ZCode は API キー、Copilot は GitHub のデバイスログインです。',
   fq4: '表示される費用は実際の請求額ですか？', fa4: 'いいえ。ローカルログのトークン数 × 公式 API 価格で計算した API 換算の参考値です。サブスクリプションは月額課金なので、この金額は請求されません。',
   fq8: '料金表はどうやって公式と同期していますか？', fa8: 'リポジトリの pricing.json は、GitHub Actions が毎日 LiteLLM と models.dev（各社が公開する API 単価を収録）から作り直しています。アプリは 24 時間ごとに確認し、新しい料金表があればダウンロード・検証して再計算します。取得に失敗した場合や設定でオフにした場合は、内蔵の料金表を使い続けます。',
@@ -175,13 +186,18 @@ const ja = {
   vMedium: '左にメインの利用枠、右にほかの枠。枠が 1 つだけならペース、リセット時刻、リセットクレジットを表示。中サイズは利用枠だけで、グラフはありません。',
   vLarge: '利用枠とペースに加え、ローカル使用量：期間、費用、トークン、リクエスト、速度、クリックできるグラフ。',
   vFull: '全サービスのカード、サービスごとの詳細、サードパーティ API のページ、設定。端をドラッグして自由にサイズ変更できます。',
-  vFullDim: '既定 420 × 790、サイズ変更可', sNoteAll: '4 つのサイズを並べて表示。配色はこのページのテーマに従います。小・中・大・全体を開くと、ツールや期間の切り替え、棒グラフのホバーができます。',
+  vFullDim: '既定 420 × 790、サイズ変更可',
+  viewerPrev: '前へ', viewerNext: '次へ', viewerClose: '閉じる',
   pgTop: 'トップ', pgProviders: 'サービス', pgBoard: '利用枠と使用量', pgPricing: '料金', pgSizes: 'サイズ', pgInstall: 'インストール', pgPrivacy: 'プライバシー', pgFaq: 'FAQ', pgDownload: 'ダウンロード',
   themeLight: 'ライト', themeDark: 'ダーク', themeSystem: 'システムに合わせる',
   vendorAll: 'すべて', priceShown: '{n} / {total} 件', priceNone: '一致するモデルはありません', tagLong: '長コンテキスト >{k}K', defaultCache: '未掲載のため入力単価の 10% で推定',
   instScoopNote: 'Homebrew の tap と同じく、まずこのリポジトリを bucket として追加してからインストール。スタートメニューのショートカットと PATH 上の codeusage が作られ、data フォルダーは Scoop の persist ディレクトリに置かれるので更新しても残ります。',
   instUpdate: '今後の更新', instNoScoop: 'Scoop が未導入なら先に：',
-  instPs1: 'GitHub Releases から最新版をダウンロードし、SHA-256 を確認', instPs2: '%LOCALAPPDATA%\\Programs\\codeusagemonit にインストール（管理者権限不要）', instPs3: 'codeusage をユーザー PATH に追加し、スタートメニューにショートカットを作成', instPs4: 'もう一度実行すれば更新。data フォルダーは保持',
+  instFootScoop: 'スタートメニューのショートカットと PATH 上の codeusage が作られます。data は Scoop の persist に置かれるので更新しても残ります。Scoop が未導入なら先に <code>irm get.scoop.sh | iex</code>。',
+  instFootPs: '管理者権限は不要です。もう一度実行すれば更新。data フォルダーは保持されます。',
+  instFootZip: 'インストーラー不要。更新は新しいバージョンで上書きし、data フォルダーは残します。',
+  instFootCli: '<code>--json</code> を付けると JSON になり、スクリプトやステータスバーに渡せます。<code>codeusage help</code> で全コマンドを表示。',
+  instPs1: 'GitHub Releases から最新版をダウンロード', instPs2: '%LOCALAPPDATA%\\Programs\\codeusagemonit にインストール（管理者権限不要）', instPs3: 'codeusage をユーザー PATH に追加し、スタートメニューにショートカットを作成', instPs4: 'もう一度実行すれば更新。data フォルダーは保持',
   instZipBtn: 'codeusagemonit-1.2.0-win-x64.zip をダウンロード', instZip1: '書き込み可能なフォルダー（例：D:\\Tools\\codeusagemonit）にすべて展開', instZip2: 'codeusagemonit.exe を実行。CLI は同じフォルダーの codeusage.exe', instZip3: '更新は新しいバージョンで上書きし、data フォルダーは残す'
 };
 const DICT = { zh, en, ja };
@@ -381,7 +397,8 @@ const OK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3
 async function writeClip(text) { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } }
 async function copyText(text, label, restore) { label.textContent = (await writeClip(text)) ? t('copied') : t('copyFailed'); setTimeout(() => { label.textContent = restore(); }, 1600); }
 async function copyIcon(btn, text) { const ok = await writeClip(text); btn.innerHTML = ok ? OK_ICON : COPY_ICON; btn.classList.toggle('ok', ok); btn.title = ok ? t('copied') : t('copyFailed'); setTimeout(() => { btn.innerHTML = COPY_ICON; btn.classList.remove('ok'); btn.title = t('copyLabel'); }, 1600); }
-const cmdRow = text => `<div class="cmd"><code><span class="pr">&gt; </span>${esc(text)}</code><button type="button" class="copy-btn" data-copy="${esc(text)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button></div>`;
+const cmdText = text => esc(text).replace(/\//g, '/<wbr>');
+const cmdRow = text => `<div class="cmd"><code><span class="pr">&gt; </span>${cmdText(text)}</code><button type="button" class="copy-btn" data-copy="${esc(text)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button></div>`;
 document.addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copyIcon(b, b.dataset.copy); });
 
 // ── Install (hero one-liner + the install panel) ──────────────────────
@@ -392,26 +409,74 @@ const INSTALL = {
 };
 let quickKind = 'scoop';
 function renderQuick() {
-  $('quick-code').innerHTML = INSTALL[quickKind].map(l => `<span class="pr">&gt; </span>${esc(l)}`).join('\n');
+  $('quick-code').innerHTML = INSTALL[quickKind].map(l => `<span class="pr">&gt; </span>${cmdText(l)}`).join('\n');
   document.querySelectorAll('[data-quick]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.quick === quickKind)));
   const btn = $('quick-copy'); btn.innerHTML = COPY_ICON; btn.dataset.copy = INSTALL[quickKind].join('\n'); btn.title = btn.ariaLabel = t('copyLabel');
 }
 $('quick').addEventListener('click', e => { const b = e.target.closest('[data-quick]'); if (b) { quickKind = b.dataset.quick; renderQuick(); } });
 let instKind = 'scoop';
-function renderInstall() {
+const USAGE = [
+  { id: 'status', cmd: 'codeusage status', desc: 'cmdStatus' },
+  { id: 'cost', cmd: 'codeusage cost --days 7', desc: 'cmdCost' },
+  { id: 'thirdparty', cmd: 'codeusage thirdparty', desc: 'cmdThird' }
+];
+function usageRows() {
+  return USAGE.map(u => `<div class="cmd cmd-use" data-cmd="${u.id}" role="button" tabindex="0" aria-pressed="${u.id === termCmd}"><code><span class="pr">&gt; </span>${esc(u.cmd)}</code><button type="button" class="copy-btn" data-copy="${esc(u.cmd)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button><p class="cmd-desc">${esc(t(u.desc))}</p></div>`).join('');
+}
+const instGroup = html => `<div class="inst-group">${html}</div>`;
+const instFill = (groups, footKey) => `<div class="inst-fill"><div class="inst-main">${groups}</div><p class="inst-foot">${t(footKey)}</p></div>`;
+function paintInstall(animate) {
   const steps = keys => `<ol class="inst-steps">${keys.map(k => `<li>${esc(t(k))}</li>`).join('')}</ol>`;
   const html = instKind === 'scoop'
-    ? INSTALL.scoop.map(cmdRow).join('') + `<p class="inst-note">${esc(t('instScoopNote'))}</p><p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}<p class="cmd-label">${esc(t('instNoScoop'))}</p>${cmdRow('irm get.scoop.sh | iex')}`
+    ? instFill(instGroup(INSTALL.scoop.map(cmdRow).join('')) + instGroup(`<p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}`), 'instFootScoop')
     : instKind === 'ps'
-      ? cmdRow(INSTALL.ps[0]) + steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])
-      : `<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>`
-        + cmdRow(REPO + '/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip')
-        + cmdRow('SHA-256 ef2c9412d3205da697fe942726a90c8ccfd09036a2f21eae9f09ceaa84093bda')
-        + steps(['instZip1', 'instZip2', 'instZip3']);
-  const el = $('inst-body'); el.innerHTML = html; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+      ? instFill(instGroup(cmdRow(INSTALL.ps[0])) + instGroup(steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])), 'instFootPs')
+      : instKind === 'zip'
+        ? instFill(instGroup(`<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>${cmdRow(REPO + '/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip')}`) + instGroup(steps(['instZip1', 'instZip2', 'instZip3'])), 'instFootZip')
+        : instFill(usageRows(), 'instFootCli');
+  const el = $('inst-body');
+  el.innerHTML = html;
+  if (animate) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
   document.querySelectorAll('[data-inst]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.inst === instKind)));
 }
-$('inst-tabs').addEventListener('click', e => { const b = e.target.closest('[data-inst]'); if (b) { instKind = b.dataset.inst; renderInstall(); } });
+let fitting = false;
+function renderInstall() { paintInstall(true); if (!fitting) requestAnimationFrame(fitInstall); }
+$('inst-tabs').addEventListener('click', e => { const b = e.target.closest('[data-inst]'); if (b) { instKind = b.dataset.inst; paintInstall(true); } });
+function termBlock(c) {
+  const prompt = '<span class="p">PS C:\\Users\\you&gt;</span> ';
+  return prompt + esc(c.cmd) + '\n' + c.out().join('\n') + '\n' + prompt;
+}
+function fitInstall() {
+  const grid = document.querySelector('.install-grid');
+  if (!grid) return;
+  const wide = matchMedia('(min-width: 1121px)').matches;
+  if (!wide) { grid.style.removeProperty('--pair-h'); return; }
+  fitting = true;
+  const saved = instKind;
+  grid.classList.add('is-measure');
+  let card = 0;
+  for (const kind of ['scoop', 'ps', 'zip', 'cli']) {
+    instKind = kind;
+    paintInstall(false);
+    card = Math.max(card, document.querySelector('#install .inst').offsetHeight);
+  }
+  instKind = saved;
+  paintInstall(false);
+  const term = document.querySelector('#install .term');
+  const probe = document.createElement('pre');
+  probe.className = 'term-body';
+  probe.style.cssText = 'position:absolute;left:0;right:0;visibility:hidden;height:auto;min-height:0;flex:none;overflow:visible;pointer-events:none;';
+  term.appendChild(probe);
+  let body = 0;
+  for (const c of Object.values(COMMANDS)) { probe.innerHTML = termBlock(c); body = Math.max(body, probe.offsetHeight); }
+  probe.remove();
+  grid.classList.remove('is-measure');
+  fitting = false;
+  const termH = body + document.querySelector('#install .term-bar').offsetHeight + 2;
+  grid.style.setProperty('--pair-h', Math.ceil(Math.max(card, termH)) + 'px');
+}
+addEventListener('resize', () => { if (!fitting) requestAnimationFrame(fitInstall); });
+if (document.fonts) document.fonts.ready.then(() => { if (!fitting) fitInstall(); });
 
 // ── Providers: name + the connection method the app actually uses ─────
 // Checked against source/Windows Connect.cs, Core.cs, LocalAntigravity.cs,
@@ -575,9 +640,8 @@ paintRelay();
 if (!reduced) setInterval(() => { if (document.hidden) return; relayOn = [1, 0, 1, 2][(Date.now() / 2600 | 0) % 4]; paintRelay(); }, 2600);
 
 // ── Sizes: interactive window mocks (small / medium / large / full) ──
-const SIZE_KEYS = ['small', 'medium', 'large', 'full'];
 const SIZE_PAGES = ['codex', 'claude', 'cursor', 'kimi', 'zcode', 'deepseek', 'pi'];
-const sz = { mode: 'all', small: { id: 'codex', wi: 0 }, medium: { id: 'codex', wi: 0 }, large: { id: 'codex', period: '30d', open: -1 }, full: { page: 'overview', period: '30d', id: 'codex' } };
+const sz = { small: { id: 'codex', wi: 0 }, medium: { id: 'codex', wi: 0 }, large: { id: 'codex', period: '30d', open: -1 }, full: { page: 'overview', period: '30d', id: 'codex' } };
 const EXTRA_USAGE = { cursor: [18.42, 6.2e6, .64, 41.6, 248], antigravity: [11.3, 8.4e6, .48, 36.8, 176], copilot: [7.85, 2.1e6, .22, 29.4, 312], grok: [6.4, 4.7e6, .31, 44.2, 98], opencode: [8.16, 5.4e6, .27, 33.5, 154] };
 function usagePack(id) {
   if (SERIES[id]) {
@@ -664,96 +728,141 @@ function fullHtml() {
   }
   return `${chrome(page, '')}<div class="sz-tabs">${tabs}</div><div class="sz-body sz-scroll">${inner}</div>`;
 }
-function renderSlot(slot) {
-  const kind = slot.dataset.size;
+function renderWindow(kind, win) {
   const html = kind === 'small' ? smallHtml() : kind === 'medium' ? mediumHtml() : kind === 'large' ? largeHtml() : fullHtml();
-  const win = slot.querySelector('.app');
   win.innerHTML = html;
+  win.dataset.kind = kind;
   const packId = kind === 'full' ? (sz.full.page === 'overview' ? 'codex' : sz.full.page) : sz[kind].id;
-  slot._rows = periodSlice(usagePack(packId), (sz[kind].period || sz.full.period || '30d'));
-  slot._pack = packId;
+  win._rows = periodSlice(usagePack(packId), (sz[kind].period || '30d'));
+  win._pack = packId;
 }
-// Laid out at these sizes, then scaled into the slot. Full matches the hero panel (440px)
-// plus room for the period switch, so labels stay on one line at every viewport.
+function paintKind(kind) {
+  document.querySelectorAll(`#deck .deck-card[data-size="${kind}"] .app`).forEach(win => renderWindow(kind, win));
+  const live = $('viewer-app');
+  if (live && live.dataset.kind === kind) renderWindow(kind, live);
+}
+// Design sizes of the four windows. Deck cards scale these in CSS; the viewer scales them to the viewport.
 const SIZE_DESIGN = { small: [220, 250], medium: [560, 230], large: [440, 560], full: [480, 700] };
-function fitSlots() {
-  document.querySelectorAll('#size-row .size-slot').forEach(slot => {
-    const frame = slot.querySelector('.sz-frame');
-    if (!frame || getComputedStyle(slot).display === 'none') return;
-    const [dw, dh] = SIZE_DESIGN[slot.dataset.size];
-    const avail = frame.clientWidth;
-    const scale = avail > 0 ? Math.min(1, avail / dw) : 1;
-    frame.style.setProperty('--sz-w', dw + 'px');
-    frame.style.setProperty('--sz-h', dh + 'px');
-    frame.style.setProperty('--sz-s', String(scale));
-    frame.style.height = Math.ceil(dh * scale) + 'px';
-  });
+const SIZE_META = [
+  { key: 'small', maxW: 280, dim: '172 × 172', title: 'sSmall', text: 'vSmall' },
+  { key: 'medium', maxW: 640, dim: '360 × 180', title: 'sMedium', text: 'vMedium' },
+  { key: 'large', maxW: 440, dim: '360 × 430', title: 'sLarge', text: 'vLarge' },
+  { key: 'full', maxW: 460, dim: 'vFullDim', title: 'sFull', text: 'vFull' }
+];
+const viewer = $('viewer'), viewerMock = $('viewer-mock'), deck = $('deck');
+let vIndex = 0, lastCard = null;
+$('viewer-dots').innerHTML = SIZE_META.map(() => '<i></i>').join('');
+function layoutViewer() {
+  const s = SIZE_META[vIndex], [dw, dh] = SIZE_DESIGN[s.key];
+  const narrow = innerWidth < 760;
+  const maxH = Math.max(160, innerHeight * (narrow ? .42 : .76));
+  const maxW = Math.max(140, narrow ? innerWidth - 40 : Math.min(s.maxW, innerWidth - 460));
+  const scale = Math.min(maxW / dw, maxH / dh);
+  viewerMock.style.setProperty('--vw', Math.round(dw * scale) + 'px');
+  viewerMock.style.setProperty('--vh', Math.round(dh * scale) + 'px');
+  viewerMock.style.setProperty('--sz-w', dw + 'px');
+  viewerMock.style.setProperty('--sz-h', dh + 'px');
+  viewerMock.style.setProperty('--sz-s', String(scale));
 }
-function paintSizeNote() {
-  const key = { all: 'sNoteAll', small: 'vSmall', medium: 'vMedium', large: 'vLarge', full: 'vFull' }[sz.mode];
-  $('size-note').textContent = t(key);
-  document.querySelectorAll('[data-cap]').forEach(el => { el.textContent = t({ small: 'sSmall', medium: 'sMedium', large: 'sLarge', full: 'sFull' }[el.dataset.cap]); });
+function fillViewer(i) {
+  const s = SIZE_META[i]; vIndex = i;
+  layoutViewer();
+  renderWindow(s.key, $('viewer-app'));
+  $('viewer-dim').textContent = s.dim.startsWith('v') ? t(s.dim) : s.dim;
+  $('viewer-title').textContent = t(s.title);
+  $('viewer-text').textContent = t(s.text);
+  document.querySelectorAll('#viewer-dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+  deck.querySelectorAll('.deck-card').forEach(c => c.classList.toggle('away', c.dataset.size === s.key));
 }
-function fitSizes() {
-  const stage = $('size-stage'), row = $('size-row'), fit = $('size-fit');
-  fitSlots();
-  row.style.transform = 'none';
-  if (stage.dataset.mode !== 'all' || matchMedia('(max-width: 760px)').matches) { fit.style.height = 'auto'; return; }
-  const need = row.scrollWidth, avail = fit.clientWidth;
-  const scale = need > avail && avail > 0 ? avail / need : 1;
-  row.style.transform = scale < 1 ? `scale(${scale})` : 'none';
-  fit.style.height = Math.ceil(row.getBoundingClientRect().height) + 'px';
+function flipFrom(card) {
+  const from = card.querySelector('.deck-shot').getBoundingClientRect(), to = viewerMock.getBoundingClientRect();
+  if (reduced || !to.width) return;
+  viewerMock.style.transition = 'none';
+  viewerMock.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
+  void viewerMock.offsetWidth;
+  viewerMock.style.transition = 'transform .55s cubic-bezier(.2,.75,.2,1)';
+  viewerMock.style.transform = 'none';
 }
-function selectSize(mode, focus) {
-  if (!SIZE_KEYS.includes(mode) && mode !== 'all') return;
-  sz.mode = mode;
-  $('size-stage').dataset.mode = mode;
-  document.querySelectorAll('#size-tabs [data-size]').forEach(b => { const on = b.dataset.size === mode; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
-  document.querySelectorAll('#size-row .size-slot').forEach(s => s.classList.toggle('on', mode === 'all' || s.dataset.size === mode));
-  paintSizeNote();
-  requestAnimationFrame(fitSizes);
+function openViewer(card) {
+  lastCard = card;
+  const i = SIZE_META.findIndex(s => s.key === card.dataset.size);
+  viewer.hidden = false;
+  fillViewer(i);
+  document.body.style.overflow = 'hidden';
+  const go = () => { flipFrom(card); requestAnimationFrame(() => viewer.classList.add('open')); $('viewer-close').focus({ preventScroll: true }); };
+  requestAnimationFrame(() => requestAnimationFrame(go));
 }
-function mountSizes() {
-  $('size-row').innerHTML = SIZE_KEYS.map(k => `<div class="size-slot on" data-size="${k}"><div class="sz-frame"><div class="app sz"></div></div><span class="cap" data-cap="${k}"></span></div>`).join('');
-  document.querySelectorAll('#size-row .size-slot').forEach(renderSlot);
-  selectSize('all');
+function closeViewer() {
+  if (viewer.hidden) return;
+  const card = deck.querySelector(`[data-size="${SIZE_META[vIndex].key}"]`);
+  const done = () => { viewer.hidden = true; viewer.classList.remove('open'); viewerMock.style.transform = ''; viewerMock.style.transition = ''; deck.querySelectorAll('.away').forEach(c => c.classList.remove('away')); document.body.style.overflow = ''; (lastCard || card)?.focus({ preventScroll: true }); };
+  viewer.classList.remove('open');
+  if (reduced || !card) return done();
+  const from = viewerMock.getBoundingClientRect(), to = card.querySelector('.deck-shot').getBoundingClientRect();
+  viewerMock.style.transition = 'transform .45s cubic-bezier(.4,0,.2,1)';
+  viewerMock.style.transform = `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${to.width / Math.max(1, from.width)})`;
+  setTimeout(done, 430);
 }
-$('size-tabs').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (b) selectSize(b.dataset.size); });
-$('size-tabs').addEventListener('keydown', e => {
-  const tabs = [...$('size-tabs').querySelectorAll('[data-size]')], i = tabs.findIndex(b => b.getAttribute('aria-selected') === 'true');
-  let next; if (e.key === 'ArrowRight') next = (i + 1) % tabs.length; else if (e.key === 'ArrowLeft') next = (i + tabs.length - 1) % tabs.length; else return;
-  e.preventDefault(); selectSize(tabs[next].dataset.size, true);
+function stepViewer(d) {
+  const i = (vIndex + d + SIZE_META.length) % SIZE_META.length;
+  if (reduced) { fillViewer(i); return; }
+  viewerMock.style.transition = 'opacity .18s'; viewerMock.style.opacity = '0';
+  setTimeout(() => { fillViewer(i); viewerMock.style.transform = 'none'; viewerMock.style.opacity = '1'; }, 180);
+}
+function mountDeck() {
+  document.querySelectorAll('#deck .deck-card').forEach(card => renderWindow(card.dataset.size, card.querySelector('.app')));
+}
+deck.addEventListener('click', e => { const c = e.target.closest('.deck-card'); if (c) openViewer(c); });
+viewer.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeViewer(); });
+$('viewer-prev').addEventListener('click', () => stepViewer(-1));
+$('viewer-next').addEventListener('click', () => stepViewer(1));
+document.addEventListener('keydown', e => {
+  if (viewer.hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeViewer(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); stepViewer(-1); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); stepViewer(1); }
 });
-$('size-row').addEventListener('click', e => {
-  const slot = e.target.closest('.size-slot'); if (!slot) return;
-  const kind = slot.dataset.size, st = sz[kind];
-  const page = e.target.closest('[data-page]'), period = e.target.closest('[data-period]'), prov = e.target.closest('[data-prov]'), win = e.target.closest('[data-win]'), open = e.target.closest('[data-open]');
+viewerMock.addEventListener('click', e => {
+  const win = e.target.closest('#viewer-app'); if (!win) return;
+  const kind = win.dataset.kind, st = sz[kind];
+  const page = e.target.closest('[data-page]'), period = e.target.closest('[data-period]'), prov = e.target.closest('[data-prov]'), row = e.target.closest('[data-win]'), open = e.target.closest('[data-open]');
   if (page) sz.full.page = page.dataset.page;
   else if (period) st.period = period.dataset.period;
   else if (prov) { st.id = prov.dataset.prov; st.wi = 0; if ('open' in st) st.open = -1; }
-  else if (e.target.closest('[data-cycle]')) { const q = QUOTAS[st.id]; if (q.windows) st.wi = (st.wi + 1) % q.windows.length; }
-  else if (win) st.wi = +win.dataset.win;
+  else if (e.target.closest('[data-cycle]')) { const q = QUOTAS[st.id]; if (q && q.windows) st.wi = (st.wi + 1) % q.windows.length; }
+  else if (row) st.wi = +row.dataset.win;
   else if (open) st.open = st.open === +open.dataset.open ? -1 : +open.dataset.open;
   else return;
-  renderSlot(slot);
+  e.stopPropagation();
+  paintKind(kind);
 });
-$('size-row').addEventListener('pointerover', e => {
+viewerMock.addEventListener('pointerover', e => {
   const b = e.target.closest('.mini-chart .b'); if (!b) return;
-  const slot = b.closest('.size-slot'), rows = slot._rows || [], x = rows[+b.dataset.i]; if (!x) return;
-  let tip = slot.querySelector('.sz-tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'sz-tip'; slot.querySelector('.app').appendChild(tip); }
+  const win = b.closest('.app'), rows = win._rows || [], x = rows[+b.dataset.i]; if (!x) return;
+  let tip = win.querySelector('.sz-tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'sz-tip'; win.appendChild(tip); }
   const when = x.hourly ? `${pad2(x.date.getHours())}:00` : dayLabel(x.date);
-  tip.innerHTML = `<b>${when}</b><br>${usd(x.cost)} · ${compact(x.tokens)} Token<br>${Math.max(0, Math.round(x.req || 0)).toLocaleString('en-US')} 次请求 · ${tps(x.speed || usagePack(slot._pack).speed)}`;
-  const hostEl = slot.querySelector('.app'), host = hostEl.getBoundingClientRect(), br = b.getBoundingClientRect();
-  const scale = host.width / (hostEl.offsetWidth || host.width) || 1;
+  tip.innerHTML = `<b>${when}</b><br>${usd(x.cost)} · ${compact(x.tokens)} Token<br>${Math.max(0, Math.round(x.req || 0)).toLocaleString('en-US')} 次请求 · ${tps(x.speed || usagePack(win._pack).speed)}`;
+  const host = win.getBoundingClientRect(), br = b.getBoundingClientRect();
+  const scale = host.width / (win.offsetWidth || host.width) || 1;
   tip.hidden = false;
-  const left = (br.left - host.left + br.width / 2) / scale;
-  const top = (br.top - host.top) / scale;
-  tip.style.left = Math.min(hostEl.offsetWidth - 8, Math.max(8, left)) + 'px';
-  tip.style.top = Math.max(8, top - 8) + 'px'; tip.style.transform = 'translate(-50%, -100%)';
+  tip.style.left = Math.min(win.offsetWidth - 8, Math.max(8, (br.left - host.left + br.width / 2) / scale)) + 'px';
+  tip.style.top = Math.max(8, (br.top - host.top) / scale - 8) + 'px';
+  tip.style.transform = 'translate(-50%, -100%)';
 });
-$('size-row').addEventListener('pointerout', e => { if (!e.target.closest('.mini-chart .b')) return; const tip = e.target.closest('.size-slot')?.querySelector('.sz-tip'); if (tip && !e.relatedTarget?.closest?.('.mini-chart .b')) tip.hidden = true; });
-addEventListener('resize', () => fitSizes());
-function openFromHash() { const m = /^#size-(small|medium|large|full|all)$/.exec(location.hash); if (!m) return; document.getElementById('sizes').scrollIntoView({ block: 'center' }); selectSize(m[1]); }
+viewerMock.addEventListener('pointerout', e => {
+  if (!e.target.closest('.mini-chart .b')) return;
+  const tip = e.target.closest('.app')?.querySelector('.sz-tip');
+  if (tip && !e.relatedTarget?.closest?.('.mini-chart .b')) tip.hidden = true;
+});
+addEventListener('resize', () => { if (!viewer.hidden) layoutViewer(); });
+function openFromHash() {
+  const m = /^#size-(small|medium|large|full|all)$/.exec(location.hash);
+  if (!m) return;
+  document.getElementById('sizes').scrollIntoView({ block: 'center' });
+  if (m[1] === 'all') return;
+  const card = deck.querySelector('[data-size="' + m[1] + '"]');
+  if (card) openViewer(card);
+}
 addEventListener('hashchange', openFromHash);
 
 // ── Terminal (mirrors codeusage output) ───────────────────────────────
@@ -768,10 +877,8 @@ function quotaLines(id, plan) {
   lines.push(`<span style="color:${P[id].c};font-weight:600">${P[id].name}</span>  ${dim(plan)}  ${dim('de•••@example.com')}`);
   q.windows.forEach(w => {
     lines.push('  ' + esc(padR(w.label, lw)) + bold(padL(w.rem + '%', 6)) + ' 剩余  ' + bar(w.rem, P[id].c) + '  ' + dim(w.reset.replace(' ', '') + '后重置'));
-    lines.push('  ' + ' '.repeat(lw) + (w.pace >= 0 ? col('余量 ' + w.pace + '%', '#7AD3A8') + dim(' · 按当前速度可持续到重置') : col('超前消耗 ' + -w.pace + '%', '#F2B36B') + dim(' · ' + (w.empty || ''))));
   });
-  if (q.credits) lines.push('  ' + esc(padR('限额重置', lw)) + q.credits + ' 次可用');
-  lines.push('  ' + dim(`今日 ${usd(SERIES[id].days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)} · ${compact(TOOLS[id].tokens)} Token · ${tps(speedOf(SERIES[id].days, id))}（API 等价）`));
+  lines.push('  ' + dim(`今日 ${usd(SERIES[id].days[29].cost)} · 30 天 ${usd(TOOLS[id].cost)} · ${compact(TOOLS[id].tokens)} Token · ${tps(speedOf(SERIES[id].days, id))}`));
   return lines;
 }
 function costLines() {
@@ -789,7 +896,7 @@ function costLines() {
   return lines;
 }
 const COMMANDS = {
-  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.2.0 · ${stamp()} · 缓存 · 2 分钟前 · 价目 ${$('price-date').textContent}`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
+  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.2.0 · ${stamp()} · 缓存 · 2 分钟前`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
   cost: { cmd: 'codeusage cost --days 7', out: costLines },
   thirdparty: { cmd: 'codeusage thirdparty', out: () => [bold('第三方 API 用量') + dim('（本机日志；服务商的周/月限额无法得知）'), '',
     `<span style="color:${P.claude.c};font-weight:600">示例中转 A</span>` + col('  使用中', '#5CC8E0') + '  ' + dim('Claude Code · relay-a.example.com'),
@@ -810,10 +917,23 @@ async function runTerm() {
   for (const line of c.out()) { if (run !== termRun) return; html += line + '\n'; termBody.innerHTML = html + '<span class="caret"></span>'; await sleep(55); }
   termBody.innerHTML = html + prompt + '<span class="caret"></span>';
 }
-$('cmd-list').addEventListener('click', e => { const b = e.target.closest('[data-cmd]'); if (!b) return; termCmd = b.dataset.cmd; document.querySelectorAll('#cmd-list [data-cmd]').forEach(x => x.setAttribute('aria-selected', String(x === b))); runTerm(); });
+function selectCmd(id) {
+  termCmd = id;
+  document.querySelectorAll('.cmd-use').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.cmd === id)));
+  runTerm();
+}
+$('inst-body').addEventListener('click', e => {
+  if (e.target.closest('[data-copy]')) return;
+  const row = e.target.closest('.cmd-use');
+  if (row) selectCmd(row.dataset.cmd);
+});
+$('inst-body').addEventListener('keydown', e => {
+  const row = e.target.closest('.cmd-use');
+  if (!row || e.target.closest('[data-copy]') || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); selectCmd(row.dataset.cmd);
+});
 new IntersectionObserver(([entry], obs) => { if (entry.isIntersecting && !termSeen) { termSeen = true; runTerm(); obs.disconnect(); } }, { threshold: .35 }).observe(termBody);
 $('copy-cmd').addEventListener('click', e => copyText(COMMANDS[termCmd].cmd, e.currentTarget, () => t('copy')));
-$('copy-sha').addEventListener('click', e => copyText(e.currentTarget.querySelector('code').textContent, e.currentTarget.querySelector('em'), () => t('copyShort')));
 
 // ── Section pager (right edge) and nav state ──────────────────────────
 const sections = [...document.querySelectorAll('[data-pager]')], pager = $('pager'), navLinks = [...document.querySelectorAll('.nav-links a')];
@@ -858,7 +978,8 @@ function setLang(value) {
   document.title = META[lang][0]; document.querySelector('meta[name="description"]').content = META[lang][1];
   paintPagerLabels(); renderProviders(); renderDash(); renderQuick(); renderInstall();
   if (prices.length) { renderVendors(); renderPrices(); }
-  if ($('size-note')) paintSizeNote();
+  $('viewer-prev').ariaLabel = t('viewerPrev'); $('viewer-next').ariaLabel = t('viewerNext'); $('viewer-close').ariaLabel = t('viewerClose');
+  if (!viewer.hidden) fillViewer(vIndex);
   try { localStorage.setItem('codeusagemonit-language', lang); } catch { }
 }
 document.querySelector('.lang').addEventListener('click', e => { const b = e.target.closest('[data-lang]'); if (b) setLang(b.dataset.lang); });
@@ -872,7 +993,7 @@ const revealer = new IntersectionObserver(entries => entries.forEach(entry => {
 document.querySelectorAll('.reveal').forEach(el => revealer.observe(el));
 
 // ── Start ─────────────────────────────────────────────────────────────
-renderTabs(); renderPage('overview'); renderBoardQuota(false); mountSizes();
+renderTabs(); renderPage('overview'); renderBoardQuota(false); mountDeck();
 setTimeout(openFromHash, 300);
 let saved; try { saved = localStorage.getItem('codeusagemonit-language'); } catch { }
 setLang(saved || (/^ja/i.test(navigator.language) ? 'ja' : /^zh/i.test(navigator.language) ? 'zh' : 'en'));
