@@ -85,7 +85,7 @@ jobs:
 
           费用为按本机日志与价目表估算的 API 等价费用，不是订阅账单。可用附带的 **SHA256SUMS.txt** 校验文件。
 
-          [项目官网](https://codeusagemonit.example.chatgpt.site) · [使用文档](https://github.com/fanchengliu/codeusagemonit#readme) · [反馈问题](https://github.com/fanchengliu/codeusagemonit/issues)
+          [项目官网](https://codeusagemonit.vercel.app) · [使用文档](https://github.com/fanchengliu/codeusagemonit#readme) · [反馈问题](https://github.com/fanchengliu/codeusagemonit/issues)
           NOTES
 
       - name: Upload and publish the verified release
@@ -110,8 +110,9 @@ jobs:
 
           mkdir -p uploaded
           gh release download "$TAG" --pattern "$PACKAGE" --pattern SHA256SUMS.txt --dir uploaded
-          cmp SHA256SUMS.txt uploaded/SHA256SUMS.txt
-          (cd uploaded && sha256sum --check SHA256SUMS.txt)
+          # The published checksum file keeps this zip line. A later installer upload may append setup.exe.
+          grep -Fqx "$PACKAGE_SHA256  $PACKAGE" uploaded/SHA256SUMS.txt
+          (cd uploaded && printf '%s  %s\n' "$PACKAGE_SHA256" "$PACKAGE" | sha256sum --check)
 
           if [ "$is_draft" = true ]; then
             gh release edit "$TAG" --draft=false --latest --notes-file RELEASE-NOTES.md
