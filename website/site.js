@@ -681,7 +681,7 @@ function paintSizeNote() {
 function fitSizes() {
   const stage = $('size-stage'), row = $('size-row'), fit = $('size-fit');
   row.style.transform = 'none';
-  if (stage.dataset.mode !== 'all') { fit.style.height = 'auto'; return; }
+  if (stage.dataset.mode !== 'all' || matchMedia('(max-width: 760px)').matches) { fit.style.height = 'auto'; return; }
   const need = row.scrollWidth, avail = fit.clientWidth;
   const scale = need > avail && avail > 0 ? avail / need : 1;
   row.style.transform = scale < 1 ? `scale(${scale})` : 'none';
