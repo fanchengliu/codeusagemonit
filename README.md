@@ -10,9 +10,9 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(x64)-blue?style=flat-square)](https://github.com/fanchengliu/codeusagemonit)
 [![Binary Size](https://img.shields.io/badge/size-551%20KB-success?style=flat-square)](https://github.com/fanchengliu/codeusagemonit)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](./LICENSE)
-[![Website](https://img.shields.io/badge/website-fanchengliu.github.io-818cf8?style=flat-square)](https://fanchengliu.github.io/codeusagemonit/)
+[![Website](https://img.shields.io/badge/website-codeusagemonit.vercel.app-818cf8?style=flat-square)](https://codeusagemonit.vercel.app)
 
-[🌐 访问官方展示网站](https://fanchengliu.github.io/codeusagemonit/) · [📖 详细使用说明 (中文)](./使用说明.md) · [⬇ 下载安装程序 (v1.2.0)](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe)
+[🌐 访问官方展示网站](https://codeusagemonit.vercel.app) · [📖 详细使用说明 (中文)](./使用说明.md) · [⬇ 下载安装程序 (v1.2.0)](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe)
 
 </div>
 
