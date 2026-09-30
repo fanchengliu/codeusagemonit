@@ -69,13 +69,13 @@ Object.assign(zh, {
   instScoopNote: '和 Homebrew 的 tap 一样：先把本仓库加成 bucket，再安装。会创建开始菜单快捷方式，并把 codeusage 加进 PATH；data 文件夹放在 Scoop 的 persist 目录，升级不丢。',
   instUpdate: '以后升级', instNoScoop: '还没装 Scoop？先运行：',
   instPs1: '从 GitHub Releases 下载最新版，并核对 SHA-256', instPs2: '装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，不需要管理员权限', instPs3: '把 codeusage 加进用户 PATH，创建开始菜单快捷方式', instPs4: '再运行一次就是升级，data 文件夹保留',
-  instZipBtn: '下载 codeusagemonit-1.1.0-win-x64.zip', instZip1: '完整解压到一个可写的文件夹，例如 D:\\Tools\\codeusagemonit', instZip2: '运行 codeusagemonit.exe；命令行用同目录的 codeusage.exe', instZip3: '升级时用新版本覆盖旧文件，data 文件夹保留'
+  instZipBtn: '下载 codeusagemonit-1.2.0-win-x64.zip', instZip1: '完整解压到一个可写的文件夹，例如 D:\\Tools\\codeusagemonit', instZip2: '运行 codeusagemonit.exe；命令行用同目录的 codeusage.exe', instZip3: '升级时用新版本覆盖旧文件，data 文件夹保留'
 });
 const en = {
   skip: 'Skip to content', navProviders: 'Providers', navBoard: 'Quotas & usage', navPricing: 'Pricing', navSizes: 'Sizes', navInstall: 'Install', navDownload: 'Download',
-  chip: 'Output speed per tool is here', heroA: 'Every AI quota,', heroB: 'at a glance.',
+  chip: 'Prices now sync daily with the vendors', heroA: 'Every AI quota,', heroB: 'at a glance.',
   heroLead: 'Remaining quota, reset times, token usage and output speed for Codex, Claude, Cursor and 8 more AI coding tools, in one small window in your Windows tray.',
-  download: 'Download for Windows', source: 'View source', quickLabel: 'Or install from the terminal', heroMeta: 'v1.1.0 · Windows 10 / 11 · No installer · MIT', quickMore: 'More ways to install ↓',
+  download: 'Download for Windows', source: 'View source', quickLabel: 'Or install from the terminal', heroMeta: 'v1.2.0 · Windows 10 / 11 · No installer · MIT', quickMore: 'More ways to install ↓',
   stageHint: 'Try it: switch tools, scroll the panel, hover the bars, open a quota',
   eyProviders: 'Providers', pA: '11 coding tools supported,', pB: 'plus your own endpoint', pLead: 'Reuses the sign-in each tool already has: CLI login, editor session or API key. No browser cookies, no stored passwords.',
   eyBoard: 'Quotas & usage', bA: 'What’s left, what it cost, how fast it ran,', bB: 'in one panel',
@@ -125,13 +125,13 @@ const en = {
   instScoopNote: 'Like a Homebrew tap: add this repository as a bucket, then install. You get a Start menu shortcut and codeusage on PATH; the data folder lives in Scoop’s persist directory, so updates keep it.',
   instUpdate: 'Update later', instNoScoop: 'No Scoop yet? Install it first:',
   instPs1: 'Downloads the latest release from GitHub and checks its SHA-256', instPs2: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit, no admin rights', instPs3: 'Adds codeusage to your user PATH and a Start menu shortcut', instPs4: 'Run it again to update; the data folder is kept',
-  instZipBtn: 'Download codeusagemonit-1.1.0-win-x64.zip', instZip1: 'Extract everything into a writable folder, e.g. D:\\Tools\\codeusagemonit', instZip2: 'Run codeusagemonit.exe; use codeusage.exe in the same folder for the CLI', instZip3: 'To update, overwrite with the new version and keep the data folder'
+  instZipBtn: 'Download codeusagemonit-1.2.0-win-x64.zip', instZip1: 'Extract everything into a writable folder, e.g. D:\\Tools\\codeusagemonit', instZip2: 'Run codeusagemonit.exe; use codeusage.exe in the same folder for the CLI', instZip3: 'To update, overwrite with the new version and keep the data folder'
 };
 const ja = {
   skip: '本文へ移動', navProviders: 'サービス', navBoard: '利用枠と使用量', navPricing: '料金', navSizes: 'サイズ', navInstall: 'インストール', navDownload: 'ダウンロード',
-  chip: 'ツールごとの出力速度に対応', heroA: '残りの利用枠が', heroB: 'ひと目でわかる',
+  chip: '料金表が毎日公式と同期', heroA: '残りの利用枠が', heroB: 'ひと目でわかる',
   heroLead: 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を、Windows のトレイにある小さなウィンドウひとつで。',
-  download: 'Windows 版をダウンロード', source: 'ソースを見る', quickLabel: 'ターミナルから 1 行でインストール', heroMeta: 'v1.1.0 · Windows 10 / 11 · インストーラー不要 · MIT', quickMore: 'ほかのインストール方法 ↓',
+  download: 'Windows 版をダウンロード', source: 'ソースを見る', quickLabel: 'ターミナルから 1 行でインストール', heroMeta: 'v1.2.0 · Windows 10 / 11 · インストーラー不要 · MIT', quickMore: 'ほかのインストール方法 ↓',
   stageHint: '触ってみてください：ツールの切り替え、パネルのスクロール、グラフのホバー、利用枠の展開',
   eyProviders: 'サービス', pA: '11 のコーディングツールに対応', pB: 'あなた自身の API も', pLead: '各ツールの既存のログインを利用：CLI、エディターのセッション、API キー。ブラウザーの Cookie は読まず、パスワードも保存しません。',
   eyBoard: '利用枠と使用量', bA: '残り、費用、速度を', bB: 'ひとつのパネルで',
@@ -181,7 +181,7 @@ const ja = {
   instScoopNote: 'Homebrew の tap と同じく、まずこのリポジトリを bucket として追加してからインストール。スタートメニューのショートカットと PATH 上の codeusage が作られ、data フォルダーは Scoop の persist ディレクトリに置かれるので更新しても残ります。',
   instUpdate: '今後の更新', instNoScoop: 'Scoop が未導入なら先に：',
   instPs1: 'GitHub Releases から最新版をダウンロードし、SHA-256 を確認', instPs2: '%LOCALAPPDATA%\\Programs\\codeusagemonit にインストール（管理者権限不要）', instPs3: 'codeusage をユーザー PATH に追加し、スタートメニューにショートカットを作成', instPs4: 'もう一度実行すれば更新。data フォルダーは保持',
-  instZipBtn: 'codeusagemonit-1.1.0-win-x64.zip をダウンロード', instZip1: '書き込み可能なフォルダー（例：D:\\Tools\\codeusagemonit）にすべて展開', instZip2: 'codeusagemonit.exe を実行。CLI は同じフォルダーの codeusage.exe', instZip3: '更新は新しいバージョンで上書きし、data フォルダーは残す'
+  instZipBtn: 'codeusagemonit-1.2.0-win-x64.zip をダウンロード', instZip1: '書き込み可能なフォルダー（例：D:\\Tools\\codeusagemonit）にすべて展開', instZip2: 'codeusagemonit.exe を実行。CLI は同じフォルダーの codeusage.exe', instZip3: '更新は新しいバージョンで上書きし、data フォルダーは残す'
 };
 const DICT = { zh, en, ja };
 let lang = 'zh';
@@ -403,7 +403,7 @@ function renderInstall() {
     ? INSTALL.scoop.map(cmdRow).join('') + `<p class="inst-note">${esc(t('instScoopNote'))}</p><p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}<p class="cmd-label">${esc(t('instNoScoop'))}</p>${cmdRow('irm get.scoop.sh | iex')}`
     : instKind === 'ps'
       ? cmdRow(INSTALL.ps[0]) + steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])
-      : `<a class="btn btn-primary" href="${REPO}/releases/download/v1.1.0/codeusagemonit-1.1.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>` + steps(['instZip1', 'instZip2', 'instZip3']);
+      : `<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>` + steps(['instZip1', 'instZip2', 'instZip3']);
   const el = $('inst-body'); el.innerHTML = html; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   document.querySelectorAll('[data-inst]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.inst === instKind)));
 }
@@ -661,7 +661,7 @@ function costLines() {
   return lines;
 }
 const COMMANDS = {
-  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.1 · ${stamp()} · 缓存 · 2 分钟前 · 价目 ${$('price-date').textContent}`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
+  status: { cmd: 'codeusage status', out: () => [bold('codeusagemonit') + dim(` V1.2 · ${stamp()} · 缓存 · 2 分钟前 · 价目 ${$('price-date').textContent}`), '', ...quotaLines('codex', 'Pro 20x'), '', ...quotaLines('claude', '演示账户')] },
   cost: { cmd: 'codeusage cost --days 7', out: costLines },
   thirdparty: { cmd: 'codeusage thirdparty', out: () => [bold('第三方 API 用量') + dim('（本机日志；服务商的周/月限额无法得知）'), '',
     `<span style="color:${P.claude.c};font-weight:600">示例中转 A</span>` + col('  使用中', '#5CC8E0') + '  ' + dim('Claude Code · relay-a.example.com'),
