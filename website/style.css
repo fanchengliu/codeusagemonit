@@ -508,18 +508,10 @@ button.fig[aria-pressed="true"]::after { transform: scaleX(1); }
 .inst-steps { display: grid; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; counter-reset: s; }
 .inst-steps li { position: relative; padding-left: 30px; color: var(--ink-2); font-size: 14.5px; line-height: 1.7; counter-increment: s; }
 .inst-steps li::before { content: counter(s); position: absolute; left: 0; top: 2px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: var(--fill-3); color: var(--ink-2); font: 600 11px/1 var(--mono); }
-.usage { margin: 8px 8px 6px; padding: 16px 4px 6px; border-top: 1px solid var(--line); }
-.usage-kicker { margin: 0 8px 10px; color: var(--ink-2); font-size: 13px; font-weight: 650; letter-spacing: .04em; }
-.cmd-list { display: grid; gap: 8px; }
-.cmd-card { display: flex; align-items: center; gap: 8px; padding: 12px 8px 12px 14px; border-radius: 14px; border: 1px solid var(--line-2); background: var(--solid); text-align: left; cursor: pointer; transition: border-color .2s, background .2s, box-shadow .2s; }
-.cmd-card:hover { border-color: var(--line-3); background: var(--fill-2); }
-.cmd-card[aria-selected="true"] { border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 9%, var(--solid)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent); }
-.cmd-card-text { flex: 1; min-width: 0; }
-.cmd-card code { display: block; font-size: 15px; font-weight: 600; line-height: 1.35; color: var(--ink); letter-spacing: -.01em; }
-.cmd-card code .pr { color: var(--accent); user-select: none; }
-.cmd-card[aria-selected="true"] code { color: var(--accent); }
-.cmd-card span { display: block; margin-top: 3px; color: var(--ink-3); font-size: 13.5px; line-height: 1.45; }
-.cmd-card .copy-btn { flex: none; }
+.cmd-use { flex-wrap: wrap; cursor: pointer; transition: border-color .2s, background .2s, box-shadow .2s; }
+.cmd-use:hover { border-color: var(--line-3); }
+.cmd-use[aria-pressed="true"] { border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 9%, var(--bg-2)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent); }
+.cmd-use .cmd-desc { flex: 1 0 100%; margin: -2px 8px 8px; color: var(--ink-3); font-size: 13.5px; line-height: 1.45; }
 .term { position: relative; border-radius: 14px; overflow: hidden; background: #0C0C0C; border: 1px solid rgba(255, 255, 255, .1); box-shadow: var(--shadow-app); }
 .term-bar { display: flex; align-items: center; height: 40px; background: #1B1B1D; border-bottom: 1px solid rgba(255, 255, 255, .06); }
 .term-tab { display: flex; align-items: center; gap: 8px; height: 100%; padding: 0 16px; background: #0C0C0C; color: #D6D6D6; font-size: 12.5px; }

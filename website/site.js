@@ -63,7 +63,8 @@ Object.assign(zh, {
   vLarge: '完整的额度窗口与节奏估算，加上本机用量：时间段、费用、Token、请求、速度和可以点的柱状图。',
   vFull: '所有平台的卡片、每个平台的详情页、第三方中转站页和设置。拖动边缘可以随意调整大小。',
   vFullDim: '默认 420 × 790，可调整',
-  deckHint: '点一张卡片，放大看看', cmdUsage: '常用命令',
+  deckHint: '点一张卡片，放大看看',
+  cmdStatus: '缓存里的额度与用量，不联网', cmdCost: '每天的费用与 Token，以及各工具的速度', cmdThird: '第三方接口的用量与速度',
   viewerPrev: '上一张', viewerNext: '下一张', viewerClose: '关闭',
   pgTop: '首页', pgProviders: '平台', pgBoard: '额度与用量', pgPricing: '计价', pgSizes: '尺寸', pgInstall: '安装', pgPrivacy: '隐私', pgFaq: '问题', pgDownload: '下载',
   themeLight: '浅色', themeDark: '深色', themeSystem: '跟随系统',
@@ -92,10 +93,10 @@ const en = {
   speedTitle: 'Real output speed', speedSub: 'Output tokens ÷ the whole request time, including time to first token and relay latency, measured per tool.',
   relayTitle: 'Relays add up too', relaySub: 'Switch providers with CC Switch as often as you like; every call is still attributed to its endpoint.', relayOfficial: 'Official', relayA: 'Relay A', relayB: 'Relay B',
   eySizes: 'Sizes', sA: 'Four sizes.', sB: 'One window.', sLead: 'Right-click to switch between small, medium, large and full. Compact sizes sit on the desktop layer, out of your way; every size can be resized.',
-  sFull: 'Full', sLarge: 'Large', sMedium: 'Medium', sSmall: 'Small', deckHint: 'Click a card to take a closer look', cmdUsage: 'Common commands',
+  sFull: 'Full', sLarge: 'Large', sMedium: 'Medium', sSmall: 'Small', deckHint: 'Click a card to take a closer look',
   eyInstall: 'Install & CLI', cA: 'One command to install,', cB: 'the same numbers in your terminal',
   cLead: 'Install with Scoop or a PowerShell one-liner; it adds itself to PATH and the Start menu. The bundled codeusage command shares the app’s cache and settings, meters are 24 cells here too, and --json feeds scripts or a status bar.',
-  recommended: 'Recommended', instZip: 'Manual download', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command',
+  recommended: 'Recommended', instZip: 'Manual download', instCli: 'Commands', cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints', copy: 'Copy command',
   eyPrivacy: 'Privacy', vA: 'Your data stays', vB: 'on your PC',
   v1t: 'Numbers only', v1: 'Only tokens, request counts, durations and model names go into a local hourly index. No conversation content.',
   v2t: 'Sign-ins stay put', v2: 'Each tool’s login tokens stay in its own folder. They are read, never copied.',
@@ -149,10 +150,10 @@ const ja = {
   speedTitle: '実際の出力速度', speedSub: '出力トークン ÷ リクエスト全体の所要時間。最初のトークンまでの待ち時間や中継の遅延も含み、ツールごとに計算します。',
   relayTitle: '中継サービスも正確に', relaySub: 'CC Switch で接続先を切り替えても、呼び出しは接続先ごとに集計されます。', relayOfficial: '公式', relayA: '中継 A', relayB: '中継 B',
   eySizes: 'サイズ', sA: '4 つのサイズ', sB: 'ひとつのウィンドウ', sLead: '右クリックで小・中・大・全体を切り替え。コンパクトなサイズはデスクトップ層に置かれ、作業の邪魔をしません。どのサイズもサイズ変更できます。',
-  sFull: '全体', sLarge: '大', sMedium: '中', sSmall: '小', deckHint: 'カードをクリックして拡大表示', cmdUsage: 'よく使うコマンド',
+  sFull: '全体', sLarge: '大', sMedium: '中', sSmall: '小', deckHint: 'カードをクリックして拡大表示',
   eyInstall: 'インストールと CLI', cA: '1 行でインストール', cB: 'ターミナルでも同じデータを',
   cLead: 'Scoop か PowerShell の 1 行でインストールでき、PATH とスタートメニューに自動で登録されます。同梱の codeusage コマンドはアプリとキャッシュ・設定を共有。メーターはここでも 24 マスで、--json を付ければスクリプトやステータスバーに渡せます。',
-  recommended: 'おすすめ', instZip: '手動ダウンロード', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー',
+  recommended: 'おすすめ', instZip: '手動ダウンロード', instCli: 'コマンド', cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度', copy: 'コマンドをコピー',
   eyPrivacy: 'プライバシー', vA: 'データは', vB: 'あなたの PC に',
   v1t: '数値だけ', v1: 'トークン数、リクエスト数、所要時間、モデル名だけをローカルの時間別インデックスに記録。会話内容は保存しません。',
   v2t: 'ログインはそのまま', v2: '各ツールのログイントークンは元のフォルダーに残ります。読み取るだけで、コピーしません。',
@@ -401,15 +402,25 @@ function renderQuick() {
 }
 $('quick').addEventListener('click', e => { const b = e.target.closest('[data-quick]'); if (b) { quickKind = b.dataset.quick; renderQuick(); } });
 let instKind = 'scoop';
+const USAGE = [
+  { id: 'status', cmd: 'codeusage status', desc: 'cmdStatus' },
+  { id: 'cost', cmd: 'codeusage cost --days 7', desc: 'cmdCost' },
+  { id: 'thirdparty', cmd: 'codeusage thirdparty', desc: 'cmdThird' }
+];
+function usageRows() {
+  return USAGE.map(u => `<div class="cmd cmd-use" data-cmd="${u.id}" role="button" tabindex="0" aria-pressed="${u.id === termCmd}"><code><span class="pr">&gt; </span>${esc(u.cmd)}</code><button type="button" class="copy-btn" data-copy="${esc(u.cmd)}" aria-label="${t('copyLabel')}" title="${t('copyLabel')}">${COPY_ICON}</button><p class="cmd-desc">${esc(t(u.desc))}</p></div>`).join('');
+}
 function renderInstall() {
   const steps = keys => `<ol class="inst-steps">${keys.map(k => `<li>${esc(t(k))}</li>`).join('')}</ol>`;
   const html = instKind === 'scoop'
     ? INSTALL.scoop.map(cmdRow).join('') + `<p class="inst-note">${esc(t('instScoopNote'))}</p><p class="cmd-label">${esc(t('instUpdate'))}</p>${cmdRow('scoop update codeusagemonit')}<p class="cmd-label">${esc(t('instNoScoop'))}</p>${cmdRow('irm get.scoop.sh | iex')}`
     : instKind === 'ps'
       ? cmdRow(INSTALL.ps[0]) + steps(['instPs1', 'instPs2', 'instPs3', 'instPs4'])
-      : `<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>`
-        + cmdRow(REPO + '/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip')
-        + steps(['instZip1', 'instZip2', 'instZip3']);
+      : instKind === 'zip'
+        ? `<a class="btn btn-primary" href="${REPO}/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip"><svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(t('instZipBtn'))}</a>`
+          + cmdRow(REPO + '/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip')
+          + steps(['instZip1', 'instZip2', 'instZip3'])
+        : usageRows();
   const el = $('inst-body'); el.innerHTML = html; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   document.querySelectorAll('[data-inst]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.inst === instKind)));
 }
@@ -856,16 +867,20 @@ async function runTerm() {
   for (const line of c.out()) { if (run !== termRun) return; html += line + '\n'; termBody.innerHTML = html + '<span class="caret"></span>'; await sleep(55); }
   termBody.innerHTML = html + prompt + '<span class="caret"></span>';
 }
-function selectCmd(card) {
-  termCmd = card.dataset.cmd;
-  document.querySelectorAll('#cmd-list .cmd-card').forEach(x => x.setAttribute('aria-selected', String(x === card)));
+function selectCmd(id) {
+  termCmd = id;
+  document.querySelectorAll('.cmd-use').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.cmd === id)));
   runTerm();
 }
-$('cmd-list').addEventListener('click', e => { if (e.target.closest('[data-copy]')) return; const card = e.target.closest('.cmd-card'); if (card) selectCmd(card); });
-$('cmd-list').addEventListener('keydown', e => {
-  const card = e.target.closest('.cmd-card');
-  if (!card || e.target.closest('[data-copy]') || (e.key !== 'Enter' && e.key !== ' ')) return;
-  e.preventDefault(); selectCmd(card);
+$('inst-body').addEventListener('click', e => {
+  if (e.target.closest('[data-copy]')) return;
+  const row = e.target.closest('.cmd-use');
+  if (row) selectCmd(row.dataset.cmd);
+});
+$('inst-body').addEventListener('keydown', e => {
+  const row = e.target.closest('.cmd-use');
+  if (!row || e.target.closest('[data-copy]') || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); selectCmd(row.dataset.cmd);
 });
 new IntersectionObserver(([entry], obs) => { if (entry.isIntersecting && !termSeen) { termSeen = true; runTerm(); obs.disconnect(); } }, { threshold: .35 }).observe(termBody);
 $('copy-cmd').addEventListener('click', e => copyText(COMMANDS[termCmd].cmd, e.currentTarget, () => t('copy')));
@@ -914,7 +929,6 @@ function setLang(value) {
   paintPagerLabels(); renderProviders(); renderDash(); renderQuick(); renderInstall();
   if (prices.length) { renderVendors(); renderPrices(); }
   $('viewer-prev').ariaLabel = t('viewerPrev'); $('viewer-next').ariaLabel = t('viewerNext'); $('viewer-close').ariaLabel = t('viewerClose');
-  document.querySelectorAll('#cmd-list .copy-btn').forEach(btn => { btn.title = btn.ariaLabel = t('copyLabel'); });
   if (!viewer.hidden) fillViewer(vIndex);
   try { localStorage.setItem('codeusagemonit-language', lang); } catch { }
 }

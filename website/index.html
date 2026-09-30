@@ -251,25 +251,9 @@
           <button type="button" role="tab" data-inst="scoop" aria-selected="true">Scoop <em data-i18n="recommended">推荐</em></button>
           <button type="button" role="tab" data-inst="ps" aria-selected="false">PowerShell</button>
           <button type="button" role="tab" data-inst="zip" aria-selected="false" data-i18n="instZip">手动下载</button>
+          <button type="button" role="tab" data-inst="cli" aria-selected="false" data-i18n="instCli">使用命令</button>
         </div>
         <div class="inst-body" id="inst-body" role="tabpanel"></div>
-        <div class="usage">
-          <p class="usage-kicker" data-i18n="cmdUsage">常用命令</p>
-          <div class="cmd-list" role="tablist" aria-label="Commands" id="cmd-list">
-            <div class="cmd-card" role="tab" tabindex="0" data-cmd="status" aria-selected="true">
-              <div class="cmd-card-text"><code><span class="pr">&gt;</span> codeusage status</code><span data-i18n="cmdStatus">缓存里的额度与用量，不联网</span></div>
-              <button type="button" class="copy-btn" data-copy="codeusage status" aria-label="复制" title="复制"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11 3.2V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5.5A1.5 1.5 0 0 0 4 10h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
-            </div>
-            <div class="cmd-card" role="tab" tabindex="0" data-cmd="cost" aria-selected="false">
-              <div class="cmd-card-text"><code><span class="pr">&gt;</span> codeusage cost --days 7</code><span data-i18n="cmdCost">每天的费用与 Token，以及各工具的速度</span></div>
-              <button type="button" class="copy-btn" data-copy="codeusage cost --days 7" aria-label="复制" title="复制"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11 3.2V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5.5A1.5 1.5 0 0 0 4 10h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
-            </div>
-            <div class="cmd-card" role="tab" tabindex="0" data-cmd="thirdparty" aria-selected="false">
-              <div class="cmd-card-text"><code><span class="pr">&gt;</span> codeusage thirdparty</code><span data-i18n="cmdThird">第三方接口的用量与速度</span></div>
-              <button type="button" class="copy-btn" data-copy="codeusage thirdparty" aria-label="复制" title="复制"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11 3.2V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5.5A1.5 1.5 0 0 0 4 10h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
-            </div>
-          </div>
-        </div>
       </div>
       <div class="term reveal">
         <div class="term-bar">
