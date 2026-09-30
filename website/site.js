@@ -1,32 +1,71 @@
 'use strict';
-const layouts = {
-  small: {src: 'assets/small.png', alt: 'codeusagemonit 小尺寸原生界面，演示数据', description: '一个大数字，一条额度条。桌面一角就够用。'},
-  medium: {src: 'assets/medium.png', alt: 'codeusagemonit 中尺寸原生双栏界面，演示数据', description: '左侧看剩余，右侧看窗口。横向双栏，把常用信息放在一起。'},
-  full: {src: 'assets/overview.png', alt: 'codeusagemonit 完整概览原生界面，演示数据', description: '各平台集中展示，费用、Token 和请求记录一览无余。'}
-};
-const tabs = [...document.querySelectorAll('[data-layout]')];
-function selectLayout(tab) {
-  const key = tab.dataset.layout, data = layouts[key];
-  if (!data) return;
-  tabs.forEach(item => {const selected = item === tab; item.setAttribute('aria-selected', String(selected)); item.tabIndex = selected ? 0 : -1;});
-  const panel = document.getElementById('layout-panel'); panel.dataset.layout = key; panel.setAttribute('aria-labelledby', tab.id);
-  const img = document.getElementById('layout-image'); img.src = data.src; img.alt = data.alt;
-  document.getElementById('layout-description').textContent = data.description;
-}
-tabs.forEach((tab, index) => {
-  tab.addEventListener('click', () => selectLayout(tab));
-  tab.addEventListener('keydown', event => {
-    let target;
-    if (event.key === 'ArrowRight') target = (index + 1) % tabs.length;
-    else if (event.key === 'ArrowLeft') target = (index + tabs.length - 1) % tabs.length;
-    else if (event.key === 'Home') target = 0;
-    else if (event.key === 'End') target = tabs.length - 1;
-    if (target === undefined) return;
-    event.preventDefault(); selectLayout(tabs[target]); tabs[target].focus();
-  });
+const zh = Object.fromEntries([...document.querySelectorAll('[data-i18n]')].map(el => [el.dataset.i18n, el.textContent]));
+Object.assign(zh, {
+  appearance:'外观',sizeLabel:'面板尺寸',blue:'蓝色',teal:'青绿',violet:'紫色',orange:'橙色',
+  smallAlt:'codeusagemonit 小尺寸真实界面，演示数据',mediumAlt:'codeusagemonit 中尺寸真实界面，演示数据',largeAlt:'codeusagemonit 大尺寸真实界面，演示数据',fullAlt:'codeusagemonit 完整真实界面，演示数据',
+  layout_all:'从小到大，选择适合你的视图。',layout_small:'一个大数字，一条额度条。抬眼就知道还剩多少。',layout_medium:'横向双栏，主额度与多个周期并排查看。',layout_large:'额度、时间筛选与用量图表，一个平台的详细视图。',layout_full:'全平台概览与账户卡片，把完整信息放在一起。',
+  desc_status:'# 查看本地缓存，不发起网络请求',desc_usage:'# 实时查询 Codex 的账户额度',desc_cost:'# 重新扫描近 30 天本机记录，输出 JSON',copied:'命令已复制',copyFailed:'请手动选中上方命令复制',custom:'自定义接口',
+  title:'codeusagemonit — Windows AI 用量监控',meta:'在 Windows 桌面掌握 Codex、Claude、Cursor 等工具的额度、Token 和用量趋势。四种尺寸，原生体验。'
 });
-document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
-  const status = document.querySelector('.copy-status');
-  try {await navigator.clipboard.writeText(button.dataset.copy); status.textContent = '命令已复制';}
-  catch {status.textContent = '请复制：' + button.dataset.copy;}
-}));
+const en = {
+  skip:'Skip to content',platforms:'Providers',features:'Features',views:'Views',appearance:'Appearance',theme:'Appearance',system:'System',light:'Light',dark:'Dark',accent:'Accent color',blue:'Blue',teal:'Teal',violet:'Violet',orange:'Orange',
+  windows:'Made for Windows',heroLine1:'Keep coding.',heroLine2:'Know your limits.',heroCopy:'Codex, Claude, Cursor. The AI tools you use, together in one tray icon.',download:'Download for Windows',source:'View on GitHub',version:'v1.1.0 · Windows x64 · Ready to use',heroNote:'Your tools. One clear view.',demo:'Actual app · Demo data',
+  providerKicker:'THE TOOLS YOU KNOW',providerTitle:'All in their place.',providerCopy:'Choose a provider to learn how to connect.',featureKicker:'LESS SWITCHING. MORE FOCUS.',featureTitle:'Usage, in perspective.',quotaKicker:'LIMITS & RESETS',quotaTitle:'Know what is left. Before the next reset.',quotaCopy:'Remaining quota, reset countdowns and usage pace at a glance. Refresh each provider independently.',remaining:'Weekly remaining',onPace:'Comfortably on pace',resetDemo:'Resets in 3 days',illustrative:'Illustrative display',historyKicker:'LOCAL USAGE',historyTitle:'Your time. Your usage.',historyCopy:'Select a date range. See tokens, estimated costs, requests and output speed in one place.',tokens:'Token usage',past7:'Last 7 days',costNote:'Demo data · API-equivalent estimates, not subscription bills',privacyKicker:'LOCAL FIRST',privacyTitle:'Your work stays on your computer.',privacyCopy:'Local logs are processed locally. Manually entered keys are encrypted with Windows DPAPI. Account passwords are never stored.',privacyLink:'About your data',
+  layoutKicker:'FOUR SIZES. ONE FAMILIAR FEEL.',layoutTitle:'The right space. Just enough detail.',layoutCopy:'From a quiet corner to the full picture. Make room for the way you work.',sizeLabel:'Panel size',all:'All',small:'Small',medium:'Medium',large:'Large',full:'Full',layoutNote:'Every size can be moved, resized and switched between providers. Screenshots show the Chinese 1.1.0 demo.',layout_all:'Small to full. Choose the view that fits.',layout_small:'One big number and one quota bar. A glance is all it takes.',layout_medium:'Two columns. Your main quota and usage windows, side by side.',layout_large:'Quota, date filters and usage charts for a single provider.',layout_full:'A complete overview, with usage charts and provider cards together.',
+  cliKicker:'AT HOME IN YOUR TERMINAL',cliTitle:'One command. A clear answer.',cliCopy:'The bundled codeusage CLI checks quotas, reads local usage, and exports JSON for your own workflows.',cmdStatus:'Cached status',cmdUsage:'Live quota',cmdCost:'Local costs',copy:'Copy command',cliFoot:'Native engine. No Node.js required.',desc_status:'# Read the local cache without a network request',desc_usage:'# Fetch the current Codex account quota',desc_cost:'# Rescan 30 days of local logs and export JSON',copied:'Command copied',copyFailed:'Select and copy the command above',
+  more:'More.',faqInstall:'Install & updates',faqInstallBefore:'Get the latest version from ',faqInstallAfter:'.',faqLogin:'Do I need to sign in to every account again?',faqLoginAnswer:'Most providers reuse an existing CLI or editor session. Connect providers that require keys from their card or from Settings.',faqData:'Do all providers show the same data?',faqDataAnswer:'The available APIs and local logs differ between providers.',faqNode:'How do I install it? Do I need Node.js?',faqNodeAnswer:'Download the Windows x64 ZIP, extract the entire archive into a writable folder, and run codeusagemonit.exe. Version 1.1.0 has its own native statistics engine and does not depend on Node.js.',faqPrivacy:'Will it collect or upload my private data?',faqPrivacyAnswer:'It reuses existing local provider sessions, OAuth, device flows, API keys and local files. It does not store passwords. Cursor Cookie headers come from the local editor session; browser cookies are not read. Quota checks send necessary authentication requests only to the relevant provider or your configured custom endpoint.',closingTitle:'Focus on code. Keep the rest in sight.',feedback:'Feedback',credits:'Inspiration',independent:'An independent Windows project. Not an official CodexBar release.',custom:'Custom provider',smallAlt:'Actual small panel with demo data',mediumAlt:'Actual medium panel with demo data',largeAlt:'Actual large panel with demo data',fullAlt:'Actual full panel with demo data',title:'codeusagemonit — AI usage for Windows',meta:'Track Codex, Claude, Cursor and more on your Windows desktop. Quotas, tokens and usage trends in four native views.'
+};
+const ja = {
+  skip:'本文へ移動',platforms:'サービス',features:'機能',views:'表示',appearance:'外観',theme:'表示モード',system:'システム設定',light:'ライト',dark:'ダーク',accent:'アクセントカラー',blue:'ブルー',teal:'ティール',violet:'パープル',orange:'オレンジ',
+  windows:'Windows のために',heroLine1:'コードに集中。',heroLine2:'残量は、ひと目で。',heroCopy:'Codex、Claude、Cursor。いつもの AI ツールを、ひとつのトレイアイコンに。',download:'Windows 版をダウンロード',source:'GitHub で見る',version:'v1.1.0 · Windows x64 · すぐに使える',heroNote:'いつものツールを、一画面に。',demo:'実際のアプリ画面 · デモデータ',
+  providerKicker:'いつものツールを',providerTitle:'それぞれの場所へ。',providerCopy:'サービスを選ぶと、接続方法を確認できます。',featureKicker:'画面の切り替えを減らし、もっと集中',featureTitle:'使用状況を、ひと目で。',quotaKicker:'利用枠とリセット',quotaTitle:'次のリセットまで、残量を把握。',quotaCopy:'残りの利用枠、リセット時刻、使用ペースをまとめて確認。サービスごとに更新できます。',remaining:'週間の残り',onPace:'余裕のあるペース',resetDemo:'3 日後にリセット',illustrative:'表示例',historyKicker:'ローカル使用量',historyTitle:'選んだ期間を、わかりやすく。',historyCopy:'カレンダーで期間を指定。トークン、推定費用、リクエスト、出力速度をまとめて表示します。',tokens:'トークン使用量',past7:'過去 7 日間',costNote:'デモデータ · API 相当の推定額であり、サブスクリプションの請求額ではありません',privacyKicker:'ローカル優先',privacyTitle:'あなたの作業は、あなたの PC に。',privacyCopy:'ローカルログは PC 内で集計。手動入力したキーは Windows DPAPI で暗号化し、パスワードは保存しません。',privacyLink:'データの扱いについて',
+  layoutKicker:'4 つのサイズ。変わらない使いやすさ。',layoutTitle:'ちょうどいい広さ。必要な情報。',layoutCopy:'デスクトップの片隅から全体表示まで。作業スタイルに合わせて選べます。',sizeLabel:'パネルサイズ',all:'すべて',small:'小',medium:'中',large:'大',full:'全体',layoutNote:'すべてのサイズで移動、サイズ変更、サービス切り替えが可能。画像は 1.1.0 中国語版のデモです。',layout_all:'小から全体まで、自分に合う表示を。',layout_small:'大きな数字と残量バー。ひと目で残りがわかります。',layout_medium:'2 列表示で、主な利用枠と各期間の残量を並べて確認。',layout_large:'1 つのサービスの利用枠、期間選択、グラフを詳しく。',layout_full:'すべてのサービスの概要とアカウントカードをまとめて表示。',
+  cliKicker:'ターミナルでも、いつものように',cliTitle:'ひとつのコマンドで、把握。',cliCopy:'同梱の codeusage CLI で利用枠やローカル統計を確認。JSON を自分のワークフローに組み込めます。',cmdStatus:'キャッシュ',cmdUsage:'現在の利用枠',cmdCost:'費用の統計',copy:'コマンドをコピー',cliFoot:'ネイティブエンジン。Node.js は不要。',desc_status:'# ネットワークを使わずローカルキャッシュを表示',desc_usage:'# Codex の現在の利用枠を取得',desc_cost:'# 過去 30 日のローカルログを再集計し JSON 出力',copied:'コピーしました',copyFailed:'上のコマンドを選択してコピーしてください',
+  more:'詳しく。',faqInstall:'インストールと更新',faqInstallBefore:'最新版は ',faqInstallAfter:' から入手できます。',faqLogin:'すべてのアカウントに再ログインが必要ですか？',faqLoginAnswer:'多くのサービスは既存の CLI やエディターのログイン状態を利用します。キーが必要な場合は、カードまたは設定から接続できます。',faqData:'どのサービスでも同じデータが表示されますか？',faqDataAnswer:'利用できる API やローカルログは、サービスによって異なります。',faqNode:'インストール方法は？Node.js は必要ですか？',faqNodeAnswer:'Windows x64 の ZIP をダウンロードし、書き込み可能なフォルダーにすべて展開して codeusagemonit.exe を実行します。1.1.0 は独自のネイティブ集計エンジンを使用し、Node.js に依存しません。',faqPrivacy:'個人データを収集・アップロードしますか？',faqPrivacyAnswer:'既存のローカルセッション、OAuth、デバイスフロー、API キー、ローカルファイルを利用し、パスワードは保存しません。Cursor の Cookie ヘッダーはローカルのエディターセッションから生成し、ブラウザーの Cookie は読みません。利用枠の照会では、必要な認証リクエストのみを該当サービスまたは設定したカスタム接続先に送信します。',closingTitle:'コードに集中。残りは、ひと目で。',feedback:'フィードバック',credits:'インスピレーション',independent:'独立した Windows プロジェクトです。CodexBar の公式版ではありません。',custom:'カスタム接続',smallAlt:'小サイズの実際のアプリ画面、デモデータ',mediumAlt:'中サイズの実際のアプリ画面、デモデータ',largeAlt:'大サイズの実際のアプリ画面、デモデータ',fullAlt:'全体表示の実際のアプリ画面、デモデータ',title:'codeusagemonit — Windows の AI 使用量モニター',meta:'Windows で Codex、Claude、Cursor などの利用枠・トークン・使用量を確認。4 つのネイティブ表示。'
+};
+Object.assign(zh,{demoLight:'浅色配色示意 · 演示数据',layoutNoteLight:'所有尺寸均可拖动、缩放、切换平台。浅色为官网配色示意，1.1.0 原版界面见黑夜模式。',lightAlt:'浅色配色示意，非 1.1.0 原版主题'});
+Object.assign(en,{demoLight:'Light palette concept · Demo data',layoutNoteLight:'All sizes support moving, resizing and switching providers. The light palette is a website concept; dark mode shows the original 1.1.0 UI.',lightAlt:'Light palette concept, not a native 1.1.0 theme'});
+Object.assign(ja,{demoLight:'ライト配色イメージ · デモデータ',layoutNoteLight:'全サイズで移動・サイズ変更・サービス切り替えが可能。ライト配色はサイト用イメージです。1.1.0 の実画面はダーク表示で確認できます。',lightAlt:'ライト配色イメージ。1.1.0 の実際のテーマではありません'});
+const translations = {zh,en,ja};
+let language = 'zh', selectedLayout = 'all', selectedCommand = 'status';
+const commands = {status:'.\\codeusage.exe status --json',usage:'.\\codeusage.exe usage -p codex',cost:'.\\codeusage.exe cost --days 30 --refresh --json'};
+const root = document.documentElement;
+function text(key){return translations[language][key] ?? zh[key] ?? key;}
+function savePreferences(){try{localStorage.setItem('codeusagemonit-appearance',JSON.stringify({theme:root.dataset.theme,accent:root.dataset.accent}));}catch{}}
+function applyThemeAssets(){
+ const light=root.dataset.resolvedTheme==='light';
+ document.querySelector('.hero-art').src='assets/hero-studio'+(light?'-light':'')+'.jpg';
+ document.querySelector('.sizes-art').src='assets/sizes-studio'+(light?'':'-dark')+'.jpg';
+ document.querySelectorAll('img[data-i18n-alt]').forEach(img=>{const key=img.dataset.i18nAlt.replace('Alt',''),name=key==='full'?'overview':key;img.src='assets/'+name+(light?'-light.jpg':'.png');img.alt=light?text(key)+' · '+text('lightAlt'):text(img.dataset.i18nAlt);});
+ document.querySelector('.hero-caption').textContent=text(light?'demoLight':'demo');
+ document.querySelector('[data-i18n="layoutNote"]').textContent=text(light?'layoutNoteLight':'layoutNote');
+}
+function resolveTheme(){root.dataset.resolvedTheme=root.dataset.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):root.dataset.theme;document.querySelector('meta[name="theme-color"]').content=root.dataset.resolvedTheme==='dark'?'#0c0d0f':'#f5f5f7';applyThemeAssets();}
+document.getElementById('theme').value=root.dataset.theme;
+document.getElementById('theme').addEventListener('change',e=>{root.dataset.theme=e.target.value;resolveTheme();savePreferences();});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',resolveTheme);
+document.querySelectorAll('button[data-accent]').forEach(button=>{button.setAttribute('aria-pressed',String(button.dataset.accent===root.dataset.accent));button.addEventListener('click',()=>{root.dataset.accent=button.dataset.accent;document.querySelectorAll('button[data-accent]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));savePreferences();});});
+const prefs=document.querySelector('.preferences');
+document.addEventListener('click',e=>{if(!prefs.contains(e.target))prefs.open=false;});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&prefs.open){prefs.open=false;prefs.querySelector('summary').focus();}});
+function renderProviders(){
+ const grid=document.getElementById('provider-grid');grid.replaceChildren();
+ for(const provider of window.PROVIDERS){const a=document.createElement('a');a.className='provider';a.href=provider.docsUrl;a.target='_blank';a.rel='noopener';a.title=provider.capabilities[language];
+ const icon=document.createElement(provider.id==='custom'?'span':'img');if(provider.id==='custom'){icon.className='custom-icon';icon.textContent='+';icon.setAttribute('aria-hidden','true');}else{icon.src='assets/icons/'+provider.id+'.svg';icon.alt='';icon.width=34;icon.height=34;}a.append(icon);
+ const labels=document.createElement('span'),name=document.createElement('strong'),auth=document.createElement('small');name.textContent=provider.id==='custom'?text('custom'):provider.name;auth.textContent=provider.authLabel[language];labels.append(name,auth);a.append(labels);grid.append(a);}
+}
+function updateDynamic(){document.getElementById('layout-description').textContent=text('layout_'+selectedLayout);document.getElementById('command-description').textContent=text('desc_'+selectedCommand);document.getElementById('command-text').textContent=commands[selectedCommand];document.querySelector('.copy-status').textContent='';}
+function setLanguage(value){language=translations[value]?value:'zh';root.lang={zh:'zh-CN',en:'en',ja:'ja'}[language];document.getElementById('language').value=language;
+ document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=text(el.dataset.i18n));document.querySelectorAll('[data-i18n-alt]').forEach(el=>el.alt=text(el.dataset.i18nAlt));document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',text(el.dataset.i18nAria)));
+ document.title=text('title');document.querySelector('meta[name="description"]').content=text('meta');document.querySelector('meta[property="og:title"]').content=text('title');document.querySelector('meta[property="og:description"]').content=text('meta');renderProviders();updateDynamic();applyThemeAssets();try{localStorage.setItem('codeusagemonit-language',language);}catch{}
+}
+document.getElementById('language').addEventListener('change',e=>setLanguage(e.target.value));
+function wireTabs(selector,select){const tabs=[...document.querySelectorAll(selector)];tabs.forEach((tab,index)=>{function activate(){tabs.forEach(t=>{t.setAttribute('aria-selected',String(t===tab));t.tabIndex=t===tab?0:-1;});select(tab);}tab.addEventListener('click',activate);tab.addEventListener('keydown',e=>{let next;if(e.key==='ArrowRight')next=(index+1)%tabs.length;else if(e.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;else if(e.key==='Home')next=0;else if(e.key==='End')next=tabs.length-1;if(next!==undefined){e.preventDefault();tabs[next].click();tabs[next].focus();}});});}
+wireTabs('button[data-layout]',tab=>{selectedLayout=tab.dataset.layout;const panel=document.getElementById('layout-panel');panel.dataset.layout=selectedLayout;panel.setAttribute('aria-labelledby',tab.id);document.querySelectorAll('[data-size]').forEach(el=>el.setAttribute('aria-hidden',String(selectedLayout!=='all'&&el.dataset.size!==selectedLayout)));updateDynamic();});
+wireTabs('button[data-command]',tab=>{selectedCommand=tab.dataset.command;document.getElementById('command-panel').setAttribute('aria-labelledby',tab.id);updateDynamic();});
+document.getElementById('copy-command').addEventListener('click',async()=>{const status=document.querySelector('.copy-status');try{await navigator.clipboard.writeText(commands[selectedCommand]);status.textContent=text('copied');}catch{status.textContent=text('copyFailed');}});
+const hero=document.getElementById('hero-stage'),motion=matchMedia('(prefers-reduced-motion: reduce)');
+hero.addEventListener('pointermove',e=>{if(motion.matches||e.pointerType==='touch')return;const box=hero.getBoundingClientRect(),x=(e.clientX-box.left)/box.width,y=(e.clientY-box.top)/box.height;hero.style.setProperty('--rx',(y-.5)*-4+'deg');hero.style.setProperty('--ry',(x-.5)*5+'deg');hero.style.setProperty('--mx',x*100+'%');hero.style.setProperty('--my',y*100+'%');});
+hero.addEventListener('pointerleave',()=>{hero.style.setProperty('--rx','0deg');hero.style.setProperty('--ry','0deg');});
+let savedLanguage;try{savedLanguage=localStorage.getItem('codeusagemonit-language');}catch{}
+setLanguage(savedLanguage||(/^ja/i.test(navigator.language)?'ja':/^en/i.test(navigator.language)?'en':'zh'));resolveTheme();
