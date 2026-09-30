@@ -1,5 +1,7 @@
 <div align="center">
 
+**中文** · [English](./README.en.md)
+
 <img src="./docs/favicon.svg" width="96" height="96" alt="codeusagemonit logo" />
 
 # codeusagemonit
@@ -71,7 +73,7 @@ codeusage status --json
 
 ### 方式一：安装程序（推荐）
 
-从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 **codeusagemonit-setup-1.2.0.exe**。可以选择安装目录和盘符，默认是 `%LOCALAPPDATA%\Programs\codeusagemonit`，不需要管理员权限。安装程序会创建开始菜单快捷方式，可选桌面快捷方式、登录时启动，以及把 `codeusage` 加入用户 PATH，并在“Windows 设置 → 应用”里注册卸载。卸载前会询问是否删除设置。再运行新的安装程序就是升级，`%LOCALAPPDATA%\codeusagemonit` 里的设置、密钥和缓存会保留。
+从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 **[codeusagemonit-setup-1.2.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe)**。可以选择安装目录和盘符，默认是 `%LOCALAPPDATA%\Programs\codeusagemonit`，不需要管理员权限。安装程序会创建开始菜单快捷方式，可选桌面快捷方式、登录时启动，以及把 `codeusage` 加入用户 PATH，并在“Windows 设置 → 应用”里注册卸载。卸载前会询问是否删除设置。再运行新的安装程序就是升级，`%LOCALAPPDATA%\codeusagemonit` 里的设置、密钥和缓存会保留。
 
 ### 方式二：Scoop（和 Homebrew 的 tap 一样）
 ```powershell
@@ -99,7 +101,7 @@ cd codeusagemonit
 .\source\Windows\build.ps1 -Installer
 ```
 
-不带参数时，构建在几秒内完成，并在根目录生成可执行程序。`-Installer` 还需要 [Inno Setup 6.3 或更新版本](https://jrsoftware.org/isdl.php)（简体中文语言文件已放在仓库里，不用再往 Inno Setup 的 Languages 目录里复制），会额外生成 `codeusagemonit-setup-<版本>.exe` 和免安装 zip。说明见 `source/Windows/installer/README.md`。
+不带参数时，构建在几秒内完成，并在根目录生成可执行程序。`-Installer` 还需要 [Inno Setup 6.3 或更新版本](https://jrsoftware.org/isdl.php)（简体中文语言文件已放在仓库里，不用再往 Inno Setup 的 Languages 目录里复制），会额外生成 `codeusagemonit-setup-<版本>.exe` 和免安装 zip。说明见 [source/Windows/installer/README.md](./source/Windows/installer/README.md)。
 
 ---
 
