@@ -11,10 +11,10 @@
 ## 1.1 output speed (t/s) per agent
 
 - `--self-test` **53/53** (new: Codex timing across two incremental reads — 20 s + 25 s, a 20-token reply not timed; Claude timing across reads, a fake `"uuid"`/`"timestamp"` inside tool-result text ignored, the same responses in a second file not timed again; Grok `apiDurationMs` with `modelCalls`, timing carried into daily rows and per-model rows; formatting and acceptance limits).
-- Feasibility on this machine's logs before implementing (last 30 days, token-weighted / median): [redacted], [redacted], [redacted] with a [redacted].
-- Engine vs Claude Code's own `cost-state` API time, per session: [redacted], [redacted], [redacted], [redacted], [redacted] t/s (the engine skips replies < 50 tokens). Two sessions differ for known reasons: one where short replies dominate ([redacted]), one whose `cost-state` covers only [redacted] of its output tokens.
-- Codex rule checked per response on one rollout: where the engine is longer than an `item_completed`-based estimate (e.g. [redacted]), the response streamed a tool call (patch) for [redacted] after its reasoning, which `item_completed` does not mark until the tool runs; the engine's response-item timestamps include it.
-- Production after upgrading (index version 4 rebuilt automatically, ~4 s): `codeusage cost --days 7` prints "[redacted]"; 30 days: [redacted] (older models, many via relay, were much slower), [redacted], Antigravity none (no durations in its records). Codex detail page (UI Automation): 输出速度 22.4 t/s; per model [redacted].
+- Feasibility was checked on local logs before implementing (token-weighted and median output speed per model, and median time to first token). Measured speeds from those logs are not written down here.
+- Engine vs Claude Code's own `cost-state` API time was compared per session (the engine skips replies < 50 tokens). Sessions differ for known reasons: short replies dominate the average, or `cost-state` covers only part of the output tokens.
+- Codex rule checked per response on one rollout: where the engine is longer than an `item_completed`-based estimate, the response streamed a tool call (patch) after its reasoning, which `item_completed` does not mark until the tool runs; the engine's response-item timestamps include it.
+- Production after upgrading (index version 4 rebuilt automatically): `codeusage cost --days 7` and a 30-day run print a per-agent t/s line. Older models, many via relay, were slower. Antigravity shows none (no durations in its records). The Codex detail page (UI Automation) shows 输出速度 and a per-model speed. Measured speeds from that run are not written down here.
 - Demo (`PrintWindow`): overview card footer "233.1M Token · 24.2 t/s"; Codex detail with the fourth figure, 费用 / Token / 速度 chart toggle ("最高 27.3 t/s"), model list speed; large size 速度 metric; third-party card "输出速度 71 t/s". Demo speeds are illustrative numbers.
 - Not verified: OpenCode timing (no local data); Kimi / Pi / Copilot / Antigravity records carry no durations, so no speed is shown for them.
 
@@ -25,15 +25,15 @@
 - Palette (demo, UI Automation, no mouse): settings → 背景颜色 opens the palette; preset 深海蓝 turns the panel and the settings window surface to exactly #0F1B2D (pixel read at 0 % transparency); typing #2a1218 in the hex field applies on focus change; Save writes `SurfaceColor: "#2A1218"` and the panel keeps it; a light colour (#B8C4D0) shows contrast 1.6 : 1 with the warning.
 - Not verified: dragging in the colour square and strips with a physical mouse (the mouse handlers use capture inside the popup; only keyboard-free UI Automation paths were exercised), and how a tinted surface looks over the live DWM blur at high transparency (`PrintWindow` does not capture the backdrop).
 
-Validated on Windows 11 Pro x64 ([redacted]), 2026-09-29 / 2026-09-30.
+Validated on Windows 11 Pro x64.
 
 ## 1.0 native usage engine, periods, interactive charts, background picture
 
 - Build: both executables compile with no errors or warnings; `--self-test` **49/49** (new or rewritten: history from hourly indexes, price lookup and tiers, Codex reader and fast tier, Claude de-duplication — larger copy wins, progress lines, missing id — third-party cost from the index, exact window, unpriced tokens, Grok / Kimi / Pi line parsers).
 - The package no longer contains `ccusage.exe` or CodexBar source; the upstream sources studied during development were moved out of `source/` into a local `reference/` folder that is not shipped. The only CodexBar files shipped are the provider logos in `icons/` (byte-identical to its `ProviderIcon-*.svg`, credited in `THIRD-PARTY-NOTICES.md`).
-- **Engine parity on real data** (this machine, 2026-08-31 … 2026-09-30, [redacted]): ccusage 20.0.26 was run once as an external oracle and compared per day and per agent. Token components (fresh input, output, cache read, cache write) are **identical on all 51**; cost identical on 50. The one difference is today's Codex `gpt-6.1-sol` ([redacted] here, $0 in ccusage 20.0.26, whose table has no price for it). Totals: Claude [redacted] / [redacted], Codex [redacted] / [redacted], Antigravity [redacted] / [redacted], ZCode [redacted] / [redacted], Grok [redacted] / [redacted]. A cold scan of all agents takes about 4 s.
+- **Engine parity on real data**: ccusage 20.0.26 was run once as an external oracle and compared per day and per agent. Token components (fresh input, output, cache read, cache write) were **identical on every compared agent-day**; cost matched on every day except one Codex model, `gpt-6.1-sol`, which ccusage 20.0.26's table does not price (it records $0). Dollar and token totals from that run are not written down here. A cold scan of all agents takes a few seconds.
 - UI (demo, UI Automation + `PrintWindow`): overview hero with period button, stacked chart and provider chips; card header (name, plan and refresh on one line; freshness and account right-aligned below); Codex detail usage block with period button, figures, composition, stacked model chart, model list and quota windows; clicking a bar pins its detail; 费用 / Token toggle; period picker (preset 当天 applied; calendar and hour grid; days outside the retained month disabled); background picture in full and medium sizes; settings 外观 card (transparency, picture, fill mode, dim); large compact size with period button and chart.
-- Production (real data, UI Automation, no mouse): after the upgrade the old indexes were rebuilt automatically and `history.json` switched to engine `native-1`; all 50 past agent-days equal the earlier values (only today's still-growing Claude total differs). Codex 当天 → 13 hourly bars (00:00–12:00), [redacted], [redacted] — identical to ccusage for that day; Codex 近 30 天 → 30 daily bars, [redacted]; overview 近 24 小时 → 25 hourly bars. Ranges were set back to 30 days afterwards.
+- Production (real data, UI Automation, no mouse): after the upgrade the old indexes were rebuilt automatically and `history.json` switched to engine `native-1`; past agent-days equal the earlier values (only the still-growing current day can differ). Codex 当天 shows hourly bars identical to ccusage for that day; Codex 近 30 天 shows one daily bar per day; overview 近 24 小时 shows hourly bars. Ranges were set back to 30 days afterwards. Dollar amounts, token totals and request counts from that run are not written down here.
 - Package: extracted zip passes `--self-test` 49/49, rebuilds from its own `source/Windows` (icons and `pricing.json` copied), starts and quits in `--demo`; no `data/`, `verification/`, `tools/` or `reference/`; no personal paths or account strings.
 - **Not verified**: Pi, GitHub Copilot CLI, OpenCode and Kimi local logs (none on this machine; parsers are covered by fixture tests only); picture tiling with very large images on low-memory systems.
 
@@ -64,8 +64,8 @@ Validated on Windows 11 Pro x64 ([redacted]), 2026-09-29 / 2026-09-30.
 ## 0.4 additions (third-party endpoints)
 
 - **37 self-tests passed**, including: Codex buckets carry provider/model and the subscription window excludes relays; Claude de-duplication by id + requestId and by id + timestamp when the request id is missing; `<synthetic>` entries skipped; TOML provider/profile/base_url lookup; host normalisation and key fingerprints; timeline attribution (before tracking → unattributed, official → skipped, relay → endpoint, missing request id → suspected relay).
-- Claude hourly index vs a fresh ccusage run: **identical on [redacted] with usage** (2026-08-31 … 2026-09-29), after adopting ccusage's timestamp fallback (one day had [redacted] without request id).
-- Real data: both clients currently official; the app recorded that in `endpoints.json`, read [redacted] entries from CC Switch, and grouped [redacted] Claude tokens (2026-08-31 … 09-20) without request id as a suspected relay. Evidence that request id absence marks a relay: the same client version logged request ids against the official API on 09-22 but not on 09-02; some records carry `entrypoint: claude-desktop-3p` or non-Anthropic message ids.
+- Claude hourly index vs a fresh ccusage run: **identical on every compared day with usage**, after adopting ccusage's timestamp fallback (one day had records without a request id).
+- Real data: both clients were official at the time of the check; the app recorded that in `endpoints.json`, read the host → name entries from CC Switch, and grouped Claude tokens that had no request id as a suspected relay. Evidence that request id absence marks a relay: the same client version logged request ids against the official API on a later day but not on an earlier day; some records carry `entrypoint: claude-desktop-3p` or non-Anthropic message ids. Provider counts, token totals and the date range are not written down here.
 - Live switch, isolated: with `CLAUDE_CONFIG_DIR` pointed at a scratch folder, rewriting its `settings.json` to a relay produced a new mark within 4 s (host normalised, `Since` equal to the file write time, key stored only as a 6-hex fingerprint). The user's real configuration was not modified.
 
 ## Automated
@@ -77,9 +77,9 @@ Validated on Windows 11 Pro x64 ([redacted]), 2026-09-29 / 2026-09-30.
 
 ## Data accuracy
 
-- Codex hourly index vs ccusage daily totals: **identical on [redacted]** from 2026-09-08 to 2026-09-29 (difference 0 tokens each day).
-- Incremental rescan: [redacted]; cold full scan of [redacted] of session logs: [redacted] (OS cache warm).
-- CC Switch comparison for 2026-09-29: token components identical; cost difference fully explained by the GPT-6 Astra > 272K long-context tier (recomputed [redacted] vs ccusage [redacted]; flat pricing reproduces CC Switch's [redacted]). Official rule confirmed on the OpenAI model page.
+- Codex hourly index vs ccusage daily totals: **identical on every compared day** (difference 0 tokens each day).
+- Incremental rescan finishes in a few milliseconds when no files changed; a cold full scan of the local session logs finishes in well under a second when the OS cache is warm.
+- CC Switch comparison on one day: token components identical; the cost difference is fully explained by the GPT-6 Astra > 272K long-context tier (recomputing with that tier matches this app; flat pricing reproduces CC Switch). Official rule confirmed on the OpenAI model page. The day's dollar amounts are not written down here.
 
 ## Visual
 
