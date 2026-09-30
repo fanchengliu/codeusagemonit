@@ -27,7 +27,7 @@
 * **11+ 主流平台全景覆盖**：官方支持 **Codex、Claude Code、Cursor、Antigravity、GitHub Copilot、DeepSeek、Grok、Kimi Code、OpenCode Go、ZCode、Pi**，并支持自定义 JSON HTTP 网关。
 * **四种自适应桌面形态**：同一个程序支持 **完整面板**、**大尺寸小组件**、**中尺寸双栏**、**小号悬浮挂件**，随心所欲放置在桌面或置顶。
 * **真实输出速度统计 (t/s)**：端到端计算网络延迟、首字时间及推理耗时的真实输出速度，一眼看清谁在暗中偷降频。
-* **361 款模型离线精准计价**：内置来自 LiteLLM 与 models.dev 的完整价目表，精准支持长上下文阶梯分档（>272K 翻倍）与缓存写入折扣，不虚报、不漏算。
+* **361 款模型，与官方同步计价**：价目表整理自 LiteLLM 与 models.dev 收录的各厂商官方 API 单价，由 GitHub Actions 每天重建；软件每 24 小时检查一次并自动更新（可在设置中关闭，断网时使用内置价目）。支持长上下文阶梯分档（>272K 翻倍）与缓存写入折扣，不虚报、不漏算。
 * **第三方中转站穿透追踪**：即便在 CC Switch 频繁切换不同供应商，也能精确将每次调用的 Token 和费用归属到具体的服务商或自建站点。
 * **极致本地隐私**：不碰浏览器 Cookie，API Key 均使用 Windows 原生 DPAPI 硬件加密，零云端遥测，代码内容永不出网。
 
@@ -69,10 +69,23 @@ codeusage status --json
 
 ## 🚀 快速上手与运行
 
-### 方式一：下载即用（免安装）
+### 方式一：Scoop（和 Homebrew 的 tap 一样）
+```powershell
+scoop bucket add codeusagemonit https://github.com/fanchengliu/codeusagemonit
+scoop install codeusagemonit
+```
+开始菜单里会出现 codeusagemonit，终端里可以直接用 `codeusage`；`scoop update codeusagemonit` 升级，`data` 文件夹放在 Scoop 的 persist 目录，升级不丢。
+
+### 方式二：PowerShell 一行安装
+```powershell
+irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps1 | iex
+```
+下载最新 Release 并核对 SHA-256，装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，把 `codeusage` 加进用户 PATH，创建开始菜单快捷方式；不需要管理员权限，再运行一次就是升级。
+
+### 方式三：下载即用（免安装）
 从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 `codeusagemonit-1.1.0-win-x64.zip`，解压后双击运行 `codeusagemonit.exe` 即可。
 
-### 方式二：PowerShell 一键构建
+### 方式四：从源码构建
 本项目使用 Windows 自带的 .NET Framework 编译器，**无需安装 Visual Studio、Node.js、Rust 或 Python**：
 
 ```powershell

@@ -677,7 +677,8 @@ namespace CodeUsageMonit {
             return "窗口 " + range + "（由重置时间和周期长度反推）。\n本地历史只有按日汇总，跨越窗口起点的那一天不计入，因此是保守下界（≥）。";
         }
         private static string PricingHint() {
-            return "费用 = 本机会话日志里每次请求的 Token × 该模型的官方 API 单价（本软件自带价目表 pricing.json，整理自公开的 LiteLLM / models.dev 价目，离线使用）。\n" +
+            Pricing.EnsureLoaded();
+            return "费用 = 本机会话日志里每次请求的 Token × 该模型的官方 API 单价（价目表 pricing.json 整理自公开的 LiteLLM / models.dev 价目，每天与本项目仓库同步一次，断网时用内置价目；当前价目 " + Pricing.Day + (Pricing.Source == "synced" ? "，已同步" : "，随软件内置") + "）。\n" +
                 "逐次请求计价：已计入缓存折扣、缓存写入（1 小时缓存按 2 倍输入价）、长上下文分档（例如单次请求输入超过 272K 时整次按长上下文价）和 Codex 优先 / fast 档的倍率。日志里自带费用的记录（Grok、部分 Claude、OpenCode）直接使用记录值。\n" +
                 "订阅套餐（如 Pro）实际按月费计费，这里只是 API 等价参考。";
         }

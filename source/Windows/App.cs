@@ -107,7 +107,7 @@ namespace CodeUsageMonit {
             refreshButton = (Button)window.FindName("RefreshButton"); pinButton = (Button)window.FindName("PinButton"); settingsButton = (Button)window.FindName("SettingsButton"); sizeButton = (Button)window.FindName("SizeButton");
             foreach (string id in ProviderCatalog.All) states[id] = new ProviderState { Id = id };
             try {
-                foreach (var s in Store.Read<List<ProviderState>>("quota-cache.json")) {
+                foreach (var s in Store.Read<List<ProviderState>>("quota-cache.json").Select(Parsers.Normalize)) {
                     if (!states.ContainsKey(s.Id)) continue;
                     // Only entries that actually hold data are shown as the last good reading.
                     if (s.Quotas.Count == 0 && s.Balances.Count == 0) continue;
@@ -323,7 +323,9 @@ namespace CodeUsageMonit {
                 lastRefresh = DateTime.Now; Store.Write("quota-cache.json", states.Values.ToList()); UpdateTray();
             } catch (Exception e) { statusNote = e is ArgumentException ? e.Message : "刷新未完成，稍后重试"; }
             finally { refreshing = false; SetSpinning(false); Render(); }
-            DateTime stamp; if (!scanning && (!DateTime.TryParse(history.Updated, out stamp) || DateTime.UtcNow - stamp.ToUniversalTime() > TimeSpan.FromMinutes(15))) { var ignored = ScanHistory(); }
+            // At most once a day; newer prices re-price the history in the next scan.
+            bool repriced = false; try { repriced = await Pricing.SyncAsync(config); } catch { }
+            DateTime stamp; if (!scanning && (repriced || !DateTime.TryParse(history.Updated, out stamp) || DateTime.UtcNow - stamp.ToUniversalTime() > TimeSpan.FromMinutes(15))) { var ignored = ScanHistory(); }
         }
         // A failed read keeps the last good values (marked stale) instead of blanking them.
         private void Accept(string id, ProviderState incoming) {

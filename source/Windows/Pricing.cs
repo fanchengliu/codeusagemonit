@@ -3,11 +3,16 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace CodeUsageMonit {
     // API list prices for estimating what local usage would cost on the vendors' APIs.
     // The table (pricing.json next to the executable, USD per million tokens) is compiled
     // from the public LiteLLM and models.dev catalogs; nothing here calls another tool.
+    // A newer table from the project's repository (rebuilt daily) is kept in data/.
     public sealed class ModelPrice {
         public string Key = "";
         public double In, Out, CacheRead, CacheWrite, Fast = 1;
@@ -31,10 +36,25 @@ namespace CodeUsageMonit {
         private static readonly Dictionary<string, ModelPrice> cache = new Dictionary<string, ModelPrice>(StringComparer.Ordinal);
         private static readonly object gate = new object();
         public static string Version = "";
+        // Date of the table in use ("2026-09-30") and whether it came with the release
+        // ("bundled") or was downloaded later ("synced").
+        public static string Updated = "", Source = "bundled";
+        public static string Day { get { return Updated.Length > 10 ? Updated.Substring(0, 10) : Updated; } }
         public static int Count { get { return table.Count; } }
         private static bool loaded;
 
-        public static void EnsureLoaded() { if (!loaded) Load(Path.Combine(Store.Root, "pricing.json")); }
+        public static void EnsureLoaded() {
+            lock (gate) {
+                if (loaded) return;
+                Load(Path.Combine(Store.Root, "pricing.json"));
+                // A downloaded table wins only while it is newer than the one shipped with
+                // this release, so an upgrade never goes back to older prices.
+                try {
+                    string path = Path.Combine(Store.Data, "pricing.json"), json, date;
+                    if (File.Exists(path) && Valid(json = File.ReadAllText(path), out date) && String.CompareOrdinal(date, Updated) > 0) { LoadJson(json); Source = "synced"; }
+                } catch { }
+            }
+        }
         public static void Load(string path) {
             lock (gate) {
                 loaded = true;
@@ -70,10 +90,68 @@ namespace CodeUsageMonit {
                 cache.Clear();
                 // The content hash makes a hand-edited price rebuild the indexes too.
                 string hash; using (var sha = System.Security.Cryptography.SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(json)), 0, 4).Replace("-", "").ToLowerInvariant();
-                string updated = J.Str(root, "updated"); Version = updated + "/" + next.Count + "/" + hash;
+                string updated = J.Str(root, "updated"); Version = updated + "/" + next.Count + "/" + hash; Updated = updated; Source = "bundled";
             }
         }
         private static double? Scale(double? perMillion) { return perMillion.HasValue ? perMillion.Value * 1e-6 : (double?)null; }
+
+        // ── Daily sync with the published table ───────────────────────────
+        // pricing.json in the repository is rebuilt every day from LiteLLM and models.dev,
+        // which track the prices the vendors publish. At most once a day the app asks for it
+        // (a plain GET with an ETag; no account or usage data is sent), checks it, stores it
+        // as data/pricing.json and switches to it. Offline, or with the setting off, the
+        // bundled table stays in use. Returns true when newer prices were installed.
+        public static string SyncUrl = "https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/source/Windows/pricing.json";
+        public sealed class SyncState { public string Checked = "", ETag = "", Result = ""; }
+        public static async Task<bool> SyncAsync(AppConfig config, bool force = false) {
+            if (config == null || !config.PriceSync) return false;
+            EnsureLoaded();
+            var state = Store.Read<SyncState>("pricing-sync.json");
+            DateTime last;
+            if (!force && DateTime.TryParse(state.Checked, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out last) && DateTime.UtcNow - last.ToUniversalTime() < TimeSpan.FromHours(24)) return false;
+            state.Checked = DateTime.UtcNow.ToString("o");
+            try {
+                var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate, UseCookies = false };
+                string proxy = ProviderService.ResolveProxy(config.Proxy); handler.UseProxy = proxy.Length > 0; if (handler.UseProxy) handler.Proxy = new WebProxy(proxy);
+                using (var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) })
+                using (var request = new HttpRequestMessage(HttpMethod.Get, SyncUrl)) {
+                    request.Headers.TryAddWithoutValidation("User-Agent", AppInfo.UserAgent);
+                    // Only a table we still have on disk may be answered with "not modified".
+                    if (Source == "synced" && state.ETag.Length > 0) request.Headers.TryAddWithoutValidation("If-None-Match", state.ETag);
+                    using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false)) {
+                        if (response.StatusCode == HttpStatusCode.NotModified) { state.Result = "unchanged"; return false; }
+                        if (!response.IsSuccessStatusCode) { state.Result = "HTTP " + (int)response.StatusCode; return false; }
+                        string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false), date;
+                        if (!Valid(json, out date)) { state.Result = "rejected"; return false; }
+                        state.ETag = response.Headers.ETag != null ? response.Headers.ETag.Tag : "";
+                        lock (gate) {
+                            if (String.CompareOrdinal(date, Updated) <= 0) { state.Result = "unchanged"; return false; }
+                            Directory.CreateDirectory(Store.Data);
+                            string path = Path.Combine(Store.Data, "pricing.json"), temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                            File.WriteAllText(temp, json, new UTF8Encoding(false));
+                            if (File.Exists(path)) File.Replace(temp, path, null); else File.Move(temp, path);
+                            LoadJson(json); Source = "synced";
+                        }
+                        state.Result = "updated " + date; return true;
+                    }
+                }
+            } catch (Exception e) { state.Result = "failed: " + e.GetType().Name; return false; }
+            finally { try { Store.Write("pricing-sync.json", state); } catch { } }
+        }
+        // A downloaded table must look like ours before it replaces anything: a dated
+        // catalogue of at least 100 models with numeric, sane input/output prices.
+        public static bool Valid(string json, out string date) {
+            date = "";
+            try {
+                object root = J.Parse(json); DateTime day;
+                date = J.Str(root, "updated");
+                // "2026-09-30" (made by hand) or "2026-09-30T02:17Z" (the daily job); both sort as text.
+                if (!DateTime.TryParseExact(date, new[] { "yyyy-MM-dd", "yyyy-MM-dd'T'HH:mm'Z'" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out day)) return false;
+                var models = J.Dict(J.Get(root, "models")); if (models.Count < 100) return false;
+                int good = models.Values.Count(v => { double? i = J.Num(v, "in"), o = J.Num(v, "out"); return i.HasValue && o.HasValue && i >= 0 && o >= 0 && i < 1000 && o < 1000; });
+                return good >= models.Count * .95;
+            } catch { return false; }
+        }
 
         // ── Model lookup ──────────────────────────────────────────────────
         // Exact id first, then without the provider prefix or release date, then with
