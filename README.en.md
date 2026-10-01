@@ -36,11 +36,13 @@ codeusagemonit puts all of it in the Windows tray. Click the icon to see what's 
 - **Local usage and cost.** Reads session logs for tools that keep them on your PC, and counts tokens and requests by hour and by model. Cost is estimated per request from official API prices. Pick any period; click a bar to pin that day's or hour's breakdown.
 - **Prices synced daily.** Ships with official prices for 361 models (compiled from LiteLLM and models.dev), including cache reads and writes, long-context tiers and Codex fast-mode multipliers. The app checks for a newer table every 24 hours; you can turn this off, and it falls back to the built-in table offline.
 - **Real output speed.** Output tokens ÷ the whole request time, including time to first token and relay latency. Only tools whose logs record that duration get a speed, and each is measured on its own, never averaged with the others. It shows how fast things feel in use, not a benchmark.
-- **Relay usage.** When Claude Code or Codex talks to a third-party endpoint, that usage appears on a separate "第三方" (third-party) page, attributed to the exact endpoint, even if you switch providers with CC Switch.
+- **Relay dashboard.** When Claude Code or Codex talks to a third-party endpoint, that usage appears on a separate Relays page, attributed to the exact endpoint, even if you switch providers with CC Switch. Pick a period to compare endpoints by tokens, official-price equivalent, requests and speed, and see the same model's speed through each endpoint.
 - **Custom providers.** Any GET endpoint that returns JSON (a relay dashboard, your own gateway) can be added with a short JSON definition and gets the same quota meters as built-in providers.
 - **Four sizes.** A full panel plus large, medium and small compact views that sit on the desktop. Right-click to switch; every size can be resized.
 - **Adjustable look.** Background colour (colour picker with 10 presets), transparency, a background image, and UI zoom (Ctrl + mouse wheel).
-- **CLI.** `codeusage` shares the app's settings, keys and caches, and supports `--json` for scripts and status bars.
+- **Several computers, backups.** Export your local usage as SQL (it also loads straight into SQLite) and import it on another computer to see both together; importing twice counts nothing twice. Or point several computers at one WebDAV folder and they sync. Settings and usage indexes are backed up on a schedule with a retention count, and restore is one click.
+- **English or Chinese.** Switch the interface language in Settings; it applies at once. Settings are grouped into General, Accounts, Data, Advanced and About, where you can check for updates.
+- **CLI.** `codeusage` shares the app's settings, keys and caches, and supports `--json` for scripts and status bars; `export`, `import`, `backup` and `sync` work there too.
 - **Your data stays on your PC.** No browser cookies, no conversation content, no telemetry.
 
 ## Screenshots
@@ -57,9 +59,9 @@ Light theme: full panel on the left, large in the center, small at the top right
 | --- | --- | --- | :---: | :---: |
 | [Codex](./docs/providers/codex.md) | Your existing Codex CLI or app sign-in | Windows the account reports (e.g. 5-hour, weekly), reset credits | ✓ | ✓ |
 | [Claude](./docs/providers/claude.md) | Your existing Claude Code sign-in | 5-hour, weekly and per-model quotas | ✓ | ✓ |
-| [Cursor](./docs/providers/cursor.md) | The session saved by the Cursor editor | Plan total, Auto, API; plus the Grok Bot weekly quota when the plan includes one | — | — |
+| [Cursor](./docs/providers/cursor.md) | The session saved by the Cursor editor | Plan total, Auto, API; plus the Grok Bot weekly quota when the plan includes one | ✓¹ | — |
 | [Antigravity](./docs/providers/antigravity.md) | The running desktop app, with the saved sign-in as a fallback | Period and per-model quotas | ✓ | — |
-| [DeepSeek](./docs/providers/deepseek.md) | API key (or `DEEPSEEK_API_KEY`) | API account balance per currency | — | — |
+| [DeepSeek](./docs/providers/deepseek.md) | API key (or `DEEPSEEK_API_KEY`) | API account balance per currency | ✓² | ✓² |
 | [Grok](./docs/providers/grok.md) | Your existing Grok Build CLI sign-in (`grok login`) | One shared billing-period allowance; Build / Chat shown as consumption | ✓ | ✓ |
 | [GitHub Copilot](./docs/providers/copilot.md) | GitHub device login, or an official client's saved authorisation | Monthly premium requests and chat | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API key, China or international | 5-hour, weekly, monthly | ✓ | — |
@@ -69,6 +71,8 @@ Light theme: full panel on the left, large in the center, small at the top right
 | [Custom](./docs/providers/custom.md) | Any GET endpoint that returns JSON; the key is stored encrypted | Up to 6 quota windows, or a balance | — | — |
 
 - The first six providers are enabled by default; turn on the rest in Settings → 显示的平台 (providers).
+- ¹ Cursor keeps no usage log on your PC; its usage comes from the per-call list in your Cursor account (tokens, requests, models and each call's price), so it includes calls from your other devices. The list has no durations, so there is no output speed.
+- ² DeepSeek's local usage and output speed come from DeepSeek Harness (`dsh`) sessions in `~/.dsh/sessions`; without DeepSeek Harness only the API balance is shown.
 - Data sources, connection steps and limits for each provider are in [`docs/providers/`](./docs/providers/) (Chinese).
 
 ## Install
@@ -77,7 +81,7 @@ Requires Windows 10 or 11 (x64). The .NET Framework 4.8 that ships with Windows 
 
 ### Installer (recommended)
 
-Download and run [codeusagemonit-setup-1.2.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe) from [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest).
+Download and run [codeusagemonit-setup-1.3.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.3.0/codeusagemonit-setup-1.3.0.exe) from [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest).
 
 - Installs to `%LOCALAPPDATA%\Programs\codeusagemonit` by default; you can choose another folder or drive.
 - Adds a Start menu shortcut. A desktop shortcut, start with Windows, and adding `codeusage` to your user PATH are optional.
@@ -126,6 +130,7 @@ codeusage                        # quotas and local usage from the app's cache (
 codeusage usage -p codex,claude  # query quotas live for the given providers
 codeusage cost --days 30         # daily cost and tokens; the last line lists output speed for tools that record timing
 codeusage thirdparty             # usage through third-party endpoints (relays)
+codeusage export usage.sql       # export usage as SQL; import, backup and sync (WebDAV, as set in the app) too
 codeusage providers              # providers, whether they're enabled, and where credentials come from
 codeusage status --json          # JSON output for scripts or a status bar
 ```

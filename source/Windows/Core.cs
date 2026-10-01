@@ -112,7 +112,7 @@ namespace CodeUsageMonit {
     }
     public sealed class WindowGeometry { public double Width, Height; public double? Left, Top; }
     public static class AppInfo {
-        public const string ShortVersion = "1.2";
+        public const string ShortVersion = "1.3";
         public const string UserAgent = "codeusagemonit/" + ShortVersion;
         // Full version from the assembly ("1.3.0").
         public static string Version { get { System.Version v = typeof(AppInfo).Assembly.GetName().Version; return v.Major + "." + v.Minor + "." + Math.Max(0, v.Build); } }

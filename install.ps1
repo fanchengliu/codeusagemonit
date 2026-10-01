@@ -5,7 +5,7 @@
 # Downloads the latest release from GitHub, checks it against the release's SHA256SUMS.txt,
 # installs to %LOCALAPPDATA%\Programs\codeusagemonit, puts codeusage on the user PATH and
 # adds a Start menu shortcut. Running it again updates in place; the data folder is kept.
-# Optional: $env:CODEUSAGEMONIT_DIR to install elsewhere, $env:CODEUSAGEMONIT_VERSION = '1.2.0'.
+# Optional: $env:CODEUSAGEMONIT_DIR to install elsewhere, $env:CODEUSAGEMONIT_VERSION = '1.3.0'.
 
 & {
     $ErrorActionPreference = 'Stop'

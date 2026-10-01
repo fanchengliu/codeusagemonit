@@ -23,7 +23,7 @@ using Drawing = System.Drawing;
 
 [assembly: AssemblyTitle("codeusagemonit")]
 [assembly: AssemblyDescription("A Windows tray monitor for AI coding assistants' quotas and local usage")]
-[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.3.0.0")]
 namespace CodeUsageMonit {
     public static class Program {
         private static Mutex mutex;

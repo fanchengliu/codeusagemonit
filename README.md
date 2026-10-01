@@ -37,7 +37,9 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 - **自定义平台**：任何返回 JSON 的 GET 接口（中转站后台、自建网关等）写一段 JSON 定义就能接入，和内置平台一样显示额度条。
 - **四种尺寸**：完整面板，以及贴在桌面上的大、中、小三种紧凑视图，右键随时切换，每种尺寸都能拖动调整大小。
 - **外观可调**：背景颜色（调色盘和 10 个预设）、界面透明度、背景图片、界面缩放（Ctrl + 滚轮）。
-- **命令行**：`codeusage` 与桌面版共用设置、密钥和缓存，支持 `--json`，方便接进脚本或状态栏。
+- **多设备与备份**：本机用量可以导出为 SQL（也能直接导入 SQLite），在另一台电脑上导入后合并查看，重复导入不会重复计算；或者几台电脑填同一个 WebDAV 文件夹自动同步。设置和用量索引按计划自动备份，可设间隔和保留份数，一键恢复。
+- **中文 / English**：界面语言可在设置里切换，立即生效；设置分为 通用、认证、数据、高级、关于 五类，“关于”里可以检查更新。
+- **命令行**：`codeusage` 与桌面版共用设置、密钥和缓存，支持 `--json`，方便接进脚本或状态栏；`export` / `import` / `backup` / `sync` 也能在命令行里做。
 - **数据留在本机**：不读浏览器 Cookie，不保存对话内容，没有遥测。
 
 
@@ -69,7 +71,7 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 
 ### 安装程序（推荐）
 
-从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 [codeusagemonit-setup-1.2.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe) 运行。
+从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 [codeusagemonit-setup-1.3.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.3.0/codeusagemonit-setup-1.3.0.exe) 运行。
 
 - 默认装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，也可以换目录或盘符。
 - 创建开始菜单快捷方式；桌面快捷方式、开机启动、把 `codeusage` 加入用户 PATH 都可选。
@@ -118,6 +120,7 @@ codeusage                        # 各平台额度与本机用量（读取桌面
 codeusage usage -p codex,claude  # 实时查询指定平台的额度
 codeusage cost --days 30         # 近 30 天每天的费用和 Token，最后一行列出有计时的平台的输出速度
 codeusage thirdparty             # 第三方接口（中转站）用量
+codeusage export usage.sql       # 导出用量（SQL）；import 导入，backup 备份，sync 按设置做 WebDAV 同步
 codeusage providers              # 平台列表、启用状态和凭据来源
 codeusage status --json          # 输出 JSON，便于接进脚本或状态栏
 ```

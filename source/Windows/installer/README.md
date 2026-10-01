@@ -44,25 +44,25 @@ cd codeusagemonit
 
 `-Installer` compiles the two executables, then writes these next to them (the repo root, unless you pass `-OutputDirectory`):
 
-- `codeusagemonit-setup-1.2.0.exe` (version comes from `AssemblyVersion` in `source\Windows\App.cs`)
-- `codeusagemonit-1.2.0-win-x64.zip` (portable; no `installed.txt` beside the exe). The zip includes `source/` so the program can be rebuilt, except `source/Windows/VERIFICATION.md`. That file is a maintainer checklist and is removed while the zip is staged. `setup.exe` never installs `source/` or `VERIFICATION.md`; it does install `使用说明.md`.
+- `codeusagemonit-setup-1.3.0.exe` (version comes from `AssemblyVersion` in `source\Windows\App.cs`)
+- `codeusagemonit-1.3.0-win-x64.zip` (portable; no `installed.txt` beside the exe). The zip includes `source/` so the program can be rebuilt, except `source/Windows/VERIFICATION.md`. That file is a maintainer checklist and is removed while the zip is staged. `setup.exe` never installs `source/` or `VERIFICATION.md`; it does install `使用说明.md`.
 - `SHA256SUMS.txt`
 
 `.\source\Windows\build.ps1` without `-Installer` still only builds the executables.
 
-GitHub Actions workflow `.github/workflows/release.yml` runs the same command on `windows-latest`. Pushing a tag `v1.2.0` (it must match `AssemblyVersion`) creates the release. **Actions → Build Windows release → Run workflow** with “publish” checked uploads `codeusagemonit-setup-<version>.exe` onto an existing release and does not replace a zip that is already published (the Scoop manifest hashes that zip). A push to `main` that changes the packaged files (source, `使用说明.md`, README, licenses, `install.ps1` or the workflow itself) runs the same build without publishing, and checks that the zip ships the repository's `使用说明.md` unchanged and no `VERIFICATION.md`.
+GitHub Actions workflow `.github/workflows/release.yml` runs the same command on `windows-latest`. Pushing a tag `v1.3.0` (it must match `AssemblyVersion`) creates the release. **Actions → Build Windows release → Run workflow** with “publish” checked uploads `codeusagemonit-setup-<version>.exe` onto an existing release and does not replace a zip that is already published (the Scoop manifest hashes that zip). A push to `main` that changes the packaged files (source, `使用说明.md`, README, licenses, `install.ps1` or the workflow itself) runs the same build without publishing, and checks that the zip ships the repository's `使用说明.md` unchanged and no `VERIFICATION.md`.
 
 ## Test on Windows
 
 SmartScreen will warn; the executable is not code-signed. Choose More info → Run anyway.
 
 1. `.\codeusagemonit.exe --self-test` exits 0. The new checks cover portable vs installed paths, migration into an empty folder, and a directory junction that is copied but not deleted.
-2. Run `codeusagemonit-setup-1.2.0.exe`. Confirm the directory page opens on `%LOCALAPPDATA%\Programs\codeusagemonit` and that Browse can select another drive. Leave PATH on, desktop and startup off. Install.
+2. Run `codeusagemonit-setup-1.3.0.exe`. Confirm the directory page opens on `%LOCALAPPDATA%\Programs\codeusagemonit` and that Browse can select another drive. Leave PATH on, desktop and startup off. Install.
 3. Start menu opens the app. A new terminal runs `codeusage version` and `codeusage help` prints `数据目录` under `%LOCALAPPDATA%\codeusagemonit`. Settings → 打开数据目录 opens that folder. The install folder contains `installed.txt` and no `data` folder.
 4. Change a setting and save. `%LOCALAPPDATA%\codeusagemonit\settings.json` updates.
 5. Run setup again (upgrade). The same setting is still there.
 6. Settings → Apps → codeusagemonit → Uninstall, and choose **No**. The install folder and the PATH entry are gone; `%LOCALAPPDATA%\codeusagemonit` remains. Install again and confirm the setting is still there. Uninstall again and choose **Yes**; that folder is removed.
-7. Unzip `codeusagemonit-1.2.0-win-x64.zip` to `D:\Tools\codeusagemonit` and run it. `D:\Tools\codeusagemonit\data\settings.json` is created. `%LOCALAPPDATA%\codeusagemonit` is not used.
+7. Unzip `codeusagemonit-1.3.0-win-x64.zip` to `D:\Tools\codeusagemonit` and run it. `D:\Tools\codeusagemonit\data\settings.json` is created. `%LOCALAPPDATA%\codeusagemonit` is not used.
 8. With that portable copy quit, run setup and choose `D:\Tools\codeusagemonit` as the folder. After the app starts, the old `data` folder has moved to `%LOCALAPPDATA%\codeusagemonit` and the setting survived.
 9. Create `portable.txt` in the install folder and start the app again. New settings go to `<install>\data` (the per-user folder is left as it was).
 10. Run setup, choose “all users”, and install under `C:\Program Files\codeusagemonit`. The app still saves to `%LOCALAPPDATA%\codeusagemonit` (no access-denied error).
@@ -70,7 +70,7 @@ SmartScreen will warn; the executable is not code-signed. Choose More info → R
 12. Silent install (keeps the defaults: PATH on, desktop and startup off):
 
 ```powershell
-.\codeusagemonit-setup-1.2.0.exe /CURRENTUSER /DIR="$env:LOCALAPPDATA\Programs\codeusagemonit" /SILENT
+.\codeusagemonit-setup-1.3.0.exe /CURRENTUSER /DIR="$env:LOCALAPPDATA\Programs\codeusagemonit" /SILENT
 & "$env:LOCALAPPDATA\Programs\codeusagemonit\unins000.exe" /SILENT
 ```
 
