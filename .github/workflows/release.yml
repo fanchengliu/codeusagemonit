@@ -110,8 +110,12 @@ jobs:
           $template = Get-Content -LiteralPath 'source\Windows\installer\release-notes.md' -Raw -Encoding UTF8
           [System.IO.File]::WriteAllText($notesPath, ($template.Replace('__VERSION__', $ver)).Trim(), (New-Object System.Text.UTF8Encoding $false))
 
+          # A new version has no release yet: gh prints "release not found" on stderr, which
+          # Windows PowerShell turns into a terminating error under 'Stop'.
+          $ErrorActionPreference = 'Continue'
           $json = & gh release view $tag --json isDraft,tagName 2>$null
           $exists = $LASTEXITCODE -eq 0
+          $ErrorActionPreference = 'Stop'
           if (-not $exists) {
             & gh release create $tag --draft --title "codeusagemonit $ver" --notes-file $notesPath $setup.FullName $zip $sums
             if ($LASTEXITCODE -ne 0) { throw 'gh release create failed.' }
