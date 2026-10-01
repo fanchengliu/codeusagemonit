@@ -27,7 +27,7 @@ namespace CodeUsageMonit {
         // Chart state survives page rebuilds: the metric shown and the pinned bar.
         private readonly Dictionary<string, string> chartMetric = new Dictionary<string, string>();
         private readonly Dictionary<string, DateTime> chartPinned = new Dictionary<string, DateTime>();
-        private static readonly CultureInfo Zh = CultureInfo.GetCultureInfo("zh-CN");
+        private static CultureInfo Zh { get { return I18n.Culture; } }
 
         // Interactive bar chart: hover a bar to highlight it, click to pin its details below
         // (click again or × to unpin); the chip at the top switches between cost and tokens,
@@ -113,7 +113,7 @@ namespace CodeUsageMonit {
         // The pinned bar of a chart, if any (compact sizes show it in their footer).
         private ChartBar PinnedBar(string id, List<ChartBar> bars) { DateTime at; return chartPinned.TryGetValue(id, out at) ? bars.FirstOrDefault(b => b.Start == at) : null; }
         private static string BarSummary(ChartBar bar) { return (bar.Hourly ? bar.Start.ToString("M/d HH:00") : bar.Start.ToString("M/d ddd", Zh)) + " · " + Usd(bar.Cost) + " · " + Compact(bar.Tokens) + " Token" + (bar.Speed.HasValue ? " · " + OutputTiming.Text(bar.Speed) : ""); }
-        private static string BarLabel(ChartBar bar) { return bar.Hourly ? bar.Start.ToString("M月d日 HH:00", Zh) : bar.Start.ToString("M月d日 ddd", Zh); }
+        private static string BarLabel(ChartBar bar) { return bar.Hourly ? bar.Start.ToString(I18n.T("M月d日 HH:00"), Zh) : bar.Start.ToString(I18n.T("M月d日 ddd"), Zh); }
         private static string BarTip(ChartBar bar, bool stacked) {
             string tip = BarLabel(bar) + "\n" + (bar.Cost > 0 || !bar.CostPartial ? Usd(bar.Cost) : "费用未知") + " · " + Compact(bar.Tokens) + " Token" + (bar.Requests > 0 ? " · " + bar.Requests.ToString("N0", CultureInfo.InvariantCulture) + " 次请求" : "") + (bar.Speed.HasValue && !stacked ? "\n输出速度 " + OutputTiming.Text(bar.Speed) : "");
             if (stacked) tip += String.Concat(bar.Parts.Where(p => p.Tokens > 0).OrderByDescending(p => p.Cost).Take(6).Select(p => "\n" + p.Name + "  " + Usd(p.Cost)));

@@ -49,7 +49,7 @@ namespace CodeUsageMonit {
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             app.DispatcherUnhandledException += delegate(object sender, DispatcherUnhandledExceptionEventArgs e) {
                 try { File.AppendAllText(System.IO.Path.Combine(Store.Data, "errors.log"), DateTime.UtcNow.ToString("o") + " " + e.Exception.GetType().Name + " " + e.Exception.Message + "\n"); } catch { }
-                MessageBox.Show("窗口遇到一个错误。请退出后重新打开；已保存的数据不受影响。", "codeusagemonit"); e.Handled = true;
+                MessageBox.Show(I18n.T("窗口遇到一个错误。请退出后重新打开；已保存的数据不受影响。"), "codeusagemonit"); e.Handled = true;
             };
             var ui = new MonitorPanel(app, args.Contains("--demo"));
             quitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, instance + ".Quit");
@@ -148,7 +148,7 @@ namespace CodeUsageMonit {
                 // ← / → page through the compact sizes, unless a text box has the keys.
                 if (IsCompact && compactConnect == null && (e.Key == Key.Left || e.Key == Key.Right) && !(Keyboard.FocusedElement is TextBoxBase) && !(Keyboard.FocusedElement is PasswordBox)) { CycleCompact(e.Key == Key.Right ? 1 : -1); e.Handled = true; }
             };
-            tray = new Forms.NotifyIcon { Text = "codeusagemonit · 正在读取", Icon = new Drawing.Icon(System.IO.Path.Combine(Store.Root, "app.ico"), Forms.SystemInformation.SmallIconSize), Visible = true };
+            tray = new Forms.NotifyIcon { Text = I18n.T("codeusagemonit · 正在读取"), Icon = new Drawing.Icon(System.IO.Path.Combine(Store.Root, "app.ico"), Forms.SystemInformation.SmallIconSize), Visible = true };
             tray.MouseClick += delegate(object sender, Forms.MouseEventArgs e) { if (e.Button == Forms.MouseButtons.Left) app.Dispatcher.BeginInvoke(new Action(ToggleFromTray)); };
             tray.ContextMenuStrip = TrayMenu();
             refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(config.RefreshMinutes) }; refreshTimer.Tick += async delegate { await Refresh(); await Housekeeping(); };
@@ -165,17 +165,17 @@ namespace CodeUsageMonit {
         }
         private Forms.ContextMenuStrip TrayMenu() {
             var menu = new Forms.ContextMenuStrip { ShowImageMargin = false, Renderer = new Forms.ToolStripProfessionalRenderer(new DarkMenuColors()) { RoundedEdges = false }, ForeColor = Drawing.Color.FromArgb(236, 238, 241), Font = new Drawing.Font("Microsoft YaHei UI", 9f), Padding = new Forms.Padding(2, 4, 2, 4) };
-            menu.Items.Add("打开面板", null, delegate { app.Dispatcher.BeginInvoke(new Action(Reveal)); });
-            menu.Items.Add("刷新全部额度", null, delegate { app.Dispatcher.BeginInvoke(new Action(() => { var ignored = Refresh(); })); });
-            menu.Items.Add("设置…", null, delegate { app.Dispatcher.BeginInvoke(new Action(OpenSettings)); });
+            menu.Items.Add(I18n.T("打开面板"), null, delegate { app.Dispatcher.BeginInvoke(new Action(Reveal)); });
+            menu.Items.Add(I18n.T("刷新全部额度"), null, delegate { app.Dispatcher.BeginInvoke(new Action(() => { var ignored = Refresh(); })); });
+            menu.Items.Add(I18n.T("设置…"), null, delegate { app.Dispatcher.BeginInvoke(new Action(OpenSettings)); });
             var sizes = new Forms.ToolStripMenuItem("显示尺寸");
-            foreach (string size in DisplaySizes) { string captured = size; var item = new Forms.ToolStripMenuItem(SizeName(size) + (size == "full" ? "面板" : "尺寸")); item.Click += delegate { app.Dispatcher.BeginInvoke(new Action(() => SetDisplaySize(captured))); }; sizes.DropDownItems.Add(item); }
+            foreach (string size in DisplaySizes) { string captured = size; var item = new Forms.ToolStripMenuItem(I18n.T(SizeName(size) + (size == "full" ? "面板" : "尺寸"))); item.Click += delegate { app.Dispatcher.BeginInvoke(new Action(() => SetDisplaySize(captured))); }; sizes.DropDownItems.Add(item); }
             sizes.DropDownOpening += delegate { foreach (Forms.ToolStripMenuItem item in sizes.DropDownItems) item.Checked = item.Text.StartsWith(SizeName(config.DisplaySize)); };
             var drop = (Forms.ToolStripDropDownMenu)sizes.DropDown; drop.ShowCheckMargin = true; drop.ShowImageMargin = false; drop.Renderer = menu.Renderer; drop.Font = menu.Font;
             foreach (Forms.ToolStripItem item in sizes.DropDownItems) { item.ForeColor = menu.ForeColor; item.Padding = new Forms.Padding(2, 4, 12, 4); }
             menu.Items.Add(sizes);
-            menu.Items.Add("重置窗口位置", null, delegate { app.Dispatcher.BeginInvoke(new Action(() => { frame.ResetPosition(); Reveal(); })); });
-            menu.Items.Add(new Forms.ToolStripSeparator()); menu.Items.Add("退出 codeusagemonit", null, delegate { app.Dispatcher.BeginInvoke(new Action(Quit)); });
+            menu.Items.Add(I18n.T("重置窗口位置"), null, delegate { app.Dispatcher.BeginInvoke(new Action(() => { frame.ResetPosition(); Reveal(); })); });
+            menu.Items.Add(new Forms.ToolStripSeparator()); menu.Items.Add(I18n.T("退出 codeusagemonit"), null, delegate { app.Dispatcher.BeginInvoke(new Action(Quit)); });
             foreach (Forms.ToolStripItem item in menu.Items) { item.Padding = new Forms.Padding(6, 5, 16, 5); item.ForeColor = menu.ForeColor; }
             return menu;
         }
@@ -336,7 +336,7 @@ namespace CodeUsageMonit {
             window.Topmost = config.AlwaysOnTop;
             bool keepOpen = !config.HideOnDeactivate;
             pinButton.Foreground = keepOpen ? AccentBrush : InkDim;
-            pinButton.ToolTip = keepOpen ? "保持展开中 · 点击后改为失焦自动收起（不影响置顶）" : "失焦自动收起中 · 点击保持展开（不影响置顶）";
+            pinButton.ToolTip = I18n.T(keepOpen ? "保持展开中 · 点击后改为失焦自动收起（不影响置顶）" : "失焦自动收起中 · 点击保持展开（不影响置顶）");
         }
         private void SaveConfig() { try { Store.Write("settings.json", config); } catch { statusNote = "设置保存失败，请检查数据目录是否可写"; UpdateStatus(); } }
         private void SetSpinning(bool on) {

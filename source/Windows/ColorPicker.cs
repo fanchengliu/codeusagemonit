@@ -136,6 +136,7 @@ namespace CodeUsageMonit {
             System.Windows.Documents.TextElement.SetFontFamily(frameBorder, window.FontFamily);
             frameBorder.KeyDown += delegate(object sender, KeyEventArgs e) { if (e.Key == Key.Escape) { popup.IsOpen = false; e.Handled = true; } };
             popup.Child = frameBorder;
+            I18n.Localize(frameBorder);
             popup.IsOpen = true;
         }
 

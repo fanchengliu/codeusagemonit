@@ -29,6 +29,7 @@ namespace CodeUsageMonit {
             settingsWindow = BuildSettingsWindow();
             settingsView = BuildSettings();
             settingsHost.Children.Add(settingsView);
+            I18n.Localize(settingsWindow);
             settingsButton.Foreground = AccentBrush;
             settingsWindow.Show(); settingsWindow.Activate();
         }
@@ -225,7 +226,7 @@ namespace CodeUsageMonit {
                 thumb.Background = image == null ? Brush("#0AFFFFFF") : (Brush)new ImageBrush(image) { Stretch = Stretch.UniformToFill };
                 clear.Visibility = picture.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 fitRow.Visibility = dimRow.Visibility = dimSlider.Visibility = picture.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-                ((TextBlock)((StackPanel)pictureLabel).Children[1]).Text = picture.Length == 0 ? I18n.T("未设置 · 支持 PNG / JPG / BMP / GIF / WebP") : pictureChanged ? I18n.T("预览中 · 保存后复制到 data 目录") : I18n.T("已设置 · 复制保存在 data 目录");
+                ((TextBlock)((StackPanel)pictureLabel).Children[1]).Text = I18n.T(picture.Length == 0 ? I18n.T("未设置 · 支持 PNG / JPG / BMP / GIF / WebP") : pictureChanged ? I18n.T("预览中 · 保存后复制到 data 目录") : I18n.T("已设置 · 复制保存在 data 目录"));
             };
             choose.Click += delegate {
                 var dialog = new Microsoft.Win32.OpenFileDialog { Title = I18n.T("选择背景图片"), Filter = I18n.T("图片") + "|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.tif;*.tiff" };
@@ -362,8 +363,10 @@ namespace CodeUsageMonit {
                     if (languageChanged) LanguageChanged();
                     await Refresh();
                     if (thirdPartyOn) { var scan = ScanHistory(); }
-                } catch (Exception ex) { error.Text = ex is ArgumentException ? ex.Message : I18n.T("设置未能保存，请检查数据目录是否可写。"); }
+                } catch (Exception ex) { error.Text = I18n.T(ex is ArgumentException ? I18n.T(ex.Message) : I18n.T("设置未能保存，请检查数据目录是否可写。")); }
             };
+            foreach (StackPanel page in pages.Values) I18n.Localize(page);
+            I18n.Localize(bar);
             return root;
         }
         private static string ProxyHint(string mode) {
@@ -377,8 +380,9 @@ namespace CodeUsageMonit {
         }
         private static FrameworkElement FieldLabel(string title, string hint) {
             var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
-            stack.Children.Add(Label(title, 12.5, Ink));
-            if (hint != null) { var sub = Label(hint, 10.5, InkFaint); sub.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(sub); }
+            // Wrapped rather than cut off: English runs longer than the Chinese.
+            var head = Label(title, 12.5, Ink); head.TextWrapping = TextWrapping.Wrap; head.TextTrimming = TextTrimming.None; stack.Children.Add(head);
+            if (hint != null) { var sub = Label(hint, 10.5, InkFaint); sub.Margin = new Thickness(0, 2, 0, 0); sub.TextWrapping = TextWrapping.Wrap; sub.TextTrimming = TextTrimming.None; stack.Children.Add(sub); }
             return stack;
         }
         private CheckBox SwitchRow(string title, string hint, bool value) {
@@ -437,14 +441,14 @@ namespace CodeUsageMonit {
                 try { Clipboard.SetText(pending.UserCode); } catch { }
                 try { Process.Start(new ProcessStartInfo(pending.VerificationUri) { UseShellExecute = true }); } catch { }
             };
-            cancel.Click += delegate { cancelled = true; device.Visibility = Visibility.Collapsed; login.IsEnabled = true; status.Text = "已取消登录。"; };
-            logout.Click += delegate { Store.SetProviderKey("copilot", ""); states["copilot"] = new ProviderState { Id = "copilot" }; logout.Visibility = Visibility.Collapsed; login.Content = "使用 GitHub 登录"; status.Text = "已退出。" + (ProviderService.CopilotToken().Length > 0 ? "仍会使用 Copilot 客户端保存的授权。" : ""); };
+            cancel.Click += delegate { cancelled = true; device.Visibility = Visibility.Collapsed; login.IsEnabled = true; status.Text = I18n.T("已取消登录。"); };
+            logout.Click += delegate { Store.SetProviderKey("copilot", ""); states["copilot"] = new ProviderState { Id = "copilot" }; logout.Visibility = Visibility.Collapsed; login.Content = I18n.T("使用 GitHub 登录"); status.Text = I18n.T("已退出。" + (ProviderService.CopilotToken().Length > 0 ? "仍会使用 Copilot 客户端保存的授权。" : "")); };
             login.Click += async delegate {
-                cancelled = false; login.IsEnabled = false; status.Text = "正在向 GitHub 申请设备码…";
+                cancelled = false; login.IsEnabled = false; status.Text = I18n.T("正在向 GitHub 申请设备码…");
                 try {
                     using (var service = new ProviderService(config)) {
                         pending = await service.StartCopilotLogin();
-                        code.Text = pending.UserCode; device.Visibility = Visibility.Visible; status.Text = "等待你在 GitHub 上授权…";
+                        code.Text = pending.UserCode; device.Visibility = Visibility.Visible; status.Text = I18n.T("等待你在 GitHub 上授权…");
                         DateTime until = DateTime.UtcNow.AddSeconds(pending.ExpiresIn);
                         while (!cancelled && DateTime.UtcNow < until) {
                             await Task.Delay(TimeSpan.FromSeconds(Math.Max(5, pending.Interval)));
@@ -452,12 +456,12 @@ namespace CodeUsageMonit {
                             string token = await service.PollCopilotLogin(pending);
                             if (token == null) continue;
                             Store.SetProviderKey("copilot", token); states["copilot"] = new ProviderState { Id = "copilot" };
-                            device.Visibility = Visibility.Collapsed; status.Text = "登录成功。保存设置并启用 Copilot 后即可显示额度。"; logout.Visibility = Visibility.Visible; login.Content = "重新登录";
+                            device.Visibility = Visibility.Collapsed; status.Text = I18n.T("登录成功。保存设置并启用 Copilot 后即可显示额度。"); logout.Visibility = Visibility.Visible; login.Content = I18n.T("重新登录");
                             break;
                         }
-                        if (!cancelled && device.Visibility == Visibility.Visible) { device.Visibility = Visibility.Collapsed; status.Text = "设备码已过期，请重新登录。"; }
+                        if (!cancelled && device.Visibility == Visibility.Visible) { device.Visibility = Visibility.Collapsed; status.Text = I18n.T("设备码已过期，请重新登录。"); }
                     }
-                } catch (Exception e) { device.Visibility = Visibility.Collapsed; status.Text = e is ProviderException ? e.Message : "无法连接 GitHub，请检查网络或代理设置。"; }
+                } catch (Exception e) { device.Visibility = Visibility.Collapsed; status.Text = I18n.T(e is ProviderException ? e.Message : "无法连接 GitHub，请检查网络或代理设置。"); }
                 finally { login.IsEnabled = true; pending = null; }
             };
             return stack;
@@ -491,7 +495,7 @@ namespace CodeUsageMonit {
         private void BackFromSettings() { if (customEditor != null) CloseCustomEditor(); else CloseSettings(); }
         private void CloseCustomEditor() {
             if (customEditor == null) return;
-            customEditor = null; settingsHost.Children.Clear(); settingsHost.Children.Add(settingsView); settingsTitle.Text = "设置"; settingsBack.Visibility = Visibility.Collapsed; RenderCustomList();
+            customEditor = null; settingsHost.Children.Clear(); settingsHost.Children.Add(settingsView); settingsTitle.Text = I18n.T("设置"); settingsBack.Visibility = Visibility.Collapsed; RenderCustomList(); I18n.Localize(customList);
         }
         private void OpenCustomEditor(CustomProvider existing) {
             var root = new Grid();
@@ -537,7 +541,7 @@ namespace CodeUsageMonit {
                 CustomProvider parsed;
                 try { parsed = CustomProviders.Parse(json.Text); } catch (ArgumentException e) { result.Foreground = WarnBrush; result.Text = e.Message; return; }
                 string key = secret.Password.Length > 0 ? secret.Password : existing != null ? Store.SavedKey(existing.Id) : "";
-                test.IsEnabled = false; result.Foreground = InkDim; result.Text = "正在请求 " + parsed.Host + " …";
+                test.IsEnabled = false; result.Foreground = InkDim; result.Text = I18n.T("正在请求 " + parsed.Host + " …");
                 try {
                     ProviderState state;
                     using (var service = new ProviderService(config)) state = await service.FetchCustom(parsed, key);
@@ -548,13 +552,13 @@ namespace CodeUsageMonit {
                     int missing = parsed.Windows.Count - state.Quotas.Count;
                     if (missing > 0) lines.Add("有 " + missing + " 个窗口在响应中找不到对应字段，将不会显示。");
                     result.Foreground = GoodBrush; result.Text = String.Join("\n", lines);
-                } catch (Exception e) { result.Foreground = WarnBrush; result.Text = e is ProviderException ? e.Message : e is TaskCanceledException ? "请求超时（15 秒）" : "请求失败：" + e.GetType().Name; }
+                } catch (Exception e) { result.Foreground = WarnBrush; result.Text = I18n.T(e is ProviderException ? e.Message : e is TaskCanceledException ? "请求超时（15 秒）" : "请求失败：" + e.GetType().Name); }
                 finally { test.IsEnabled = true; }
             };
             save.Click += delegate {
                 CustomProvider parsed;
                 try { parsed = CustomProviders.Parse(json.Text); } catch (ArgumentException e) { result.Foreground = WarnBrush; result.Text = e.Message; return; }
-                if (ProviderCatalog.Ids.Contains(parsed.Id) || (ProviderCatalog.Custom.ContainsKey(parsed.Id) && (existing == null || existing.Id != parsed.Id))) { result.Foreground = WarnBrush; result.Text = "已有同样 id 的平台（" + parsed.Id + "），请在 JSON 里指定不同的 id。"; return; }
+                if (ProviderCatalog.Ids.Contains(parsed.Id) || (ProviderCatalog.Custom.ContainsKey(parsed.Id) && (existing == null || existing.Id != parsed.Id))) { result.Foreground = WarnBrush; result.Text = I18n.T("已有同样 id 的平台（" + parsed.Id + "），请在 JSON 里指定不同的 id。"); return; }
                 try {
                     var list = ProviderCatalog.Custom.Values.Where(p => existing == null || p.Id != existing.Id).ToList(); list.Add(parsed);
                     CustomProviders.Save(list);
@@ -570,11 +574,11 @@ namespace CodeUsageMonit {
                     Store.Write("settings.json", config);
                     CloseCustomEditor();
                     var ignored = Refresh();
-                } catch (Exception e) { result.Foreground = WarnBrush; result.Text = "保存失败：" + e.Message; }
+                } catch (Exception e) { result.Foreground = WarnBrush; result.Text = I18n.T("保存失败：" + e.Message); }
             };
             bool confirm = false;
             delete.Click += delegate {
-                if (!confirm) { confirm = true; delete.Content = "再次点击确认删除"; return; }
+                if (!confirm) { confirm = true; delete.Content = I18n.T("再次点击确认删除"); return; }
                 var list = ProviderCatalog.Custom.Values.Where(p => p.Id != existing.Id).ToList();
                 try { CustomProviders.Save(list); Store.SetProviderKey(existing.Id, ""); } catch { }
                 RegisterCustomProviders(list); states.Remove(existing.Id);
@@ -582,7 +586,8 @@ namespace CodeUsageMonit {
                 CloseCustomEditor();
             };
             customEditor = root;
-            settingsHost.Children.Clear(); settingsHost.Children.Add(root); settingsTitle.Text = "自定义平台"; settingsBack.Visibility = Visibility.Visible;
+            settingsHost.Children.Clear(); settingsHost.Children.Add(root); settingsTitle.Text = I18n.T("自定义平台"); settingsBack.Visibility = Visibility.Visible;
+            I18n.Localize(root);
         }
     }
 }

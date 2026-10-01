@@ -24,7 +24,7 @@ namespace CodeUsageMonit {
 
         private void UpdateScaleLabel() {
             var text = window.FindName("ScaleText") as TextBlock;
-            if (text != null) text.Text = (config.UiScale * 100).ToString("0") + "% · Ctrl+滚轮";
+            if (text != null) text.Text = I18n.T((config.UiScale * 100).ToString("0") + "% · Ctrl+滚轮");
         }
         // Render() restores the previous offset; switching pages must land at the top, so
         // the reset is issued after it (scroll requests are applied in order on layout).
@@ -38,11 +38,11 @@ namespace CodeUsageMonit {
             else if (refreshing) { text = "正在刷新…"; dot = AccentBrush; }
             else if (statusNote.Length > 0) { text = statusNote; dot = WarnBrush; }
             else {
-                text = connected + " / " + enabled + " 已连接 · 每 " + config.RefreshMinutes + " 分钟刷新" + (lastRefresh == DateTime.MinValue ? "" : " · " + lastRefresh.ToString("HH:mm") + " 更新");
+                text = connected + " / " + enabled + " 已连接 · 每 " + config.RefreshMinutes + " 分钟刷新" + (lastRefresh == DateTime.MinValue ? "" : I18n.English ? " · updated " + lastRefresh.ToString("HH:mm") : " · " + lastRefresh.ToString("HH:mm") + " 更新");
                 dot = connected == enabled ? GoodBrush : WarnBrush;
                 if (Updates.Newer(updateState)) text += " · " + I18n.T("有新版本 v{0}", updateState.Latest);
             }
-            status.Text = text; statusDot.Fill = dot;
+            status.Text = I18n.T(text); statusDot.Fill = dot;
         }
         private void Render() {
             if (quitting) return;
@@ -60,6 +60,7 @@ namespace CodeUsageMonit {
             } else if (selected == ProviderCatalog.ThirdParty) RenderThirdParty();
             else RenderDetail(states[selected]);
             bodyScroll.ScrollToVerticalOffset(offset);
+            I18n.Localize(window);
         }
         // The page appears once a third-party endpoint is in use or has recent usage.
         private bool ThirdPartyVisible() { return config.ShowThirdParty && thirdParty.Endpoints.Count > 0; }
@@ -84,7 +85,7 @@ namespace CodeUsageMonit {
                 if (active) name.FontWeight = FontWeights.SemiBold;
                 var content = new StackPanel(); content.Children.Add(glyph); content.Children.Add(name);
                 var button = new Button { Content = content, Style = Styled("TabButton"), Background = Brush(active ? "#17FFFFFF" : "#00FFFFFF"), Margin = new Thickness(2, 0, 2, 0) };
-                button.ToolTip = id == "overview" ? "全部平台" : id == ProviderCatalog.ThirdParty ? "经第三方接口的用量（本机日志）" : ProviderCatalog.Name(id) + " · " + StatusWord(states[id]);
+                button.ToolTip = I18n.T(id == "overview" ? "全部平台" : id == ProviderCatalog.ThirdParty ? "经第三方接口的用量（本机日志）" : ProviderCatalog.Name(id) + " · " + StatusWord(states[id]));
                 System.Windows.Automation.AutomationProperties.SetName(button, ProviderCatalog.Name(id));
                 button.Click += delegate { SelectProvider(captured); };
                 tabs.Children.Add(button);
@@ -159,7 +160,7 @@ namespace CodeUsageMonit {
         }
         private void CopySummary(Button source) {
             // The clipboard can be held by another process; that must not become an error dialog.
-            try { Clipboard.SetText(SummaryText()); } catch { source.ToolTip = "剪贴板被占用，请重试"; return; }
+            try { Clipboard.SetText(SummaryText()); } catch { source.ToolTip = I18n.T("剪贴板被占用，请重试"); return; }
             source.Content = ""; source.Foreground = GoodBrush;
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
             timer.Tick += delegate { timer.Stop(); source.Content = ""; source.ClearValue(Control.ForegroundProperty); };
@@ -191,7 +192,7 @@ namespace CodeUsageMonit {
                 var summary = Label("今日 " + TodayMoney(days) + " · 30 天 " + Money(days), 11, InkDim); Tabular(summary);
                 double? speed = RecentSpeed(state.Id, days);
                 var tokens = Label(Compact(days.Sum(d => d.Tokens)) + " Token" + (speed.HasValue ? " · " + OutputTiming.Text(speed) : ""), 11, InkFaint); Tabular(tokens);
-                if (speed.HasValue) tokens.ToolTip = ProviderCatalog.Name(state.Id) + " 近 7 天输出速度 " + OutputTiming.Text(speed) + "\n" + OutputTiming.Definition;
+                if (speed.HasValue) tokens.ToolTip = I18n.T(ProviderCatalog.Name(state.Id) + " 近 7 天输出速度 " + OutputTiming.Text(speed) + "\n" + OutputTiming.Definition);
                 AddRow(footer, summary, tokens); stack.Children.Add(footer);
             }
             return Card(stack);
@@ -227,7 +228,7 @@ namespace CodeUsageMonit {
             if (config.HideAccounts && account.Contains("@")) account = account.Substring(0, Math.Min(2, account.IndexOf('@'))) + "•••" + account.Substring(account.IndexOf('@'));
             if (account.Length > 0) {
                 var owner = Label(account, 10.5, InkFaint); owner.MaxWidth = 190; owner.Margin = new Thickness(10, 0, 0, 0); owner.HorizontalAlignment = HorizontalAlignment.Right;
-                owner.ToolTip = detail ? (config.HideAccounts ? "可在设置中关闭邮箱遮挡" : account) : null;
+                owner.ToolTip = I18n.T(detail ? (config.HideAccounts ? "可在设置中关闭邮箱遮挡" : account) : null);
                 Grid.SetRow(owner, 1); Grid.SetColumn(owner, 1); Grid.SetColumnSpan(owner, 2); grid.Children.Add(owner);
             }
             return grid;
@@ -271,7 +272,7 @@ namespace CodeUsageMonit {
                 var row = Row(); row.Margin = new Thickness(0, 5, 0, 0);
                 var amount = Label("已消耗总额度 " + product.UsedPercent.ToString("0.#") + "%", 11, InkDim);
                 Tabular(amount); AddRow(row, Label(product.DisplayName, 11, InkDim), amount);
-                row.ToolTip = "该消耗已计入当前账期的已用额度，各产品共享上方显示的剩余额度。";
+                row.ToolTip = I18n.T("该消耗已计入当前账期的已用额度，各产品共享上方显示的剩余额度。");
                 breakdown.Children.Add(row);
             }
             return breakdown;
@@ -344,7 +345,7 @@ namespace CodeUsageMonit {
                 Action<string, string> add = (label, value) => { var r = Row(); r.Margin = new Thickness(0, 2, 0, 1); var v = Label(value, 10.5, Ink); Tabular(v); AddRow(r, Label(label, 10.5, InkFaint), v); lines.Children.Add(r); };
                 add("已用 / 剩余", quota.Used.ToString("0.#") + "% / " + quota.Remaining.ToString("0.#") + "%");
                 if (quota.WindowSeconds > 0) add("窗口长度", quota.WindowSeconds % 86400 == 0 ? (quota.WindowSeconds / 86400) + " 天" : (quota.WindowSeconds / 3600.0).ToString("0.#") + " 小时");
-                DateTimeOffset resetAt; if (DateTimeOffset.TryParse(quota.ResetUtc, out resetAt)) add("重置时间", resetAt.LocalDateTime.ToString("M月d日 ddd HH:mm", Zh));
+                DateTimeOffset resetAt; if (DateTimeOffset.TryParse(quota.ResetUtc, out resetAt)) add("重置时间", resetAt.LocalDateTime.ToString(I18n.T("M月d日 ddd HH:mm"), I18n.Culture));
                 if (pace != null) add("线性节奏下应已用", Math.Max(0, Math.Min(100, quota.Used - pace.Reserve)).ToString("0") + "%");
                 lines.Children.Add(new TextBlock { Text = "节奏按本周期平均速度线性估算，不是官方承诺。", FontSize = 10, Foreground = InkFaint, Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap });
                 detail.Child = lines; stack.Children.Add(detail);
@@ -381,7 +382,7 @@ namespace CodeUsageMonit {
             string detail = state.ResetCreditExpiries.Count > 0 ? "到期 " + String.Join(" · ", state.ResetCreditExpiries.Take(3).Select(ExpiryCountdown)) : !state.ResetCreditsAvailable.HasValue && state.ResetCreditsError.Length > 0 ? state.ResetCreditsError : "";
             if (detail.Length > 0) {
                 var hint = Label(detail, 10.5, InkFaint); hint.Margin = new Thickness(0, 3, 0, 0);
-                hint.ToolTip = state.ResetCreditExpiries.Count == 0 ? "只读显示，不会自动使用重置额度" : "有效期：\n" + String.Join("\n", state.ResetCreditExpiries.Select(LocalTime)) + "\n只读显示，不会自动使用。";
+                hint.ToolTip = I18n.T(state.ResetCreditExpiries.Count == 0 ? "只读显示，不会自动使用重置额度" : "有效期：\n" + String.Join("\n", state.ResetCreditExpiries.Select(LocalTime)) + "\n只读显示，不会自动使用。");
                 block.Children.Add(hint);
             }
             return block;
@@ -506,7 +507,7 @@ namespace CodeUsageMonit {
             double prompt = input + read + write;
             var head = Row();
             var rate = Label(prompt > 0 ? "缓存命中率 " + (read / prompt * 100).ToString("0.0") + "%" : "", 10.5, InkDim);
-            rate.ToolTip = "缓存命中 ÷（新增输入 + 缓存命中 + 缓存写入）。与 CC Switch 的口径一致。";
+            rate.ToolTip = I18n.T("缓存命中 ÷（新增输入 + 缓存命中 + 缓存写入）。与 CC Switch 的口径一致。");
             AddRow(head, Label(caption, 10.5, InkFaint), rate); stack.Children.Add(head);
             var grid = new UniformGrid { Columns = write > 0 ? 4 : 3, Margin = new Thickness(0, 6, 0, 0) };
             grid.Children.Add(MiniStat("新增输入", input, "未命中缓存、按全价计费的输入"));
@@ -571,7 +572,7 @@ namespace CodeUsageMonit {
         private static string Ago(string iso) {
             DateTimeOffset date; if (!DateTimeOffset.TryParse(iso, out date)) return "时间未知";
             double minutes = (DateTimeOffset.UtcNow - date).TotalMinutes;
-            return minutes < 60 ? "1 小时内" : minutes < 24 * 60 ? (int)(minutes / 60) + " 小时前" : date.LocalDateTime.ToString("M月d日");
+            return minutes < 60 ? "1 小时内" : minutes < 24 * 60 ? (int)(minutes / 60) + " 小时前" : date.LocalDateTime.ToString(I18n.T("M月d日"), I18n.Culture);
         }
 
         // ── Building blocks ───────────────────────────────────────────────
@@ -602,7 +603,7 @@ namespace CodeUsageMonit {
 
         // ── Formatting ────────────────────────────────────────────────────
         private static string Today() { return HistoryService.DayKey(DateTime.Today); }
-        private static string ShortDate(string day) { DateTime date; return DateTime.TryParseExact(day, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date) ? date.ToString("M月d日") : day; }
+        private static string ShortDate(string day) { DateTime date; return DateTime.TryParseExact(day, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date) ? date.ToString(I18n.T("M月d日"), I18n.Culture) : day; }
         private static string Usd(double value, bool cents) { return "$" + value.ToString(cents ? "N2" : value < 10 ? "0.##" : "N0", CultureInfo.InvariantCulture); }
         private static string Usd(double value) { return Usd(value, true); }
         private static string Money(IEnumerable<DayUsage> days) { var rows = days.Where(d => d.CostKnown).ToList(); return rows.Count == 0 ? "—" : Usd(rows.Sum(d => d.Cost)); }
@@ -620,7 +621,7 @@ namespace CodeUsageMonit {
         }
         private static string WindowHint(WindowUsage usage) {
             if (usage == null) return "服务商尚未返回可计算的额度窗口起止时间。";
-            string range = usage.StartUtc.ToLocalTime().ToString("M月d日 HH:mm") + " – " + usage.EndUtc.ToLocalTime().ToString("M月d日 HH:mm");
+            string range = usage.StartUtc.ToLocalTime().ToString(I18n.T("M月d日 HH:mm"), I18n.Culture) + " – " + usage.EndUtc.ToLocalTime().ToString(I18n.T("M月d日 HH:mm"), I18n.Culture);
             if (usage.Exact) return "窗口 " + range + "（由重置时间和周期长度反推）。\nToken 按会话日志逐小时精确累计，只计官方订阅、不含第三方接口；费用按各自然日的 API 等价单价折算，因此标 ≈。";
             return "窗口 " + range + "（由重置时间和周期长度反推）。\n本地历史只有按日汇总，跨越窗口起点的那一天不计入，因此是保守下界（≥）。";
         }
@@ -635,9 +636,14 @@ namespace CodeUsageMonit {
             return n >= 1000000000 ? (n / 1000000000).ToString("0.##", c) + "B" : n >= 1000000 ? (n / 1000000).ToString("0.##", c) + "M" : n >= 1000 ? (n / 1000).ToString("0.#", c) + "K" : n.ToString("N0", c);
         }
         private static string LocalTime(string iso) { DateTimeOffset date; return DateTimeOffset.TryParse(iso, out date) ? date.LocalDateTime.ToString("MM-dd HH:mm") : "时间未知"; }
-        private static string Countdown(string iso) { DateTimeOffset date; if (!DateTimeOffset.TryParse(iso, out date)) return "重置时间未知"; var span = date - DateTimeOffset.UtcNow; if (span.TotalSeconds <= 0) return "等待新窗口"; return (span.TotalDays >= 1 ? ((int)span.TotalDays) + "天 " + span.Hours + "小时" : span.TotalHours >= 1 ? ((int)span.TotalHours) + "小时 " + span.Minutes + "分" : Math.Max(1, (int)span.TotalMinutes) + "分钟") + "后重置"; }
-        private static string UpdatedAgo(string iso) { DateTimeOffset date; if (!DateTimeOffset.TryParse(iso, out date)) return "更新时间未知"; double minutes = (DateTimeOffset.UtcNow - date).TotalMinutes; return minutes < 1 ? "刚刚更新" : minutes < 60 ? (int)minutes + " 分钟前更新" : "更新于 " + LocalTime(iso); }
-        private static string Duration(double seconds) { if (seconds <= 0) return "现在"; var t = TimeSpan.FromSeconds(seconds); return t.TotalDays >= 1 ? (int)t.TotalDays + "天 " + t.Hours + "小时" : t.TotalHours >= 1 ? (int)t.TotalHours + "小时 " + t.Minutes + "分" : Math.Max(1, (int)t.TotalMinutes) + "分钟"; }
+        private static string Countdown(string iso) { DateTimeOffset date; if (!DateTimeOffset.TryParse(iso, out date)) return "重置时间未知"; var span = date - DateTimeOffset.UtcNow; if (span.TotalSeconds <= 0) return "等待新窗口"; return I18n.English ? "resets in " + Span(span) : Span(span) + "后重置"; }
+        private static string UpdatedAgo(string iso) { DateTimeOffset date; if (!DateTimeOffset.TryParse(iso, out date)) return "更新时间未知"; double minutes = (DateTimeOffset.UtcNow - date).TotalMinutes; return minutes < 1 ? "刚刚更新" : minutes < 60 ? (int)minutes + (I18n.English ? " min ago" : " 分钟前更新") : "更新于 " + LocalTime(iso); }
+        private static string Duration(double seconds) { if (seconds <= 0) return "现在"; return Span(TimeSpan.FromSeconds(seconds)); }
+        // "6天 23小时" / "6d 23h".
+        private static string Span(TimeSpan t) {
+            if (I18n.English) return t.TotalDays >= 1 ? (int)t.TotalDays + "d " + t.Hours + "h" : t.TotalHours >= 1 ? (int)t.TotalHours + "h " + t.Minutes + "m" : Math.Max(1, (int)t.TotalMinutes) + " min";
+            return t.TotalDays >= 1 ? (int)t.TotalDays + "天 " + t.Hours + "小时" : t.TotalHours >= 1 ? (int)t.TotalHours + "小时 " + t.Minutes + "分" : Math.Max(1, (int)t.TotalMinutes) + "分钟";
+        }
         private static string ExpiryCountdown(string iso) { DateTimeOffset date; return DateTimeOffset.TryParse(iso, out date) ? Duration(Math.Max(0, (date - DateTimeOffset.UtcNow).TotalSeconds)) : "到期时间未知"; }
     }
 }

@@ -32,11 +32,11 @@ namespace CodeUsageMonit {
             foreach (var current in new[] { new { App = "Claude Code", Mark = thirdParty.ClaudeNow }, new { App = "Codex", Mark = thirdParty.CodexNow } }) {
                 var row = Row(); row.Margin = new Thickness(0, 8, 0, 0);
                 var value = Label(CurrentLabel(current.Mark), 11.5, current.Mark != null && !current.Mark.Official ? Ink : InkDim);
-                value.MaxWidth = 250; value.ToolTip = current.Mark != null && current.Mark.Key.Length > 0 ? "密钥指纹 " + current.Mark.Key + "（只保存指纹，不保存密钥）" : null;
+                value.MaxWidth = 250; value.ToolTip = I18n.T(current.Mark != null && current.Mark.Key.Length > 0 ? "密钥指纹 " + current.Mark.Key + "（只保存指纹，不保存密钥）" : null);
                 AddRow(row, Label("当前 " + current.App, 11.5, InkDim), value); intro.Children.Add(row);
             }
             if (thirdParty.ClaudeUnattributed > 0) {
-                DateTime since; string when = LogIndex.Parse(thirdParty.ClaudeTrackedSince, out since) ? since.ToLocalTime().ToString("M月d日 HH:mm") : "开始记录";
+                DateTime since; string when = LogIndex.Parse(thirdParty.ClaudeTrackedSince, out since) ? since.ToLocalTime().ToString(I18n.T("M月d日 HH:mm"), I18n.Culture) : "开始记录";
                 intro.Children.Add(Notice("Claude Code 的日志不记录接口地址，本软件从 " + when + " 起记录切换；在此之前带官方 request-id 的 " + Compact(thirdParty.ClaudeUnattributed) + " Token 无法判断是官方还是透传型中转，未计入任何接口。", false));
             }
             body.Children.Add(Card(intro));
@@ -91,8 +91,8 @@ namespace CodeUsageMonit {
             var chips = new StackPanel { Orientation = Orientation.Horizontal };
             foreach (string[] option in new[] { new[] { "tokens", "Token" }, new[] { "cost", "费用" }, new[] { "requests", "请求" }, new[] { "speed", "速度" } }) {
                 string code = option[0]; bool on = boardMetric == code;
-                var chip = new Button { Content = Label(option[1], 10, on ? Ink : InkFaint), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(2, 0, 0, 0), Background = Brush(on ? "#1CFFFFFF" : "#00FFFFFF"), ToolTip = "按" + option[1] + "排序" };
-                System.Windows.Automation.AutomationProperties.SetName(chip, "接口对比按" + option[1]);
+                var chip = new Button { Content = Label(option[1], 10, on ? Ink : InkFaint), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(2, 0, 0, 0), Background = Brush(on ? "#1CFFFFFF" : "#00FFFFFF"), ToolTip = I18n.T("按{0}排序", I18n.T(option[1])) };
+                System.Windows.Automation.AutomationProperties.SetName(chip, I18n.T("接口对比按{0}", I18n.T(option[1])));
                 chip.Click += delegate { boardMetric = code; Render(); };
                 chips.Children.Add(chip);
             }
@@ -140,7 +140,7 @@ namespace CodeUsageMonit {
             string origin = e.Host.Length > 0 ? e.Host : e.Key == ClaudeLogs.NoRequestId ? "记录缺少官方 request-id，无法确定地址" : "本软件开始记录之前的第三方会话";
             var where = Label(AppName(e.App) + " · " + origin + (e.Key.Length > 0 && e.Host.Length > 0 ? " · 密钥 …" + e.Key : "") + " · " + (e.LastUsed.Length == 0 ? "近一个月未使用" : "最后使用 " + Ago(e.LastUsed)), 10.5, InkDim);
             where.TextWrapping = TextWrapping.Wrap;
-            if (e.Key == ClaudeLogs.NoRequestId) where.ToolTip = "Anthropic 官方接口的每次响应都带 request-id，Claude Code 会把它写进日志。这些记录没有 request-id，通常是经中转站转发（中转站往往不透传这个响应头），但无法确定是哪一家。";
+            if (e.Key == ClaudeLogs.NoRequestId) where.ToolTip = I18n.T("Anthropic 官方接口的每次响应都带 request-id，Claude Code 会把它写进日志。这些记录没有 request-id，通常是经中转站转发（中转站往往不透传这个响应头），但无法确定是哪一家。");
             box.Children.Add(where);
             if (e.Total.Tokens() <= 0) return box;
             UIElement composition = Composition(e.Total.I, e.Total.O, e.Total.C, e.Total.W, "Token 构成");

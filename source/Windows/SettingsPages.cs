@@ -255,10 +255,10 @@ namespace CodeUsageMonit {
                 bool newer = Updates.Newer(u);
                 download.Visibility = newer ? Visibility.Visible : Visibility.Collapsed;
                 updateText.Foreground = newer ? GoodBrush : u.Error.Length > 0 ? WarnBrush : InkFaint;
-                updateText.Text = newer ? I18n.T("发现新版本 v{0}（当前 v{1}）", u.Latest, AppInfo.Version)
+                updateText.Text = I18n.T(newer ? I18n.T("发现新版本 v{0}（当前 v{1}）", u.Latest, AppInfo.Version)
                     : u.Error.Length > 0 ? u.Error
                     : u.Latest.Length > 0 ? I18n.T("已是最新版本 · {0} 检查", when)
-                    : I18n.T("当前 v{0}", AppInfo.Version);
+                    : I18n.T("当前 v{0}", AppInfo.Version));
             };
             download.Click += delegate { string url = updateState.Url.Length > 0 ? updateState.Url : Updates.Releases; try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { } };
             check.Click += async delegate {

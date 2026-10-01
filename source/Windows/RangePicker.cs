@@ -125,6 +125,7 @@ namespace CodeUsageMonit {
                 popup.Child = frame;
             };
             rebuild();
+            I18n.Localize(popup.Child);
             popup.IsOpen = true;
         }
         private FrameworkElement TimeCard(string title, DateTime value, bool active, bool disabled, Action pickDate, Action pickTime) {
@@ -153,12 +154,12 @@ namespace CodeUsageMonit {
             var head = new Grid(); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); head.ColumnDefinitions.Add(new ColumnDefinition()); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var prev = new Button { Style = Styled("IconButton"), Content = "", Width = 26, Height = 26, FontSize = 10, IsEnabled = month > new DateTime(OldestSelectable.Year, OldestSelectable.Month, 1), ToolTip = "上个月" };
             prev.Click += delegate { changeMonth(month.AddMonths(-1)); }; head.Children.Add(prev);
-            var title = Label(month.ToString("yyyy年M月"), 13, Ink); title.FontWeight = FontWeights.SemiBold; title.HorizontalAlignment = HorizontalAlignment.Center; Grid.SetColumn(title, 1); head.Children.Add(title);
+            var title = Label(month.ToString(I18n.T("yyyy年M月"), I18n.Culture), 13, Ink); title.FontWeight = FontWeights.SemiBold; title.HorizontalAlignment = HorizontalAlignment.Center; Grid.SetColumn(title, 1); head.Children.Add(title);
             var next = new Button { Style = Styled("IconButton"), Content = "", Width = 26, Height = 26, FontSize = 10, IsEnabled = month.AddMonths(1) <= DateTime.Today, ToolTip = "下个月" };
             next.Click += delegate { changeMonth(month.AddMonths(1)); }; Grid.SetColumn(next, 2); head.Children.Add(next);
             stack.Children.Add(head);
             var grid = new UniformGrid { Columns = 7, Margin = new Thickness(0, 6, 0, 0) };
-            foreach (string d in new[] { "日", "一", "二", "三", "四", "五", "六" }) { var l = Label(d, 10.5, InkFaint); l.HorizontalAlignment = HorizontalAlignment.Center; l.Margin = new Thickness(0, 2, 0, 6); grid.Children.Add(l); }
+            foreach (string d in I18n.English ? new[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" } : new[] { "日", "一", "二", "三", "四", "五", "六" }) { var l = Label(d, 10.5, InkFaint); l.HorizontalAlignment = HorizontalAlignment.Center; l.Margin = new Thickness(0, 2, 0, 6); grid.Children.Add(l); }
             DateTime first = month.AddDays(-(int)month.DayOfWeek);
             for (int i = 0; i < 42; i++) {
                 DateTime day = first.AddDays(i); bool inMonth = day.Month == month.Month;
@@ -180,7 +181,7 @@ namespace CodeUsageMonit {
         private FrameworkElement HourGrid(DateTime value, Action<int> pick) {
             var box = new Border { Background = Brush("#08FFFFFF"), BorderBrush = Brush("#14FFFFFF"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 8, 10, 8) };
             var stack = new StackPanel();
-            var title = Label(value.ToString("M月d日") + " · 选择整点", 13, Ink); title.FontWeight = FontWeights.SemiBold; title.HorizontalAlignment = HorizontalAlignment.Center; title.Margin = new Thickness(0, 4, 0, 8); stack.Children.Add(title);
+            var title = Label(value.ToString(I18n.T("M月d日"), I18n.Culture) + " · 选择整点", 13, Ink); title.FontWeight = FontWeights.SemiBold; title.HorizontalAlignment = HorizontalAlignment.Center; title.Margin = new Thickness(0, 4, 0, 8); stack.Children.Add(title);
             var grid = new UniformGrid { Columns = 4 };
             DateTime now = DateTime.Now;
             for (int h = 0; h < 24; h++) {

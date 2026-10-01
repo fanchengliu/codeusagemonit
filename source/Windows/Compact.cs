@@ -85,7 +85,7 @@ namespace CodeUsageMonit {
                 menu.Items.Clear();
                 foreach (string size in DisplaySizes) {
                     string captured = size;
-                    var item = new MenuItem { Header = SizeName(size) + (size == "full" ? "面板" : "尺寸"), IsChecked = activeSize == size };
+                    var item = new MenuItem { Header = I18n.T(SizeName(size) + (size == "full" ? "面板" : "尺寸")), IsChecked = activeSize == size };
                     item.Click += delegate { SetDisplaySize(captured); };
                     menu.Items.Add(item);
                 }
@@ -134,6 +134,7 @@ namespace CodeUsageMonit {
                 content = activeSize == "small" ? CompactSmall(state, days, pages, space) : activeSize == "large" ? CompactLarge(state, days, pages, space) : CompactMedium(state, days, pages, space);
             }
             compactRoot.Child = content;
+            I18n.Localize(window);
         }
 
         // ── Small ─────────────────────────────────────────────────────────
@@ -145,7 +146,7 @@ namespace CodeUsageMonit {
             if (main != null) {
                 body.Children.Add(HeadlineButton(state, main, Clamp(Math.Min(space.Width, space.Height) * .19, 28, 56)));
                 var bar = SegmentBar(main.Remaining, ProviderCatalog.Color(state.Id), space.Width > 240 ? 24 : 16, 6); bar.Margin = new Thickness(0, 7, 0, 0); body.Children.Add(bar);
-                var reset = Label(Countdown(main.ResetUtc), 10, InkFaint); reset.Margin = new Thickness(0, 5, 0, 0); reset.ToolTip = "重置时间：" + LocalTime(main.ResetUtc); body.Children.Add(reset);
+                var reset = Label(Countdown(main.ResetUtc), 10, InkFaint); reset.Margin = new Thickness(0, 5, 0, 0); reset.ToolTip = I18n.T("重置时间：" + LocalTime(main.ResetUtc)); body.Children.Add(reset);
             } else AlternateBody(body, state, days, Clamp(Math.Min(space.Width, space.Height) * .16, 24, 44));
             Grid.SetRow(body, 1); root.Children.Add(body);
             var dots = Dots(pages, state.Id); Grid.SetRow(dots, 2); root.Children.Add(dots);
@@ -176,7 +177,7 @@ namespace CodeUsageMonit {
             List<Quota> others = state.Quotas.Where(q => q != main).ToList();
             if (main != null) {
                 left.Children.Add(HeadlineButton(state, main, Clamp(space.Height * .18, 26, 46)));
-                var reset = Label(Countdown(main.ResetUtc), 10, InkFaint); reset.Margin = new Thickness(0, 3, 0, 0); reset.ToolTip = "重置时间：" + LocalTime(main.ResetUtc); left.Children.Add(reset);
+                var reset = Label(Countdown(main.ResetUtc), 10, InkFaint); reset.Margin = new Thickness(0, 3, 0, 0); reset.ToolTip = I18n.T("重置时间：" + LocalTime(main.ResetUtc)); left.Children.Add(reset);
             } else AlternateBody(left, state, days, Clamp(space.Height * .16, 24, 40));
             body.Children.Add(left);
             // Right: quota windows only (no chart in this size). A single window gets its pace,
@@ -234,12 +235,12 @@ namespace CodeUsageMonit {
             var line = new TextBlock { FontSize = size, Foreground = InkFaint, TextTrimming = TextTrimming.CharacterEllipsis };
             line.Inlines.Add(new Run(even ? "进度均衡" : pace.Reserve >= 0 ? "余量 " + pace.Reserve.ToString("0") + "%" : "超前消耗 " + (-pace.Reserve).ToString("0") + "%") { Foreground = even ? InkDim : pace.Reserve >= 0 ? GoodBrush : WarnBrush });
             line.Inlines.Add(pace.Lasts ? " · 可持续到重置" : pace.SecondsUntilEmpty.HasValue ? " · 约 " + Duration(pace.SecondsUntilEmpty.Value) + "后用尽" : "");
-            line.ToolTip = "按本周期平均速度线性估算，不是官方承诺。";
+            line.ToolTip = I18n.T("按本周期平均速度线性估算，不是官方承诺。");
             return line;
         }
         private static string WindowLength(Quota quota, string prefix) {
             if (quota.WindowSeconds <= 0) return "";
-            return prefix + (quota.WindowSeconds % 86400 == 0 ? (quota.WindowSeconds / 86400) + " 天" : (quota.WindowSeconds / 3600.0).ToString("0.#") + " 小时") + "窗口";
+            return prefix + (quota.WindowSeconds % 86400 == 0 ? (quota.WindowSeconds / 86400) + " 天" : (quota.WindowSeconds / 3600.0).ToString("0.#") + " 小时") + (I18n.English ? " window" : "窗口");
         }
         private FrameworkElement OverviewMedium(List<string> pages, Size space) {
             Grid root = PageGrid(new Thickness(14, 9, 10, 8), 3, 1);
@@ -416,7 +417,7 @@ namespace CodeUsageMonit {
             stack.Children.Add(BigValue(main.Remaining.ToString("0") + "%", size));
             int index = state.Quotas.IndexOf(main), count = state.Quotas.Count;
             var caption = Label(main.Label + "剩余" + (count > 1 ? "  " + (index + 1) + "/" + count : ""), 10.5, InkDim); stack.Children.Add(caption);
-            if (count < 2) { stack.ToolTip = main.Label + " 已用 " + main.Used.ToString("0.#") + "% · 重置 " + LocalTime(main.ResetUtc); return stack; }
+            if (count < 2) { stack.ToolTip = I18n.T(main.Label + " 已用 " + main.Used.ToString("0.#") + "% · 重置 " + LocalTime(main.ResetUtc)); return stack; }
             var button = new Button { Content = stack, HorizontalAlignment = HorizontalAlignment.Left, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(4, 1, 6, 2), Margin = new Thickness(-4, -1, 0, 0), ToolTip = "点击切换额度窗口（共 " + count + " 个）" };
             System.Windows.Automation.AutomationProperties.SetName(button, "切换额度窗口");
             button.Click += delegate(object sender, RoutedEventArgs e) { e.Handled = true; ChooseHeadline(state, state.Quotas[(index + 1) % count]); };
@@ -474,7 +475,7 @@ namespace CodeUsageMonit {
             if (open) {
                 string window = quota.WindowSeconds > 0 ? WindowLength(quota, "") + " · " : "";
                 var detail = new TextBlock { FontSize = 10, Foreground = InkDim, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0), LineHeight = 15 };
-                detail.Text = window + "已用 " + quota.Used.ToString("0.#") + "% · " + LocalTime(quota.ResetUtc) + " 重置" + (pace != null ? "\n节奏按本周期平均速度线性估算，不是官方承诺。" : "");
+                detail.Text = I18n.T(window + "已用 " + quota.Used.ToString("0.#") + "% · " + LocalTime(quota.ResetUtc) + " 重置" + (pace != null ? "\n节奏按本周期平均速度线性估算，不是官方承诺。" : ""));
                 stack.Children.Add(detail);
             }
             var button = new Button { Content = stack, HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(5, 4, 5, 5), Margin = new Thickness(-5, 7, -5, 0), ToolTip = open ? "点击收起" : "点击展开重置时间与用量" };
@@ -497,7 +498,7 @@ namespace CodeUsageMonit {
             var columns = new UniformGrid { Columns = 30, Rows = 1 };
             for (int i = 0; i < 30; i++) {
                 var item = series[i];
-                var column = new Grid { Margin = new Thickness(.75, 0, .75, 0), Background = Brushes.Transparent, ToolTip = item.Date.ToString("M月d日 ddd", CultureInfo.GetCultureInfo("zh-CN")) + "\n" + Usd(item.Cost) + " · " + Compact(item.Tokens) + " Token" };
+                var column = new Grid { Margin = new Thickness(.75, 0, .75, 0), Background = Brushes.Transparent, ToolTip = item.Date.ToString(I18n.T("M月d日 ddd"), I18n.Culture) + "\n" + Usd(item.Cost) + " · " + Compact(item.Tokens) + " Token" };
                 if (item.Cost > 0) {
                     column.RowDefinitions.Add(new RowDefinition { Height = new GridLength(max - item.Cost, GridUnitType.Star) }); column.RowDefinitions.Add(new RowDefinition { Height = new GridLength(item.Cost, GridUnitType.Star), MinHeight = 2 });
                     var bar = new Border { Background = Brush(ProviderCatalog.Color(id)), Opacity = i == 29 ? 1 : .55, CornerRadius = new CornerRadius(1, 1, 0, 0) }; Grid.SetRow(bar, 1); column.Children.Add(bar);
@@ -516,7 +517,7 @@ namespace CodeUsageMonit {
             var columns = new UniformGrid { Columns = 30, Rows = 1 };
             foreach (var item in series) {
                 double total = item.Parts.Sum(p => p.Cost);
-                string tip = item.Date.ToString("M月d日 ddd", CultureInfo.GetCultureInfo("zh-CN")) + " · " + Usd(total) + String.Concat(item.Parts.Select(p => "\n" + ProviderCatalog.Name(p.Id) + "  " + Usd(p.Cost)));
+                string tip = item.Date.ToString(I18n.T("M月d日 ddd"), I18n.Culture) + " · " + Usd(total) + String.Concat(item.Parts.Select(p => "\n" + ProviderCatalog.Name(p.Id) + "  " + Usd(p.Cost)));
                 var column = new Grid { Margin = new Thickness(.75, 0, .75, 0), Background = Brushes.Transparent, ToolTip = tip };
                 if (total <= 0) column.Children.Add(new Border { Height = 1, Background = Brush("#1FFFFFFF"), VerticalAlignment = VerticalAlignment.Bottom });
                 else {
@@ -540,7 +541,7 @@ namespace CodeUsageMonit {
         }
         private string ConnectedSummary(List<string> ids) {
             int connected = ids.Count(id => states.ContainsKey(id) && states[id].Status == "ready");
-            return connected + " / " + ids.Count + " 已连接" + (lastRefresh == DateTime.MinValue ? "" : " · " + lastRefresh.ToString("HH:mm") + " 更新");
+            return connected + " / " + ids.Count + " 已连接" + (lastRefresh == DateTime.MinValue ? "" : I18n.English ? " · updated " + lastRefresh.ToString("HH:mm") : " · " + lastRefresh.ToString("HH:mm") + " 更新");
         }
         // Overview order: the providers closest to running out first, then the rest.
         private IEnumerable<string> Urgent(IEnumerable<string> ids) {

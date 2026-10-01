@@ -377,6 +377,25 @@ namespace CodeUsageMonit {
                     Require(Math.Abs(index.Entries().Sum(h => h.Tokens) - 1920) < 1e-9);
                 } finally { try { Directory.Delete(dir, true); } catch { } }
             });
+            test("English interface: whole strings, built-up strings, placeholders, and back to Chinese", () => {
+                try {
+                    I18n.Use("zh");
+                    Require(I18n.T("近 30 天") == "近 30 天");
+                    I18n.Use("en");
+                    Require(I18n.T("近 30 天") == "Last 30 days" && I18n.T("{0} 分钟", 5) == "5 min" && I18n.T("Codex") == "Codex");
+                    Require(I18n.T("4 / 6" + " 已连接 · 每 " + 5 + " 分钟刷新") == "4 / 6 connected · every 5 min");
+                    Require(I18n.T("Sonnet · 每周") == "Sonnet · Weekly");
+                    // Every placeholder of a key is kept in its English text.
+                    foreach (var pair in I18nTable.En) foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(pair.Key, @"\{\d\}")) Require(pair.Value.Contains(m.Value));
+                    var block = new System.Windows.Controls.TextBlock { Text = "近 7 天", ToolTip = "刷新全部" };
+                    I18n.Localize(block); Require(block.Text == "Last 7 days" && (string)block.ToolTip == "Refresh all");
+                    // A label followed by added runs (the bold percentage of a quota) keeps them.
+                    var mixed = new System.Windows.Controls.TextBlock { Text = "每周 " };
+                    mixed.Inlines.Add(new System.Windows.Documents.Run("22%")); mixed.Inlines.Add(new System.Windows.Documents.Run(" 剩余"));
+                    I18n.Localize(mixed); Require(new System.Windows.Documents.TextRange(mixed.ContentStart, mixed.ContentEnd).Text == "Weekly 22% left");
+                    I18n.Use("zh"); I18n.Localize(block); Require(block.Text == "近 7 天" && (string)block.ToolTip == "刷新全部");
+                } finally { I18n.Use("zh"); }
+            });
             test("SQL reader handles quotes, comments and several rows per INSERT", () => {
                 var rows = Devices.Inserts("-- note; with a semicolon\nINSERT INTO cum_devices VALUES ('a''b', 'n;x', NULL, '1'); /* x; */ INSERT INTO t (p, q) VALUES (1, 'x'), (2.5e1, 'y');").ToList();
                 Require(rows.Count == 3 && rows[0].Key == "cum_devices" && (string)rows[0].Value["device_id"] == "a'b" && (string)rows[0].Value["name"] == "n;x" && rows[0].Value["exported_utc"] == null);
