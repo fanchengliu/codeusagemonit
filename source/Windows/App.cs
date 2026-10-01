@@ -29,9 +29,13 @@ namespace CodeUsageMonit {
         private static Mutex mutex;
         private static EventWaitHandle showEvent;
         private static EventWaitHandle quitEvent;
+        // --side-by-side: a second copy (another folder, its own data) beside the installed one,
+        // e.g. to try a new build. It never touches the autostart entry.
+        public static bool SideBySide;
         [STAThread] public static int Main(string[] args) {
             if (args.Contains("--demo") && args.Contains("--probe")) return 2;
-            string instance = @"Local\codeusagemonit" + (args.Contains("--demo") ? ".Preview" : "");
+            SideBySide = args.Contains("--side-by-side");
+            string instance = @"Local\codeusagemonit" + (args.Contains("--demo") ? ".Preview" : SideBySide ? ".SideBySide" : "");
             if (args.Contains("--quit")) { try { using (var signal = EventWaitHandle.OpenExisting(instance + ".Quit")) signal.Set(); } catch (WaitHandleCannotBeOpenedException) { } return 0; }
             if (args.Contains("--self-test")) return SelfTests.Run();
             if (args.Contains("--probe")) return Probe().GetAwaiter().GetResult();
@@ -398,7 +402,7 @@ namespace CodeUsageMonit {
             return new TextBlock { Text = id == "antigravity" ? "Λ" : id == "grok" ? "𝕏" : ProviderCatalog.Name(id).Substring(0, 1), FontSize = size - 2, Width = size, Height = size, TextAlignment = TextAlignment.Center, Foreground = Brush(ProviderCatalog.Color(id)), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         }
         private bool StartupEnabled() { using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) return key != null && key.GetValue("codeusagemonit") != null; }
-        private void SetStartup(bool enabled) { using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) { if (enabled) key.SetValue("codeusagemonit", "\"" + System.IO.Path.Combine(Store.Root, "codeusagemonit.exe") + "\" --background"); else key.DeleteValue("codeusagemonit", false); } }
+        private void SetStartup(bool enabled) { if (Program.SideBySide) return; using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) { if (enabled) key.SetValue("codeusagemonit", "\"" + System.IO.Path.Combine(Store.Root, "codeusagemonit.exe") + "\" --background"); else key.DeleteValue("codeusagemonit", false); } }
         public void Quit() { frame.Capture(); SaveConfig(); quitting = true; tray.Visible = false; if (settingsWindow != null) settingsWindow.Close(); window.Close(); app.Shutdown(); }
         public void Dispose() { quitting = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
     }

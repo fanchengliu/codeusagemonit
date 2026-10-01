@@ -243,7 +243,7 @@ namespace CodeUsageMonit {
             }));
             dataCard.Children.Add(proxyRow); dataCard.Children.Add(proxyBox); dataCard.Children.Add(proxyHint); dataCard.Children.Add(Separator());
             CheckBox hidden = SwitchRow("隐藏账户邮箱的部分字符", "截图或分享时更安全", config.HideAccounts);
-            CheckBox autoStart = SwitchRow("登录 Windows 后自动运行", demo ? "演示模式下不可更改" : "启动后只驻留托盘", !demo && StartupEnabled()); autoStart.IsEnabled = !demo;
+            CheckBox autoStart = SwitchRow("登录 Windows 后自动运行", demo ? "演示模式下不可更改" : Program.SideBySide ? "并行运行的副本不可更改" : "启动后只驻留托盘", !demo && StartupEnabled()); autoStart.IsEnabled = !demo && !Program.SideBySide;
             dataCard.Children.Add(hidden); dataCard.Children.Add(Separator()); dataCard.Children.Add(autoStart);
             content.Children.Add(Card(dataCard));
 

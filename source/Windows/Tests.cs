@@ -304,6 +304,26 @@ namespace CodeUsageMonit {
                     Require(b.Month == 900 && b.Current && (a == null || a.Month == 0));
                 } finally { EndpointAttribution.Use(null); }
             });
+            test("Third-party dashboard ranks endpoints over a period and stacks bars by endpoint", () => {
+                var log = new EndpointLog();
+                log.Marks.Add(new EndpointMark { App = "claude", Host = "a.example.com", Key = "aaaaaa", Name = "A", Since = "2026-09-30T09:00:00Z" });
+                log.Marks.Add(new EndpointMark { App = "claude", Host = "b.example.com", Key = "bbbbbb", Name = "B", Since = "2026-09-30T10:30:00Z" });
+                var claude = new LogIndex(); claude.Files.Add(new LogFile { Name = "s.jsonl", Hours = {
+                    { "2026093009|anthropic|m1|a.example.com/aaaaaa", new Bucket { I = 1000, R = 2 } },
+                    { "2026093010|anthropic|m1|b.example.com/bbbbbb", new Bucket { I = 3000, R = 3, TN = 3, TO = 900, TS = 9 } },
+                    { "2026093010|anthropic|m2|", new Bucket { I = 5000, R = 1 } } } }); // official: not a relay
+                var codex = new LogIndex(); codex.Files.Add(new LogFile { Name = "r.jsonl", Hours = { { "2026093011|myrelay|gpt", new Bucket { I = 500, R = 1 } } } });
+                var period = ThirdPartyReport.Period(codex, claude, log, new DateTime(2026, 9, 30, 0, 0, 0), new DateTime(2026, 9, 30, 12, 0, 0), new DateTime(2026, 9, 30, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Utc);
+                Require(period.Hourly && period.Bars.Count == 12 && Math.Abs(period.Total.Tokens() - 4500) < 1e-9);
+                Require(period.Endpoints.Select(p => p.Label).SequenceEqual(new[] { "B", "A", "地址未记录的第三方接口" }));
+                EndpointPeriod top = period.Endpoints[0];
+                Require(top.Current && Math.Abs(top.Total.Speed().Value - 100) < 1e-9 && top.Color == ThirdPartyReport.Palette[0]);
+                ChartBar ten = period.Bars[10];
+                Require(ten.Parts.Count == 1 && ten.Parts[0].Name == "B" && Math.Abs(ten.Tokens - 3000) < 1e-9);
+                // A 4-hour window from 08:00 leaves B's 10:00 bucket in and the 11:00 Codex one out.
+                var narrow = ThirdPartyReport.Period(codex, claude, log, new DateTime(2026, 9, 30, 8, 0, 0), new DateTime(2026, 9, 30, 11, 0, 0), new DateTime(2026, 9, 30, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Utc);
+                Require(Math.Abs(narrow.Total.Tokens() - 4000) < 1e-9 && narrow.Endpoints.Last().Total.Tokens() == 0);
+            });
             test("A truncated log is read again from the start and its surviving records count", () => {
                 string dir = Path.Combine(Path.GetTempPath(), "codeusagemonit-trunc-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(dir);
                 try {

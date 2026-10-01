@@ -25,6 +25,20 @@ namespace CodeUsageMonit {
         public string Id { get { return App + "|" + Host + "|" + Key; } }
         public string Title { get { return Name.Length > 0 ? Name : Host.Length > 0 ? Host : "地址未记录的第三方接口"; } }
     }
+    // One endpoint over a chosen period (the third-party dashboard).
+    public sealed class EndpointPeriod {
+        public string Id = "", App = "", Host = "", Key = "", Name = "", Label = "", Color = "#A9B4C6", LastUsed = "";
+        public bool Current;
+        public Bucket Total = new Bucket();
+        public Dictionary<string, Bucket> Models = new Dictionary<string, Bucket>();
+        public string Title { get { return Name.Length > 0 ? Name : Host.Length > 0 ? Host : "地址未记录的第三方接口"; } }
+    }
+    public sealed class ThirdPartyPeriod {
+        public List<EndpointPeriod> Endpoints = new List<EndpointPeriod>(); // most tokens first
+        public Bucket Total = new Bucket();
+        public List<ChartBar> Bars = new List<ChartBar>();                 // parts = endpoints
+        public bool Hourly;
+    }
     public sealed class ThirdPartySummary {
         public List<EndpointUsage> Endpoints = new List<EndpointUsage>();
         public double ClaudeUnattributed;
@@ -178,20 +192,8 @@ namespace CodeUsageMonit {
                 foreach (HourUsage hour in source.Index.Entries()) {
                     DateTime day = TimeZoneInfo.ConvertTimeFromUtc(hour.Hour, zone).Date;
                     if (day < first || day > today) continue;
-                    // Buckets read since endpoint attribution know their endpoint per request;
-                    // older ones fall back to the endpoint in effect at the top of the hour.
-                    EndpointMark mark = hour.Endpoint != null ? EndpointAttribution.Mark(log, source.App, hour.Endpoint) : Endpoints.Resolve(log, source.App, hour.Hour);
-                    EndpointMark target;
-                    if (source.App == Endpoints.CodexApp) {
-                        // Codex logs say exactly whether a session used a custom provider.
-                        if (CodexLogs.IsOfficial(hour.Provider)) continue;
-                        target = mark != null && !mark.Official ? mark : new EndpointMark { App = Endpoints.CodexApp, Key = hour.Provider, Name = "地址未记录的第三方接口" };
-                    } else if (mark != null && !mark.Official) target = mark;
-                    // Anthropic always returns a request-id, so records without one did not
-                    // come from the official API even when settings.json looks official
-                    // (e.g. Claude Desktop routed through a relay, or before tracking began).
-                    else if (hour.Provider == ClaudeLogs.NoRequestId) target = new EndpointMark { App = Endpoints.ClaudeApp, Key = ClaudeLogs.NoRequestId, Name = "疑似中转站" };
-                    else { if (mark == null) summary.ClaudeUnattributed += hour.Tokens; continue; }
+                    bool untracked; EndpointMark target = Target(source.App, hour, log, out untracked);
+                    if (target == null) { if (untracked) summary.ClaudeUnattributed += hour.Tokens; continue; }
                     EndpointUsage usage;
                     if (!map.TryGetValue(target.Id, out usage)) { usage = new EndpointUsage { App = target.App, Host = target.Host, Key = target.Key, Name = target.Name }; map[target.Id] = usage; models[target.Id] = new Dictionary<string, double>(); }
                     if (usage.Name.Length == 0 && target.Name.Length > 0) usage.Name = target.Name;
@@ -217,6 +219,86 @@ namespace CodeUsageMonit {
             }
             summary.Endpoints = map.Values.OrderByDescending(e => e.Current).ThenByDescending(e => e.Month).ToList();
             return summary;
+        }
+        // Endpoint colours on the dashboard, by rank.
+        public static readonly string[] Palette = { "#5CC8E0", "#F2B36B", "#7AD3A8", "#D6C1F9", "#E58FD0", "#F4C95D", "#8FA8F0", "#A9B4C6" };
+        // Every endpoint's usage in [startLocal, endLocal): totals, per model, and bars (hourly
+        // up to two days, else daily) split by endpoint. The running hour counts up to now.
+        public static ThirdPartyPeriod Period(LogIndex codex, LogIndex claude, EndpointLog log, DateTime startLocal, DateTime endLocal, DateTime nowUtc, TimeZoneInfo zone) {
+            var period = new ThirdPartyPeriod { Hourly = (endLocal - startLocal).TotalHours <= 48 };
+            DateTime first = period.Hourly ? new DateTime(startLocal.Year, startLocal.Month, startLocal.Day, startLocal.Hour, 0, 0) : startLocal.Date;
+            DateTime nowLocal = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, zone);
+            for (DateTime t = first; t < endLocal; t = period.Hourly ? t.AddHours(1) : t.AddDays(1))
+                period.Bars.Add(new ChartBar { Start = t, Hourly = period.Hourly, Current = period.Hourly ? t.Date == nowLocal.Date && t.Hour == nowLocal.Hour : t == nowLocal.Date });
+            var bars = period.Bars.ToDictionary(b => b.Start);
+            DateTime startUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(startLocal, DateTimeKind.Unspecified), zone), endUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(endLocal, DateTimeKind.Unspecified), zone);
+            var map = new Dictionary<string, EndpointPeriod>();
+            foreach (var source in new[] { new { App = Endpoints.CodexApp, Index = codex }, new { App = Endpoints.ClaudeApp, Index = claude } }) {
+                if (source.Index == null) continue;
+                foreach (HourUsage hour in source.Index.Entries()) {
+                    bool untracked; EndpointMark target = Target(source.App, hour, log, out untracked);
+                    if (target == null) continue;
+                    EndpointPeriod e;
+                    if (!map.TryGetValue(target.Id, out e)) map[target.Id] = e = new EndpointPeriod { Id = target.Id, App = target.App, Host = target.Host, Key = target.Key, Name = target.Name };
+                    if (e.Name.Length == 0 && target.Name.Length > 0) e.Name = target.Name;
+                    string last = hour.Hour.AddHours(1).ToString("o"); if (String.CompareOrdinal(last, e.LastUsed) > 0) e.LastUsed = last;
+                    double w = LogIndex.Weight(hour.Hour, startUtc, endUtc, nowUtc); if (w <= 0) continue;
+                    Bucket model; string name = hour.Model.Length > 0 ? hour.Model : "（未标注模型）";
+                    if (!e.Models.TryGetValue(name, out model)) e.Models[name] = model = new Bucket();
+                    foreach (Bucket t in new[] { model, e.Total, period.Total }) { t.I += hour.Input * w; t.C += hour.Cached * w; t.W += hour.CacheWrite * w; t.O += hour.Output * w; t.X += hour.Other * w; t.R += hour.Requests * w; t.D += hour.Cost * w; t.U += hour.Unpriced * w; t.TN += hour.TimedRequests * w; t.TO += hour.TimedOutput * w; t.TS += hour.TimedSeconds * w; }
+                    DateTime local = TimeZoneInfo.ConvertTimeFromUtc(hour.Hour, zone);
+                    ChartBar bar; if (!bars.TryGetValue(period.Hourly ? new DateTime(local.Year, local.Month, local.Day, local.Hour, 0, 0) : local.Date, out bar)) continue;
+                    bar.Cost += hour.Cost * w; bar.Tokens += hour.Tokens * w; bar.Requests += hour.Requests * w; if (hour.Unpriced > 0) bar.CostPartial = true;
+                    bar.TimedOutput += hour.TimedOutput * w; bar.TimedSeconds += hour.TimedSeconds * w;
+                    ChartPart part = bar.Parts.FirstOrDefault(p => p.Name == e.Id);
+                    if (part == null) bar.Parts.Add(part = new ChartPart { Name = e.Id });
+                    part.Cost += hour.Cost * w; part.Tokens += hour.Tokens * w; part.TimedOutput += hour.TimedOutput * w; part.TimedSeconds += hour.TimedSeconds * w;
+                }
+            }
+            // The endpoints in use now appear even without usage in the period.
+            foreach (string app in new[] { Endpoints.ClaudeApp, Endpoints.CodexApp }) {
+                EndpointMark now = Endpoints.Latest(log, app); if (now == null || now.Official) continue;
+                EndpointPeriod e; if (!map.TryGetValue(now.Id, out e)) map[now.Id] = e = new EndpointPeriod { Id = now.Id, App = now.App, Host = now.Host, Key = now.Key };
+                e.Current = true; if (now.Name.Length > 0) e.Name = now.Name;
+            }
+            period.Endpoints = map.Values.OrderByDescending(e => e.Total.Tokens()).ThenByDescending(e => e.Current).ThenBy(e => e.Title, StringComparer.Ordinal).ToList();
+            for (int i = 0; i < period.Endpoints.Count; i++) {
+                EndpointPeriod e = period.Endpoints[i];
+                e.Color = Palette[Math.Min(i, Palette.Length - 1)];
+                // Claude Code and Codex through the same relay share a name: tell them apart.
+                e.Label = period.Endpoints.Count(o => o.Title == e.Title) > 1 ? e.Title + " · " + (e.App == Endpoints.ClaudeApp ? "Claude Code" : "Codex") : e.Title;
+            }
+            // Two keys on one relay for the same client: add the key fingerprint.
+            foreach (EndpointPeriod e in period.Endpoints.Where(e => period.Endpoints.Count(o => o.Label == e.Label) > 1).ToList()) e.Label += " …" + e.Key;
+            var byId = period.Endpoints.ToDictionary(e => e.Id);
+            foreach (ChartBar bar in period.Bars) {
+                bar.Requests = Math.Round(bar.Requests);
+                foreach (ChartPart part in bar.Parts) { EndpointPeriod e = byId[part.Name]; part.Name = e.Label; part.Color = e.Color; }
+                bar.Parts = bar.Parts.OrderBy(p => period.Endpoints.FindIndex(e => e.Label == p.Name)).ToList();
+            }
+            period.Total.R = Math.Round(period.Total.R);
+            return period;
+        }
+        // The third-party endpoint a bucket's requests went to; null for the official API.
+        // untracked: Claude requests with an official request-id from before switches were
+        // recorded, which cannot be told apart from a pass-through relay.
+        public static EndpointMark Target(string app, HourUsage hour, EndpointLog log, out bool untracked) {
+            untracked = false;
+            // Buckets read since endpoint attribution know their endpoint per request;
+            // older ones fall back to the endpoint in effect at the top of the hour.
+            EndpointMark mark = hour.Endpoint != null ? EndpointAttribution.Mark(log, app, hour.Endpoint) : Endpoints.Resolve(log, app, hour.Hour);
+            if (app == Endpoints.CodexApp) {
+                // Codex logs say exactly whether a session used a custom provider.
+                if (CodexLogs.IsOfficial(hour.Provider)) return null;
+                return mark != null && !mark.Official ? mark : new EndpointMark { App = Endpoints.CodexApp, Key = hour.Provider, Name = "地址未记录的第三方接口" };
+            }
+            if (mark != null && !mark.Official) return mark;
+            // Anthropic always returns a request-id, so records without one did not
+            // come from the official API even when settings.json looks official
+            // (e.g. Claude Desktop routed through a relay, or before tracking began).
+            if (hour.Provider == ClaudeLogs.NoRequestId) return new EndpointMark { App = Endpoints.ClaudeApp, Key = ClaudeLogs.NoRequestId, Name = "疑似中转站" };
+            untracked = mark == null;
+            return null;
         }
         private static void PickModel(EndpointUsage target, Dictionary<string, double> tally) {
             var top = tally.Where(p => p.Key.Length > 0).OrderByDescending(p => p.Value).FirstOrDefault();

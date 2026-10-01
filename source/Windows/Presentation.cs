@@ -521,11 +521,6 @@ namespace CodeUsageMonit {
             var number = Label(Compact(value), 12.5, Ink); number.Margin = new Thickness(0, 2, 0, 0); Tabular(number); box.Children.Add(number);
             return box;
         }
-        private static UIElement Axis() {
-            var axis = Row(); axis.Margin = new Thickness(0, 4, 0, 0);
-            AddRow(axis, Label(DateTime.Today.AddDays(-29).ToString("M/d"), 9.5, InkFaint), Label("今天", 9.5, InkFaint));
-            return axis;
-        }
 
         // ── Third-party endpoints ─────────────────────────────────────────
         // Usage only: relays set their own weekly/monthly limits and do not publish
@@ -565,71 +560,6 @@ namespace CodeUsageMonit {
                 Grid.SetColumn(chevron, 2); grid.Children.Add(chevron);
             }
             return grid;
-        }
-        private void RenderThirdParty() {
-            var intro = new StackPanel();
-            intro.Children.Add(ThirdPartyHeader(true));
-            intro.Children.Add(new TextBlock { Text = "统计本机 Claude Code / Codex 经第三方接口（中转站）发出的请求用量。各服务商的周、月限额由其自行设定且不公开，所以这里只显示用了多少，不显示剩余额度。", FontSize = 11, Foreground = InkDim, TextWrapping = TextWrapping.Wrap, LineHeight = 17, Margin = new Thickness(0, 10, 0, 4) });
-            foreach (var current in new[] { new { App = "Claude Code", Mark = thirdParty.ClaudeNow }, new { App = "Codex", Mark = thirdParty.CodexNow } }) {
-                var row = Row(); row.Margin = new Thickness(0, 8, 0, 0);
-                var value = Label(CurrentLabel(current.Mark), 11.5, current.Mark != null && !current.Mark.Official ? Ink : InkDim);
-                value.MaxWidth = 250; value.ToolTip = current.Mark != null && current.Mark.Key.Length > 0 ? "密钥指纹 " + current.Mark.Key + "（只保存指纹，不保存密钥）" : null;
-                AddRow(row, Label("当前 " + current.App, 11.5, InkDim), value); intro.Children.Add(row);
-            }
-            if (thirdParty.ClaudeUnattributed > 0) {
-                DateTime since; string when = LogIndex.Parse(thirdParty.ClaudeTrackedSince, out since) ? since.ToLocalTime().ToString("M月d日 HH:mm") : "开始记录";
-                intro.Children.Add(Notice("Claude Code 的日志不记录接口地址，本软件从 " + when + " 起记录切换；在此之前带官方 request-id 的 " + Compact(thirdParty.ClaudeUnattributed) + " Token 无法判断是官方还是透传型中转，未计入下面的任何接口。", false));
-            }
-            body.Children.Add(Card(intro));
-            foreach (EndpointUsage endpoint in thirdParty.Endpoints) body.Children.Add(Card(EndpointBlock(endpoint)));
-        }
-        private UIElement EndpointBlock(EndpointUsage endpoint) {
-            var stack = new StackPanel();
-            var head = new Grid();
-            head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); head.ColumnDefinitions.Add(new ColumnDefinition()); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            FrameworkElement icon = Icon(endpoint.App, 16); icon.Margin = new Thickness(0, 0, 9, 0); head.Children.Add(icon);
-            var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var name = Label(endpoint.Title, 14, Ink); name.FontWeight = FontWeights.SemiBold; name.MaxWidth = 210; title.Children.Add(name);
-            if (endpoint.Current) { var pill = Pill("使用中"); ((TextBlock)pill.Child).Foreground = AccentBrush; pill.Background = Brush("#1A5CC8E0"); title.Children.Add(pill); }
-            Grid.SetColumn(title, 1); head.Children.Add(title);
-            var last = Label(endpoint.LastUsed.Length == 0 ? "近 30 天未使用" : "最后使用 " + Ago(endpoint.LastUsed), 10.5, InkFaint);
-            Grid.SetColumn(last, 2); head.Children.Add(last);
-            stack.Children.Add(head);
-            string origin = endpoint.Host.Length > 0 ? " · " + endpoint.Host : endpoint.Key == ClaudeLogs.NoRequestId ? " · 记录缺少官方 request-id，无法确定地址" : " · 本软件开始记录之前的第三方会话";
-            string where = AppName(endpoint.App) + origin + (endpoint.Key.Length > 0 && endpoint.Host.Length > 0 ? " · 密钥 …" + endpoint.Key : "");
-            var sub = Label(where, 10.5, InkFaint); sub.Margin = new Thickness(25, 3, 0, 0); stack.Children.Add(sub);
-            if (endpoint.Key == ClaudeLogs.NoRequestId) sub.ToolTip = "Anthropic 官方接口的每次响应都带 request-id，Claude Code 会把它写进日志。这些记录没有 request-id，通常是经中转站转发（中转站往往不透传这个响应头），但无法确定是哪一家。";
-
-            var table = new Grid { Margin = new Thickness(0, 12, 0, 0) };
-            table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(62) });
-            for (int i = 0; i < 3; i++) { table.ColumnDefinitions.Add(new ColumnDefinition()); table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); }
-            string costTip = "按官方 API 单价逐次请求估算的参考值。中转站按自己的倍率或套餐扣费，实际花费以服务商后台为准。";
-            Cell(table, 0, 1, Label("今日", 10.5, InkFaint), null); Cell(table, 0, 2, Label("近 7 天", 10.5, InkFaint), null); Cell(table, 0, 3, Label("近 30 天", 10.5, InkFaint), null);
-            Cell(table, 1, 0, Label("Token", 11, InkDim), null);
-            Cell(table, 1, 1, Figure(Compact(endpoint.Today), 15), null); Cell(table, 1, 2, Figure(Compact(endpoint.Week), 15), null); Cell(table, 1, 3, Figure(Compact(endpoint.Month), 15), "近 30 天 " + endpoint.Requests.ToString("N0") + " 次请求");
-            Cell(table, 2, 0, Label("官方价参考", 11, InkDim), costTip);
-            string approx = endpoint.CostPartial ? "≥" : "≈";
-            Cell(table, 2, 1, Figure(endpoint.Today > 0 ? approx + Usd(endpoint.CostToday) : "—", 12), costTip); Cell(table, 2, 2, Figure(endpoint.Week > 0 ? approx + Usd(endpoint.CostWeek) : "—", 12), costTip); Cell(table, 2, 3, Figure(endpoint.Month > 0 ? approx + Usd(endpoint.CostMonth) : "—", 12), costTip);
-            stack.Children.Add(table);
-            if (endpoint.Month > 0) stack.Children.Add(TokenChart(endpoint.Daily, ProviderCatalog.Color(endpoint.App)));
-            var foot = Label((endpoint.MainModel.Length > 0 ? "主要模型 " + endpoint.MainModel + " · " : "") + "近 30 天 " + endpoint.Requests.ToString("N0") + " 次请求" + (endpoint.Speed.HasValue ? " · 输出速度 " + OutputTiming.Text(endpoint.Speed) : "") + " · 限额未知", 10.5, InkFaint);
-            if (endpoint.Speed.HasValue) foot.ToolTip = OutputTiming.Definition;
-            foot.Margin = new Thickness(0, 12, 0, 0); stack.Children.Add(foot);
-            return stack;
-        }
-        private static UIElement TokenChart(double[] daily, string color) {
-            var wrapper = new StackPanel { Margin = new Thickness(0, 14, 0, 0) };
-            double max = Math.Max(1, daily.Max());
-            var head = Row(); AddRow(head, Label("每日 Token · 近 30 天", 10.5, InkFaint), Label("峰值 " + Compact(max), 10.5, InkFaint)); wrapper.Children.Add(head);
-            var columns = new UniformGrid { Columns = 30, Height = 40, Margin = new Thickness(0, 6, 0, 0) };
-            for (int i = 0; i < 30; i++) {
-                DateTime date = DateTime.Today.AddDays(i - 29);
-                var column = new Grid { Margin = new Thickness(1, 0, 1, 0), Background = Brushes.Transparent, ToolTip = date.ToString("M月d日 ddd", CultureInfo.GetCultureInfo("zh-CN")) + "\n" + Compact(daily[i]) + " Token" };
-                column.Children.Add(new Border { Height = daily[i] > 0 ? Math.Max(2, 40 * daily[i] / max) : 1, Background = Brush(daily[i] > 0 ? color : "#FFFFFF"), Opacity = daily[i] <= 0 ? .12 : i == 29 ? 1 : .55, VerticalAlignment = VerticalAlignment.Bottom, CornerRadius = new CornerRadius(1.5, 1.5, 0, 0) });
-                columns.Children.Add(column);
-            }
-            wrapper.Children.Add(columns); wrapper.Children.Add(Axis());
-            return wrapper;
         }
         private static string AppName(string app) { return app == Endpoints.ClaudeApp ? "Claude Code" : app == Endpoints.CodexApp ? "Codex" : app; }
         private static string CurrentLabel(EndpointMark mark) {
