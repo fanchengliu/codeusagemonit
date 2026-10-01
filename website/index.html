@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F5F6F8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#08090C" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#07080B" media="(prefers-color-scheme: dark)">
 <script>
 /* Theme before first paint: the saved choice (light / dark), else follow the system. */
 (function () { var pref = 'system'; try { pref = localStorage.getItem('codeusagemonit-theme') || 'system'; } catch (e) { }
@@ -13,7 +13,7 @@
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); document.documentElement.setAttribute('data-theme-pref', pref); })();
 </script>
 <title>codeusagemonit — Windows 上的 AI 编程额度与用量监控</title>
-<meta name="description" content="一个 Windows 托盘工具：Codex、Claude、Cursor 等 11 个 AI 编程工具的剩余额度和重置时间，一眼看清。有本机日志的平台显示 Token 用量；输出速度只覆盖 Codex、Claude、ZCode、Grok 和 OpenCode。按官方 API 价目计价，价目每天同步。开源，数据在本机统计。">
+<meta name="description" content="一个 Windows 托盘工具：Codex、Claude、Cursor 等 11 个 AI 编程工具的剩余额度、重置时间、本机 Token 用量与输出速度，一眼看清。按官方 API 价目计价，价目每天同步。开源，数据在本机统计。">
 <link rel="canonical" href="https://codeusagemonit.vercel.app/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://codeusagemonit.vercel.app/">
@@ -22,24 +22,28 @@
 <meta property="og:image" content="https://codeusagemonit.vercel.app/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<!-- Apple devices use SF Pro + PingFang (system fonts, not downloadable). Elsewhere Inter + Noto Sans SC stand in. -->
 <link rel="preconnect" href="https://fonts.googleapis.cn">
 <link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.cn/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<!-- Loaded without blocking the page: system fonts show first, then swap in. -->
+<link rel="stylesheet" href="https://fonts.googleapis.cn/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.cn/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"></noscript>
 <link rel="stylesheet" href="style.css">
+<script src="icons.js" defer></script>
 <script src="site.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="skip">跳到正文</a>
 
-<header class="nav">
+<header class="nav" id="nav">
   <div class="wrap nav-row">
     <a class="brand" href="#top"><img src="favicon.svg" width="28" height="28" alt=""><span>codeusagemonit</span></a>
     <nav class="nav-links" aria-label="Main">
       <a href="#providers" data-i18n="navProviders">平台</a>
-      <a href="#board" data-i18n="navBoard">额度与用量</a>
-      <a href="#pricing" data-i18n="navPricing">计价</a>
       <a href="#sizes" data-i18n="navSizes">尺寸</a>
+      <a href="#console" data-i18n="navConsole">额度与用量</a>
       <a href="#install" data-i18n="navInstall">安装</a>
+      <a href="#trust" data-i18n="navTrust">隐私与问题</a>
     </nav>
     <div class="nav-end">
       <div class="seg-mini theme" role="group" aria-label="Theme" id="theme">
@@ -49,100 +53,139 @@
         <button type="button" data-lang="zh" aria-pressed="true">中</button><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="ja" aria-pressed="false">日</button>
       </div>
       <a class="icon-link" href="https://github.com/fanchengliu/codeusagemonit" aria-label="GitHub">
-        <svg viewBox="0 0 16 16" width="19" height="19" aria-hidden="true"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+        <svg viewBox="0 0 16 16" width="19" height="19" aria-hidden="true"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.650-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.150 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.230-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
       </a>
-      <a class="btn btn-primary btn-sm" href="#download" data-i18n="navDownload">下载</a>
+      <a class="btn btn-primary btn-sm nav-dl" href="#download" data-i18n="navDownload">下载</a>
+      <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="sheet" aria-label="菜单"><i></i><i></i></button>
     </div>
+  </div>
+  <div class="sheet" id="sheet" hidden>
+    <nav class="wrap sheet-links" aria-label="Sections">
+      <a href="#providers"><b>01</b><span data-i18n="navProviders">平台</span></a>
+      <a href="#sizes"><b>02</b><span data-i18n="navSizes">尺寸</span></a>
+      <a href="#console"><b>03</b><span data-i18n="navConsole">额度与用量</span></a>
+      <a href="#install"><b>04</b><span data-i18n="navInstall">安装</span></a>
+      <a href="#trust"><b>05</b><span data-i18n="navTrust">隐私与问题</span></a>
+      <a class="btn btn-primary sheet-dl" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe" data-i18n="dlBtn">下载最新版安装包</a>
+    </nav>
   </div>
 </header>
 
-<nav class="pager" aria-label="Sections"><span class="pager-progress" aria-hidden="true"><i id="pager-fill"></i></span><ol id="pager"></ol></nav>
+<nav class="pager" aria-label="Sections"><ol id="pager"></ol></nav>
 
 <main id="main">
 
-<!-- 00 Hero: copy + the full panel, flat and clickable -->
+<!-- Hero -->
 <section class="hero" id="top" data-pager="pgTop">
-  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-bg" aria-hidden="true"><i class="orb a"></i><i class="orb b"></i></div>
   <div class="wrap hero-grid">
     <div class="hero-copy">
       <a class="release-chip" href="https://github.com/fanchengliu/codeusagemonit/releases/tag/v1.2.0">
-        <span class="chip-tag">v1.2.0</span><span data-i18n="chip">价目表每天与官方同步，一行命令安装</span><span class="chip-arrow" aria-hidden="true">→</span>
+        <span class="chip-tag">v1.2.0</span><span data-i18n="chip">价目表每天与官方同步</span><span class="chip-arrow" aria-hidden="true">→</span>
       </a>
       <h1><span class="h1-line" data-i18n="heroA">额度还剩多少</span><span class="h1-line grad" data-i18n="heroB">抬眼就知道</span></h1>
-      <p class="lead" data-i18n="heroLead">Codex、Claude、Cursor 等 11 个 AI 编程工具的剩余额度和重置时间，都在 Windows 托盘的一个小窗口里。有本机日志的平台会显示 Token 用量；输出速度只覆盖 Codex、Claude、ZCode、Grok 和 OpenCode。</p>
+      <p class="lead" data-i18n="heroLead">Codex、Claude、Cursor 等 11 个 AI 编程工具的剩余额度、重置时间、Token 用量和输出速度，都在 Windows 托盘的一个小窗口里。</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe">
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span data-i18n="download">下载安装程序</span>
         </a>
-        <a class="btn btn-ghost btn-lg" href="https://github.com/fanchengliu/codeusagemonit"><span data-i18n="source">查看源码</span></a>
+        <a class="btn btn-ghost btn-lg" href="#install">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="m5 7 3 3-3 3m5 0h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span data-i18n="termInstall">终端一行安装</span>
+        </a>
       </div>
-      <div class="quick" id="quick">
-        <div class="quick-head"><span data-i18n="quickLabel">或者在终端里一行安装</span><button type="button" data-quick="scoop" aria-pressed="true">Scoop</button><button type="button" data-quick="ps" aria-pressed="false">PowerShell</button></div>
-        <div class="quick-body"><pre id="quick-code"></pre><button type="button" class="copy-btn" id="quick-copy" aria-label="复制" title="复制"></button></div>
-      </div>
-      <p class="hero-meta"><span data-i18n="heroMeta">v1.2.0 · Windows 10 / 11 · 安装程序 · MIT 开源</span> · <a class="quick-more" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip" data-i18n="downloadZip">免安装 zip</a> · <a class="quick-more" href="#install" data-i18n="quickMore">更多安装方式 ↓</a></p>
+      <ul class="hero-facts">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.2 6.6 2.5v5H1.5Zm6.1-.8 6.9-.9v6H7.6Zm-6.1 6.1h5.1v5L1.5 12.8Zm6.1 0h6.9v6l-6.9-.9Z" fill="currentColor"/></svg><span data-i18n="factWin">Windows</span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 13.5 3.6v4c0 3.2-2.3 5.6-5.5 6.9-3.2-1.3-5.5-3.7-5.5-6.9v-4Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="m5.6 8 1.7 1.7L10.6 6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="factLocal">数据只在本机统计</span></li>
+        <li><a href="https://github.com/fanchengliu/codeusagemonit"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 .6a7.4 7.4 0 0 0-2.34 14.42c.37.07.5-.16.5-.36v-1.25c-2.06.45-2.5-.99-2.5-.99-.33-.86-.82-1.09-.82-1.09-.67-.46.05-.45.05-.45.74.05 1.13.76 1.13.76.66 1.13 1.73.8 2.15.61.07-.48.26-.8.47-.99-1.64-.19-3.37-.82-3.37-3.66 0-.81.29-1.47.76-1.99-.08-.19-.33-.94.07-1.96 0 0 .62-.2 2.04.76a7 7 0 0 1 3.7 0c1.41-.96 2.03-.76 2.03-.76.4 1.02.15 1.77.08 1.96.47.52.76 1.18.76 1.99 0 2.85-1.74 3.47-3.39 3.65.27.23.5.68.5 1.37v2.03c0 .2.13.44.51.36A7.4 7.4 0 0 0 8 .6Z"/></svg><span data-i18n="factSource">查看源码</span></a></li>
+      </ul>
     </div>
 
     <div class="stage" id="stage">
-      <div class="stage-glow" aria-hidden="true"></div>
+      <div class="stage-ring" aria-hidden="true"></div>
       <div class="app" id="app" aria-label="codeusagemonit interactive demo">
         <div class="app-head">
           <span class="app-logo" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="app-name">codeusagemonit</span><span class="app-pill">演示</span>
+          <span class="app-name">codeusagemonit</span><span class="app-pill" data-i18n="demoTag">演示</span>
           <span class="app-tools">
-            <button type="button" class="app-icon" id="app-refresh" aria-label="刷新" title="刷新"><svg viewBox="0 0 16 16"><path d="M13.2 8A5.2 5.2 0 1 1 11.6 4.3M13 2.4v2.8h-2.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-            <span class="app-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5 9 7M2.5 13.5 7 9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
-            <span class="app-icon accent" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="m9.5 2 4.5 4.5-2 .6-2.4 2.4.3 3-1.1 1.1L6.3 11 3 14.3M5 9.7 2.3 7l1.1-1.1 3 .3L8.8 3.8 9.5 2Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
-            <span class="app-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
-            <span class="app-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+            <button type="button" class="app-icon" id="app-refresh" data-tip="tipRefresh" aria-label="刷新"><svg viewBox="0 0 16 16"><path d="M13.2 8A5.2 5.2 0 1 1 11.6 4.3M13 2.4v2.8h-2.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button type="button" class="app-icon" id="app-size" data-tip="tipSize" aria-label="尺寸"><svg viewBox="0 0 16 16"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5 9 7M2.5 13.5 7 9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+            <button type="button" class="app-icon" id="app-pin" data-tip="tipPin" aria-pressed="false" aria-label="置顶"><svg viewBox="0 0 16 16"><path d="m9.5 2 4.5 4.5-2 .6-2.4 2.4.3 3-1.1 1.1L6.3 11 3 14.3M5 9.7 2.3 7l1.1-1.1 3 .3L8.8 3.8 9.5 2Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></button>
+            <button type="button" class="app-icon" id="app-gear" data-tip="tipSettings" aria-expanded="false" aria-label="设置"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+            <button type="button" class="app-icon" id="app-close" data-tip="tipClose" aria-label="收起到托盘"><svg viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
           </span>
         </div>
         <div class="app-tabs" id="app-tabs" role="tablist"></div>
         <div class="app-body" id="app-body" tabindex="0"></div>
-        <div class="app-foot"><span><i class="live"></i>演示数据 · 不读取账户</span><span>420 × 790 · 可滚动</span></div>
+        <div class="app-sheet" id="app-sheet" hidden></div>
+        <div class="app-toast" id="app-toast" role="status" aria-live="polite"></div>
+        <div class="app-foot"><span><i class="live"></i><span data-i18n="demoFoot">演示数据 · 不读取账户</span></span><span id="app-foot-r">420 × 790</span></div>
       </div>
-      <p class="stage-hint" data-i18n="stageHint">点一点试试：切换平台、滚动面板、悬停柱子、展开额度</p>
+      <button type="button" class="tray" id="tray" hidden><span class="app-logo" aria-hidden="true"><i></i><i></i><i></i></span><span data-i18n="trayBack">在托盘里 · 点一下打开</span></button>
     </div>
   </div>
 </section>
 
-<!-- 01 Providers -->
+<!-- 01 Providers: the v1 layout — centred head, a four-column list of logos -->
 <section class="section" id="providers" data-pager="pgProviders">
   <div class="wrap">
     <div class="head reveal">
-      <p class="eyebrow"><b>01</b><span data-i18n="eyProviders">平台</span></p>
-      <h2><span data-i18n="pA">已支持 11 个编程工具</span><span class="h2-dim" data-i18n="pB">外加你自己的接口</span></h2>
-      <p class="body" data-i18n="pLead">复用各工具已有的登录：CLI、编辑器会话或 API Key。不导入浏览器 Cookie，不保存账户密码。</p>
+      <p class="kicker"><b>01</b><span data-i18n="eyProviders">接入平台</span></p>
+      <h2><span data-i18n="pA">已支持 11 个编程工具</span><span class="grad" data-i18n="pB">外加你自己的接口</span></h2>
     </div>
     <ul class="provider-board reveal" id="p-grid"></ul>
   </div>
 </section>
 
-<!-- 02 Quotas + usage of one tool, in one panel -->
-<section class="section" id="board" data-pager="pgBoard">
+<!-- 02 Sizes: the four windows stacked small to large; click one and it opens inside the frame -->
+<section class="section" id="sizes" data-pager="pgSizes">
   <div class="wrap">
     <div class="head reveal">
-      <p class="eyebrow"><b>02</b><span data-i18n="eyBoard">额度与用量</span></p>
-      <h2><span data-i18n="bA">还剩多少、花了多少、跑得多快</span><span class="h2-dim" data-i18n="bB">一个面板说清楚</span></h2>
-      <p class="body" data-i18n="bLead">先看额度：每个窗口一条 24 格分段条，亮着的是剩余，下面一行告诉你按当前节奏能不能撑到重置。再看用量：有本机日志的平台直接读会话日志，只记数字，按小时或按天看费用、Token 和请求。输出速度只覆盖 Codex、Claude、ZCode、Grok 和 OpenCode。</p>
+      <p class="kicker"><b>02</b><span data-i18n="eySizes">尺寸设计</span></p>
+      <h2><span data-i18n="sA">四种尺寸</span><span class="grad" data-i18n="sB">一个窗口</span></h2>
     </div>
-    <div class="panel board reveal" id="board-panel">
+    <div class="size-frame reveal" id="size-frame">
+      <div class="frame-wall" aria-hidden="true"></div>
+      <div class="frame-left">
+        <div class="size-caption" id="size-caption" aria-live="polite"></div>
+        <div class="stack" id="stack" role="tablist" aria-label="Sizes">
+          <button type="button" class="stack-card" role="tab" data-size="full"><span class="stack-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="stack-tag" data-i18n="sFull">完整</span></button>
+          <button type="button" class="stack-card" role="tab" data-size="large"><span class="stack-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="stack-tag" data-i18n="sLarge">大</span></button>
+          <button type="button" class="stack-card" role="tab" data-size="medium"><span class="stack-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="stack-tag" data-i18n="sMedium">中</span></button>
+          <button type="button" class="stack-card" role="tab" data-size="small"><span class="stack-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="stack-tag" data-i18n="sSmall">小</span></button>
+        </div>
+      </div>
+      <div class="frame-show" id="frame-show" role="tabpanel">
+        <div class="show-win" id="show-win"><div class="sz-frame"><div class="app sz" id="show-app"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 Quotas, usage, pricing, speed and relays: one console -->
+<section class="section" id="console" data-pager="pgConsole">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="kicker"><b>03</b><span data-i18n="eyConsole">额度 · 用量 · 计价</span></p>
+      <h2><span data-i18n="bA">还剩多少、花了多少、跑得多快</span><span class="grad" data-i18n="bB">一个面板说清楚</span></h2>
+    </div>
+
+    <div class="console panel reveal" id="board-panel">
       <div class="board-top">
         <div class="tool-pick" role="group" aria-label="Tool" id="tool-pick"></div>
         <div class="seg" role="group" aria-label="Period" id="period-seg">
-          <button type="button" data-period="today" data-i18n="pToday">当天</button><button type="button" data-period="7d" data-i18n="p7">近 7 天</button><button type="button" data-period="30d" aria-pressed="true" data-i18n="p30">近 30 天</button>
+          <button type="button" data-period="today" data-i18n="pToday">当天</button><button type="button" data-period="7d" data-i18n="p7">近 7 天</button><button type="button" data-period="30d" data-i18n="p30">近 30 天</button>
         </div>
       </div>
       <div class="board-grid">
         <div class="board-quota">
           <p class="col-title" data-i18n="colQuota">额度 · 剩余 / 重置 / 节奏</p>
           <div id="board-quota"></div>
-          <p class="board-hint" data-i18n="boardHint">点一条额度看细节 · 白线是匀速用到重置时应剩的位置</p>
+          <p class="board-hint" data-i18n="boardHint">点一条额度看细节 · 竖线是匀速用到重置时应剩的位置</p>
         </div>
         <div class="board-usage">
           <p class="col-title" data-i18n="colUsage">用量 · 本机日志</p>
-          <p class="q-empty" id="usage-empty" hidden></p>
           <div class="dash-figs">
             <button type="button" class="fig" data-metric="cost" aria-pressed="true"><span data-i18n="fCost">API 等价费用</span><strong id="f-cost">$0.00</strong></button>
             <button type="button" class="fig" data-metric="tokens"><span>Token</span><strong id="f-tokens">0</strong></button>
@@ -158,148 +201,93 @@
         </div>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- 03 Pricing, speed, relays -->
-<section class="section" id="pricing" data-pager="pgPricing">
-  <div class="wrap">
-    <div class="head reveal">
-      <p class="eyebrow"><b>03</b><span data-i18n="eyPricing">计价与速度</span></p>
-      <h2><span data-i18n="prA">算得准</span><span class="h2-dim" data-i18n="prB">价格跟着官方走</span></h2>
-      <p class="body" data-i18n="prLead">费用 = 本机日志里每次请求的 Token × 该模型的官方 API 单价。价目表每天与官方同步一次，断网时用内置价目；速度按每次请求端到端计时；走中转站的调用，也归到具体站点。</p>
+    <div class="sub-head reveal">
+      <h3><span data-i18n="prA">算得准</span><span class="grad" data-i18n="prB">价格跟着官方走</span></h3>
+      <div class="sync"><span class="sync-dot" aria-hidden="true"></span><span><span data-i18n="syncOk">已同步</span> · <span data-i18n="syncDate">价目日期</span> <b id="price-date">2026-09-30</b></span><span class="sync-sep" aria-hidden="true"></span><span data-i18n="syncEvery">每 24 小时检查一次更新</span></div>
     </div>
     <div class="bento">
       <div class="card price-card reveal">
-        <h3 data-i18n="priceTitle">最新模型，与官方同步计价</h3>
-        <p class="sub" data-i18n="priceSub">官方 API 单价，含长上下文阶梯、缓存读写和 Fast 模式倍率。</p>
-        <div class="sync"><span class="sync-dot" aria-hidden="true"></span><span><span data-i18n="syncOk">已同步</span> · <span data-i18n="syncDate">价目日期</span> <b id="price-date">2026-09-30</b></span><span class="sync-sep" aria-hidden="true"></span><span data-i18n="syncEvery">每 24 小时检查一次更新</span></div>
+        <div class="card-top">
+          <div><h4 data-i18n="priceTitle">最新模型，与官方同步计价</h4><p class="sub" data-i18n="priceSub">官方 API 单价，含长上下文阶梯、缓存读写和 Fast 模式倍率。</p></div>
+        </div>
         <div class="ptools">
           <label class="psearch"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3.3 3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input type="search" id="price-q" autocomplete="off" spellcheck="false" data-i18n-ph="priceSearch" placeholder="搜索模型，例如 gpt-6、opus、gemini"></label>
+          <div class="vendors" id="vendors" role="group" aria-label="Vendor"></div>
         </div>
-        <div class="vendors" id="vendors" role="group" aria-label="Vendor"></div>
-        <div class="ptable-wrap"><table class="ptable"><thead><tr><th data-i18n="thModel">模型</th><th data-i18n="thIn">输入</th><th data-i18n="thOut">输出</th><th data-i18n="thCache">缓存读</th></tr></thead><tbody id="price-rows"></tbody></table></div>
-        <div class="pfoot"><span data-i18n="priceUnit">美元 / 百万 Token · 来源：厂商官方价目（经 LiteLLM、models.dev 汇总）</span></div>
+        <div class="ptable-box"><div class="ptable-wrap" id="ptable-wrap"><table class="ptable"><thead><tr><th data-i18n="thModel">模型</th><th data-i18n="thIn">输入</th><th data-i18n="thOut">输出</th><th data-i18n="thCache">缓存读</th></tr></thead><tbody id="price-rows"></tbody></table></div></div>
+        <div class="pfoot"><span data-i18n="priceUnit">美元 / 百万 Token · 来源：厂商官方价目（经 LiteLLM、models.dev 汇总）</span><span id="price-count"></span></div>
       </div>
-      <div class="card reveal">
-        <h3 data-i18n="speedTitle">真实输出速度</h3>
-        <p class="sub" data-i18n="speedSub">输出 Token ÷ 请求全程耗时，首字延迟和中转延迟都算在内。只统计 Codex、Claude、ZCode、Grok 和 OpenCode，各算各的。</p>
-        <div class="speed-list" id="speed-list"></div>
-      </div>
-      <div class="card reveal">
-        <h3 data-i18n="relayTitle">中转站，也算得清</h3>
-        <p class="sub" data-i18n="relaySub">配合 CC Switch 来回切换供应商，每次调用照样归到具体站点。</p>
-        <svg class="relay" id="relay" viewBox="0 0 420 176" role="img" aria-label="Claude Code → official / relay A / relay B">
-          <path class="wire" d="M134 88 C 200 88, 200 28, 262 28"/><path class="wire" d="M134 88 C 200 88, 200 88, 262 88"/><path class="wire" d="M134 88 C 200 88, 200 148, 262 148"/>
-          <path class="flow" d="M134 88 C 200 88, 200 28, 262 28"/><path class="flow" d="M134 88 C 200 88, 200 88, 262 88"/><path class="flow" d="M134 88 C 200 88, 200 148, 262 148"/>
-          <rect class="node src" x="4" y="66" width="130" height="44" rx="11"/><circle class="src-dot" cx="24" cy="88" r="4"/><text x="36" y="92.5">Claude Code</text>
-          <rect class="node" x="262" y="8" width="154" height="40" rx="10"/><text x="276" y="32.5" data-i18n="relayOfficial">官方</text><text class="v" x="404" y="32.5" text-anchor="end">12.4M</text>
-          <rect class="node" x="262" y="68" width="154" height="40" rx="10"/><text x="276" y="92.5" data-i18n="relayA">中转 A</text><text class="v" x="404" y="92.5" text-anchor="end">41.0M</text>
-          <rect class="node" x="262" y="128" width="154" height="40" rx="10"/><text x="276" y="152.5" data-i18n="relayB">中转 B</text><text class="v" x="404" y="152.5" text-anchor="end">8.6M</text>
-        </svg>
+      <div class="side-cards">
+        <div class="card reveal">
+          <h4 data-i18n="speedTitle">真实输出速度</h4>
+          <div class="speed-list" id="speed-list"></div>
+        </div>
+        <div class="card reveal">
+          <h4 data-i18n="relayTitle">中转站，也算得清</h4>
+          <p class="sub" data-i18n="relaySub">配合第三方供应商切换，每次调用照样归到具体站点，输出清晰明了。</p>
+          <svg class="relay" id="relay" viewBox="0 0 420 176" role="img" aria-label="Claude Code → official / relay A / relay B">
+            <path class="wire" d="M134 88 C 200 88, 200 28, 262 28"/><path class="wire" d="M134 88 C 200 88, 200 88, 262 88"/><path class="wire" d="M134 88 C 200 88, 200 148, 262 148"/>
+            <path class="flow" d="M134 88 C 200 88, 200 28, 262 28"/><path class="flow" d="M134 88 C 200 88, 200 88, 262 88"/><path class="flow" d="M134 88 C 200 88, 200 148, 262 148"/>
+            <rect class="node src" x="4" y="66" width="130" height="44" rx="11"/><circle class="src-dot" cx="24" cy="88" r="4"/><text x="36" y="92.5">Claude Code</text>
+            <g class="hit" data-relay="0"><rect class="node" x="262" y="8" width="154" height="40" rx="10"/><text x="276" y="32.5" data-i18n="relayOfficial">官方</text><text class="v" x="404" y="32.5" text-anchor="end" data-rv="0">12.4M</text></g>
+            <g class="hit" data-relay="1"><rect class="node" x="262" y="68" width="154" height="40" rx="10"/><text x="276" y="92.5" data-i18n="relayA">中转 A</text><text class="v" x="404" y="92.5" text-anchor="end" data-rv="1">41.0M</text></g>
+            <g class="hit" data-relay="2"><rect class="node" x="262" y="128" width="154" height="40" rx="10"/><text x="276" y="152.5" data-i18n="relayB">中转 B</text><text class="v" x="404" y="152.5" text-anchor="end" data-rv="2">8.6M</text></g>
+          </svg>
+          <p class="relay-note" id="relay-note"></p>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 04 Sizes: stacked deck of theme-following window mocks; click a card to open it -->
-<section class="section" id="sizes" data-pager="pgSizes">
-  <div class="wrap">
-    <div class="head reveal">
-      <p class="eyebrow"><b>04</b><span data-i18n="eySizes">尺寸</span></p>
-      <h2><span data-i18n="sA">四种尺寸</span><span class="h2-dim" data-i18n="sB">一个窗口</span></h2>
-      <p class="body" data-i18n="sLead">右键切换小、中、大、完整。紧凑尺寸待在桌面层，不挡工作窗口；每种尺寸都能拖动调整大小。</p>
-    </div>
-    <div class="deck reveal" id="deck">
-      <button type="button" class="deck-card" data-size="full"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sFull">完整</b></span></button>
-      <button type="button" class="deck-card" data-size="large"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sLarge">大</b></span></button>
-      <button type="button" class="deck-card" data-size="medium"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sMedium">中</b></span></button>
-      <button type="button" class="deck-card" data-size="small"><span class="deck-shot" inert><span class="sz-frame"><span class="app sz"></span></span></span><span class="deck-label"><b data-i18n="sSmall">小</b></span></button>
-    </div>
-    <p class="deck-hint reveal" data-i18n="deckHint">点一张卡片，放大看看</p>
-  </div>
-</section>
-
-<div class="viewer" id="viewer" hidden>
-  <div class="viewer-backdrop" data-close></div>
-  <div class="viewer-frame" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
-    <div class="viewer-mock" id="viewer-mock"><div class="sz-frame"><div class="app sz" id="viewer-app"></div></div></div>
-    <div class="viewer-info">
-      <p class="viewer-dim" id="viewer-dim"></p>
-      <h3 id="viewer-title"></h3>
-      <p id="viewer-text"></p>
-      <div class="viewer-nav">
-        <button type="button" class="round" id="viewer-prev" aria-label="上一张"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span class="viewer-dots" id="viewer-dots"></span>
-        <button type="button" class="round" id="viewer-next" aria-label="下一张"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      </div>
-    </div>
-    <button type="button" class="round viewer-close" id="viewer-close" data-close aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-  </div>
-</div>
-
-<!-- 05 Install + CLI -->
+<!-- 04 Install + CLI: the window on the right follows the tab on the left -->
 <section class="section" id="install" data-pager="pgInstall">
   <div class="wrap">
     <div class="head reveal">
-      <p class="eyebrow"><b>05</b><span data-i18n="eyInstall">安装与命令行</span></p>
-      <h2><span data-i18n="cA">一行命令装好</span><span class="h2-dim" data-i18n="cB">终端里也是同一份数据</span></h2>
-      <p class="body" data-i18n="cLead">Scoop、PowerShell 或 setup.exe 都能安装，并加入 PATH、创建开始菜单快捷方式。随附的 codeusage 命令和桌面版共用缓存与设置，额度条在终端里同样是 24 格，加 --json 就能接进脚本或状态栏。</p>
+      <p class="kicker"><b>04</b><span data-i18n="eyInstall">安装与命令行</span></p>
+      <h2><span data-i18n="cA">一行命令装好</span><span class="grad" data-i18n="cB">终端里也是同一份数据</span></h2>
     </div>
-    <div class="install-grid">
-      <div class="panel inst reveal">
+    <div class="install-grid reveal">
+      <div class="panel inst">
         <div class="inst-tabs" role="tablist" aria-label="Install" id="inst-tabs">
           <button type="button" role="tab" data-inst="scoop" aria-selected="true">Scoop <em data-i18n="recommended">推荐</em></button>
           <button type="button" role="tab" data-inst="ps" aria-selected="false">PowerShell</button>
-          <button type="button" role="tab" data-inst="zip" aria-selected="false" data-i18n="instZip">手动下载</button>
+          <button type="button" role="tab" data-inst="setup" aria-selected="false" data-i18n="instSetup">安装程序</button>
           <button type="button" role="tab" data-inst="cli" aria-selected="false" data-i18n="instCli">使用命令</button>
         </div>
         <div class="inst-body" id="inst-body" role="tabpanel"></div>
       </div>
-      <div class="term reveal">
-        <div class="term-bar">
-          <span class="term-tab"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="1" y="2" width="14" height="12" rx="2.5" fill="#1F4E8C"/><path d="m4 6 2.5 2L4 10m4 0h4" stroke="#fff" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Windows PowerShell</span>
-          <span class="term-controls" aria-hidden="true"><svg viewBox="0 0 10 10"><path d="M1 5h8" stroke="currentColor"/></svg><svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor"/></svg><svg viewBox="0 0 10 10"><path d="m1.5 1.5 7 7m0-7-7 7" stroke="currentColor"/></svg></span>
+      <div class="win" id="win">
+        <div class="win-bar">
+          <span class="win-title" id="win-title"></span>
+          <span class="win-controls" aria-hidden="true"><svg viewBox="0 0 10 10"><path d="M1 5h8" stroke="currentColor"/></svg><svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor"/></svg><svg viewBox="0 0 10 10"><path d="m1.5 1.5 7 7m0-7-7 7" stroke="currentColor"/></svg></span>
         </div>
         <pre class="term-body" id="term-body" tabindex="0"></pre>
-        <button type="button" class="term-copy" id="copy-cmd" data-i18n="copy">复制命令</button>
+        <div class="wizard" id="wizard" hidden></div>
+        <div class="win-actions"><button type="button" class="win-btn" id="win-replay" data-i18n="replay">重新播放</button><button type="button" class="win-btn" id="win-copy" data-i18n="copy">复制命令</button></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 06 Privacy -->
-<section class="section" id="privacy" data-pager="pgPrivacy">
+<!-- 05 Privacy: a centred head with one sentence, the FAQ below -->
+<section class="section" id="trust" data-pager="pgTrust">
   <div class="wrap">
     <div class="head reveal">
-      <p class="eyebrow"><b>06</b><span data-i18n="eyPrivacy">隐私</span></p>
-      <h2><span data-i18n="vA">数据留在</span><span class="h2-dim" data-i18n="vB">你的电脑上</span></h2>
+      <p class="kicker"><b>05</b><span data-i18n="eyPrivacy">隐私</span></p>
+      <h2><span data-i18n="vA">数据留在</span><span class="grad" data-i18n="vB">你的电脑上</span></h2>
+      <p class="body" data-i18n="vText">只把 Token、请求数、耗时和模型名记在本机，不保存对话内容；各工具的登录令牌留在原处只读不复制，每日自动刷新价目表。</p>
     </div>
-    <div class="facts">
-      <div class="fact reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18V9m5 9V5m5 13v-6m5 6V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><h3 data-i18n="v1t">只记数字</h3><p data-i18n="v1">只把 Token、请求数、耗时和模型名写进本地的小时索引，不保存对话内容。</p></div>
-      <div class="fact reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.7"/></svg><h3 data-i18n="v2t">登录留在原处</h3><p data-i18n="v2">各工具的登录令牌留在它们自己的目录，只读取，不复制。</p></div>
-      <div class="fact reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.5" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 12h8m-3 0v3m2.5-3v2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><h3 data-i18n="v3t">密钥加密</h3><p data-i18n="v3">手动填写的 API Key 用 Windows DPAPI 加密，只有当前用户能解密。</p></div>
-      <div class="fact reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M12 4c2.5 2.6 3.5 5.2 3.5 8S14.5 17.4 12 20c-2.5-2.6-3.5-5.2-3.5-8S9.5 6.6 12 4Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/></svg><h3 data-i18n="v4t">没有遥测</h3><p data-i18n="v4">没有自己的服务器。查额度只连对应的服务商；价目表每天从 GitHub 取一次，不带任何账户或用量信息，可在设置里关掉。</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 07 FAQ -->
-<section class="section" id="faq" data-pager="pgFaq">
-  <div class="wrap">
-    <div class="head reveal">
-      <p class="eyebrow"><b>07</b><span data-i18n="eyFaq">FAQ</span></p>
-      <h2><span data-i18n="fqA">常见问题</span></h2>
-    </div>
-    <div class="faq reveal">
-      <details><summary data-i18n="fq1">怎么安装？需要什么运行环境？</summary><p data-i18n="fa1">可以下载 setup.exe（可选目录和开始菜单，可选桌面快捷方式、开机启动和 PATH，在“Windows 设置 → 应用”里卸载），也可以用 Scoop、PowerShell 一行脚本，或下载 zip 解压到可写文件夹后运行。默认不需要管理员权限。不需要 Node.js，Windows 10 / 11 自带的 .NET Framework 4.8 就够了。</p></details>
-      <details><summary data-i18n="fq7">怎么升级和卸载？</summary><p data-i18n="fa7">安装程序：再运行新的 setup.exe 就是升级，设置保留在 %LOCALAPPDATA%\codeusagemonit；卸载在 Windows 设置 → 应用里，会询问是否删除设置。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit，数据放在 Scoop 的 persist 目录，升级不丢。PowerShell 脚本：再运行一次就是升级；卸载时删除 %LOCALAPPDATA%\Programs\codeusagemonit 并从用户 PATH 里去掉它。zip 版：用新版本覆盖旧文件即可，data 文件夹保留。</p></details>
-      <details><summary data-i18n="fq2">为什么提示“Windows 已保护你的电脑”？</summary><p data-i18n="fa2">程序没有购买代码签名证书。点“更多信息 → 仍要运行”即可。</p></details>
-      <details><summary data-i18n="fq3">需要把账号重新登录一遍吗？</summary><p data-i18n="fa3">不需要。Codex、Claude Code、Cursor、Antigravity、Grok 直接复用本机已有的登录；DeepSeek、Kimi、OpenCode、ZCode 填 API Key；Copilot 用 GitHub 设备码登录。</p></details>
-      <details><summary data-i18n="fq4">显示的费用是真实账单吗？</summary><p data-i18n="fa4">不是。费用 = 本机日志里的 Token × 官方 API 单价，是 API 等价参考；订阅套餐按月费计费，不会产生这笔账单。</p></details>
-      <details><summary data-i18n="fq8">价目表怎么和官方同步？</summary><p data-i18n="fa8">项目仓库里的 pricing.json 每天由 GitHub Actions 从 LiteLLM 与 models.dev 重新整理（二者收录各厂商官网公布的 API 单价）。软件每 24 小时检查一次，有新版本就下载并校验，然后按新价目重算；下载失败或在设置里关掉时，继续用内置价目。</p></details>
-      <details><summary data-i18n="fq5">输出速度怎么算？</summary><p data-i18n="fa5">输出 Token（含思考）÷ 从发出请求到最后一段输出的时间，包含首字延迟与网络、中转站延迟。只统计输出不少于 50 Token 的请求。Codex、Claude、ZCode、Grok 和 OpenCode 各算各的；其余平台的日志没有请求耗时，不显示速度。</p></details>
-      <details><summary data-i18n="fq6">界面是什么语言？有 macOS 版吗？</summary><p data-i18n="fa6">软件界面目前是简体中文，只支持 Windows。macOS 上可以试试 CodexBar，本项目的界面思路参考了它。</p></details>
+    <div class="panel faq-panel reveal">
+      <p class="faq-label" data-i18n="eyFaq">常见问题</p>
+      <div class="faq">
+        <details><summary data-i18n="fq1">怎么安装？需要什么运行环境？</summary><p data-i18n="fa1">可以下载安装程序（可选目录和开始菜单，可选桌面快捷方式、开机启动和 PATH，在“Windows 设置 → 应用”里卸载），也可以用 Scoop、PowerShell 一行脚本，或下载 zip 解压到可写文件夹后运行。默认不需要管理员权限。不需要 Node.js，系统自带的 .NET Framework 4.8 就够了。</p></details>
+        <details><summary data-i18n="fq7">怎么升级和卸载？</summary><p data-i18n="fa7">安装程序：再运行新的安装程序就是升级，设置保留在 %LOCALAPPDATA%\codeusagemonit；卸载在 Windows 设置 → 应用里，会询问是否删除设置。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit，数据放在 Scoop 的 persist 目录，升级不丢。PowerShell 脚本：再运行一次就是升级；卸载时删除 %LOCALAPPDATA%\Programs\codeusagemonit 并从用户 PATH 里去掉它。</p></details>
+        <details><summary data-i18n="fq2">为什么提示“Windows 已保护你的电脑”？</summary><p data-i18n="fa2">程序没有购买代码签名证书。点“更多信息 → 仍要运行”即可。</p></details>
+        <details><summary data-i18n="fq3">需要把账号重新登录一遍吗？</summary><p data-i18n="fa3">不需要。Codex、Claude Code、Cursor、Antigravity、Grok 直接复用本机已有的登录；DeepSeek、Kimi、OpenCode、ZCode 填 API Key；Copilot 用 GitHub 设备码登录。</p></details>
+        <details><summary data-i18n="fq8">价目表怎么和官方同步？</summary><p data-i18n="fa8">项目仓库里的 pricing.json 每天由 GitHub Actions 从 LiteLLM 与 models.dev 重新整理（二者收录各厂商官网公布的 API 单价）。软件每 24 小时检查一次，有新版本就下载并校验，然后按新价目重算；下载失败或在设置里关掉时，继续用内置价目。</p></details>
+      </div>
     </div>
   </div>
 </section>
@@ -308,16 +296,16 @@
 <section class="section download" id="download" data-pager="pgDownload">
   <div class="wrap">
     <div class="dl reveal">
-      <div class="dl-glow" aria-hidden="true"></div>
+      <div class="dl-bg" aria-hidden="true"></div>
+      <div class="dl-meter" id="dl-meter" aria-hidden="true"></div>
       <img src="favicon.svg" width="64" height="64" alt="">
-      <h2 data-i18n="dlTitle">现在就放进托盘</h2>
-      <p class="dl-meta">v1.2.0 · Windows 10 / 11 · x64 · MIT · <a class="quick-more" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip" data-i18n="downloadZip">免安装 zip</a></p>
+      <h2 data-i18n="dlTitle">现在就加入吧！</h2>
+      <p class="dl-meta" data-i18n="dlMeta">完全免费 · 适用于 Windows · 当前版本 v1.2.0</p>
       <div class="cta-row center">
         <a class="btn btn-primary btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-setup-1.2.0.exe">
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span data-i18n="download">下载安装程序</span>
+          <span data-i18n="dlBtn">下载最新版安装包</span>
         </a>
-        <a class="btn btn-ghost btn-lg" href="https://github.com/fanchengliu/codeusagemonit/releases" data-i18n="dlAll">全部版本</a>
       </div>
     </div>
   </div>
