@@ -71,7 +71,7 @@ Usage sent through third-party endpoints never moves the subscription meters, so
 | Cursor | Read-only editor `state.vscdb`; plan total / Auto / API, plus a Grok Bot weekly meter (`get-sand-usage-status`) when the included limit is non-zero. A failed extra call leaves the three plan meters up; 套餐总量 stays the headline |
 | Antigravity | An already-running same-user desktop language server with its local CSRF token, then the existing Google credential fallback |
 | DeepSeek | API key entered in Settings or `DEEPSEEK_API_KEY`; balances kept separate by currency |
-| Grok | Existing xAI Grok Build CLI login |
+| Grok | Existing xAI Grok Build CLI login; one shared billing-period allowance, with validated Build / Chat consumption kept separate from remaining quota |
 | GitHub Copilot | In-app GitHub OAuth device flow (`read:user`), or a token already saved by an official Copilot client (read-only) |
 | Kimi Code | API key (`KIMI_CODE_API_KEY` or DPAPI-saved) |
 | OpenCode | OpenCode Go API key (`OPENCODE_API_KEY` or saved) |

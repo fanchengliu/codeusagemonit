@@ -57,7 +57,7 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 | [Cursor](./docs/providers/cursor.md) | 读取 Cursor 编辑器保存的会话 | 套餐总量、Auto、API；账户包含时另显示 Grok Bot 每周额度 | — | — |
 | [Antigravity](./docs/providers/antigravity.md) | 读取正在运行的桌面应用，已保存的登录作为回退 | 周期额度、模型额度 | ✓ | — |
 | [DeepSeek](./docs/providers/deepseek.md) | API Key（或环境变量 `DEEPSEEK_API_KEY`） | API 账户余额，按币种显示 | — | — |
-| [Grok](./docs/providers/grok.md) | 复用 Grok Build CLI 的登录（`grok login`） | 当前账期的订阅额度 | ✓ | ✓ |
+| [Grok](./docs/providers/grok.md) | 复用 Grok Build CLI 的登录（`grok login`） | 当前账期共享额度；Build / Chat 为消耗构成 | ✓ | ✓ |
 | [GitHub Copilot](./docs/providers/copilot.md) | GitHub 设备码登录，或复用官方插件已保存的授权 | 每月高级请求、对话额度 | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API Key，可选国内或国际 | 5 小时、每周、每月 | ✓ | — |
 | [OpenCode Go](./docs/providers/opencode.md) | API Key | 5 小时、每周、每月 | ✓ | ✓ |

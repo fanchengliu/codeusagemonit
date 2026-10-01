@@ -60,7 +60,7 @@ Light theme: full panel on the left, large in the center, small at the top right
 | [Cursor](./docs/providers/cursor.md) | The session saved by the Cursor editor | Plan total, Auto, API; plus the Grok Bot weekly quota when the plan includes one | — | — |
 | [Antigravity](./docs/providers/antigravity.md) | The running desktop app, with the saved sign-in as a fallback | Period and per-model quotas | ✓ | — |
 | [DeepSeek](./docs/providers/deepseek.md) | API key (or `DEEPSEEK_API_KEY`) | API account balance per currency | — | — |
-| [Grok](./docs/providers/grok.md) | Your existing Grok Build CLI sign-in (`grok login`) | Subscription allowance for the billing period | ✓ | ✓ |
+| [Grok](./docs/providers/grok.md) | Your existing Grok Build CLI sign-in (`grok login`) | One shared billing-period allowance; Build / Chat shown as consumption | ✓ | ✓ |
 | [GitHub Copilot](./docs/providers/copilot.md) | GitHub device login, or an official client's saved authorisation | Monthly premium requests and chat | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API key, China or international | 5-hour, weekly, monthly | ✓ | — |
 | [OpenCode Go](./docs/providers/opencode.md) | API key | 5-hour, weekly, monthly | ✓ | ✓ |
