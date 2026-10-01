@@ -50,7 +50,7 @@ cd codeusagemonit
 
 `.\source\Windows\build.ps1` without `-Installer` still only builds the executables.
 
-GitHub Actions workflow `.github/workflows/release.yml` runs the same command on `windows-latest`. Pushing a tag `v1.2.0` (it must match `AssemblyVersion`) creates the release. **Actions → Build Windows release → Run workflow** with “publish” checked uploads `codeusagemonit-setup-<version>.exe` onto an existing release and does not replace a zip that is already published (the Scoop manifest hashes that zip). Checking **replace_assets** and setting **tag** to `v1.2.0` replaces that release's zip, setup.exe and `SHA256SUMS.txt` with this build. The git tag is not moved.
+GitHub Actions workflow `.github/workflows/release.yml` runs the same command on `windows-latest`. Pushing a tag `v1.2.0` (it must match `AssemblyVersion`) creates the release. **Actions → Build Windows release → Run workflow** with “publish” checked uploads `codeusagemonit-setup-<version>.exe` onto an existing release and does not replace a zip that is already published (the Scoop manifest hashes that zip). A push to `main` that changes the packaged files (source, `使用说明.md`, README, licenses, `install.ps1` or the workflow itself) runs the same build without publishing, and checks that the zip ships the repository's `使用说明.md` unchanged and no `VERIFICATION.md`.
 
 ## Test on Windows
 
