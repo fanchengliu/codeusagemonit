@@ -133,7 +133,7 @@ const en = {
   eyFaq: 'FAQ',
   fq1: 'How do I install it? What does it need?', fa1: 'Download the installer (choose a folder and a Start menu shortcut; desktop, startup and PATH are optional; uninstall from Windows Settings → Apps), or use Scoop, the PowerShell one-liner, or the zip extracted into a writable folder. The default needs no admin rights. No Node.js; the .NET Framework 4.8 that ships with Windows is enough.',
   fq7: 'How do I update or uninstall?', fa7: 'Installer: run the new installer; settings stay in %LOCALAPPDATA%\\codeusagemonit. Uninstall from Windows Settings → Apps, which asks before deleting settings. Scoop: scoop update codeusagemonit / scoop uninstall codeusagemonit; data lives in Scoop’s persist folder. PowerShell script: run it again to update; to uninstall, delete %LOCALAPPDATA%\\Programs\\codeusagemonit and remove it from your user PATH.',
-  fq2: 'Why does Windows say it “protected your PC”?', fa2: 'The app has no paid code-signing certificate. Click “More info → Run anyway”.',
+  fq2: 'Edge says the file “isn’t commonly downloaded”, or Windows says it “protected your PC”?', fa2: 'That is Windows’ reputation check for new files, not a virus alert: the installer is not code-signed yet, and a newly released version with few downloads gets these prompts in Edge and SmartScreen. It is built from the open source, and the release page has SHA256SUMS.txt to check it. In Edge, open “…” on the download → Keep → Show more → Keep anyway; when running it, click “More info → Run anyway”. Installing with Scoop or the PowerShell one-liner usually avoids these prompts.',
   fq3: 'Do I have to sign in to every account again?', fa3: 'No. Codex, Claude Code, Cursor, Antigravity and Grok reuse the sign-in already on your PC; DeepSeek shows local usage from DeepSeek Harness without a key (add an API key for the balance); Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.',
   fq9: 'Can I see two computers’ usage together?', fa9: 'Yes. In Settings › Data, export one computer’s usage as SQL and import it on the other: it is added to what is there, and importing twice, or the same logs already present, is de-duplicated automatically. Or point several computers at one WebDAV folder (Nextcloud, Jianguoyun…) to sync. Only tokens, requests, costs and durations travel, never conversations or keys.',
   fq8: 'How does the price table stay in sync with official prices?', fa8: 'The repository’s pricing.json is rebuilt every day by GitHub Actions from LiteLLM and models.dev, which track the API prices each vendor publishes. The app checks every 24 hours, downloads and validates a newer table and recalculates with it; if the download fails or you turn it off in settings, it keeps the built-in prices.',
@@ -203,7 +203,7 @@ const ja = {
   eyFaq: 'よくある質問',
   fq1: 'インストール方法と必要な環境は？', fa1: 'インストーラー（インストール先とスタートメニュー、任意のデスクトップ・ログオン時起動・PATH。アンインストールは Windows の設定 → アプリ）、Scoop、PowerShell の 1 行、または zip を書き込み可能なフォルダーに展開して実行できます。既定では管理者権限は不要です。Node.js は不要。Windows 標準の .NET Framework 4.8 で動きます。',
   fq7: '更新とアンインストールは？', fa7: 'インストーラー：新しいインストーラーを実行すれば更新。設定は %LOCALAPPDATA%\\codeusagemonit に残り、アンインストール時に削除するか確認します。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit。PowerShell：もう一度実行すれば更新。アンインストールは %LOCALAPPDATA%\\Programs\\codeusagemonit を削除し、ユーザー PATH から外します。',
-  fq2: '「Windows によって PC が保護されました」と表示されるのは？', fa2: 'コード署名証明書を購入していないためです。「詳細情報 → 実行」を選んでください。',
+  fq2: 'ダウンロード時に「一般的にダウンロードされていません」、実行時に「Windows によって PC が保護されました」と出るのは？', fa2: '新しいファイルに対する Windows の評判チェックで、ウイルス警告ではありません。インストーラーはまだコード署名されておらず、公開直後でダウンロード数が少ない版では Edge と SmartScreen がこう表示します。ソースから自動ビルドされ、リリースページの SHA256SUMS.txt で確認できます。Edge ではダウンロード項目の「…」→ 保存 → 詳細表示 → 保持する、実行時は「詳細情報 → 実行」を選んでください。Scoop や PowerShell の 1 行コマンドでインストールすると、通常これらの表示は出ません。',
   fq3: 'すべてのアカウントに再ログインが必要ですか？', fa3: 'いいえ。Codex、Claude Code、Cursor、Antigravity、Grok は PC 上の既存のログインを利用します。DeepSeek は DeepSeek Harness を使っていればキーなしでローカル使用量を表示します（残高には API キー）。Kimi、OpenCode、ZCode は API キー、Copilot は GitHub のデバイスログインです。',
   fq9: '2 台の PC の使用量をまとめて見られますか？', fa9: 'はい。設定 › データで片方の使用量を SQL に書き出し、もう片方で読み込むと既存のデータに加算されます。同じファイルの再読み込みや、同じログがすでにある場合は自動で重複を除きます。複数の PC で同じ WebDAV フォルダを指定して同期することもできます。送られるのはトークン数・リクエスト数・費用・所要時間だけで、会話やキーは含みません。',
   fq8: '料金表はどうやって公式と同期していますか？', fa8: 'リポジトリの pricing.json は、GitHub Actions が毎日 LiteLLM と models.dev から作り直しています。アプリは 24 時間ごとに確認し、新しい料金表があればダウンロード・検証して再計算します。取得に失敗した場合や設定でオフにした場合は、内蔵の料金表を使い続けます。',
@@ -957,7 +957,7 @@ async function runWizard(alive) {
     if (!alive()) return;
     barEl.style.setProperty('--p', p + '%');
     fileEl.textContent = LOCAL + '\\' + FILES[Math.min(FILES.length - 1, Math.floor(p / 100 * FILES.length))];
-    await sleep(reduced ? 0 : 90);
+    await sleep(reduced ? 0 : 190);
   }
   if (!alive()) return;
   markStep(2);

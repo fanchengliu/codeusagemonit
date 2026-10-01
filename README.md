@@ -99,7 +99,7 @@ irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps
 从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 `codeusagemonit-<版本>-win-x64.zip`，解压到任意可写的文件夹，双击 `codeusagemonit.exe`。升级时覆盖旧文件，保留旁边的 `data` 文件夹。
 
 > [!NOTE]
-> 程序没有代码签名，首次运行时 Windows 可能提示“Windows 已保护你的电脑”，点 **更多信息 → 仍要运行** 即可。
+> 程序还没有代码签名。新版本刚发布时，Edge 下载可能提示“通常不会下载”（在下载项上点 **… → 保留 → 显示更多 → 仍然保留**），首次运行可能提示“Windows 已保护你的电脑”（点 **更多信息 → 仍要运行**）。这是 Windows 对新文件的信誉提醒，不是病毒报警；可以用发布页的 SHA256SUMS.txt 核对文件。用 Scoop 或 PowerShell 一行命令安装一般不会出现这些提示。
 
 ## 上手
 

@@ -109,7 +109,7 @@ The script downloads the latest release from GitHub, verifies file integrity aut
 Download `codeusagemonit-<version>-win-x64.zip` from [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest), extract it to any writable folder and run `codeusagemonit.exe`. To update, overwrite the old files and keep the `data` folder beside them.
 
 > [!NOTE]
-> The app is not code-signed, so Windows may show "Windows protected your PC" on first run. Click **More info → Run anyway**.
+> The app is not code-signed yet. Right after a release, Edge may say the installer "isn't commonly downloaded" (open **… → Keep → Show more → Keep anyway** on the download), and Windows may show "Windows protected your PC" on first run (click **More info → Run anyway**). That is a reputation check for new files, not a virus alert; check the file against SHA256SUMS.txt on the release page. Installing with Scoop or the PowerShell one-liner usually avoids these prompts.
 
 ## Getting started
 
