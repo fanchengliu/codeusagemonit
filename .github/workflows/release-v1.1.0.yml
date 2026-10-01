@@ -1,119 +1,19 @@
 name: Publish codeusagemonit 1.1.0
 
+# Historical republish of the original 1.1.0 zip. That package contained personal
+# usage figures. Do not upload it again. Rebuilds go through release.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/release-v1.1.0.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: release-v1.1.0
-  cancel-in-progress: false
+  contents: read
 
 jobs:
   release:
-    if: github.repository == 'fanchengliu/codeusagemonit'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      GH_REPO: fanchengliu/codeusagemonit
-      TAG: v1.1.0
-      PACKAGE: codeusagemonit-1.1.0-win-x64.zip
-      PACKAGE_COMMIT: 119e7230151706e2de3081d4d9154a94c5b8543f
-      PACKAGE_SHA256: a3fbd0794217ddf6c557ff32ed340dd3268a6709fb97555826bf5ffc317dcbbd
     steps:
-      - name: Download the original maintainer build
-        shell: bash
+      - name: Refuse to republish the historical package
         run: |
-          set -euo pipefail
-          curl --fail --location --retry 3 \
-            "https://raw.githubusercontent.com/$GH_REPO/$PACKAGE_COMMIT/downloads/$PACKAGE" \
-            --output "$PACKAGE"
-          printf '%s  %s\n' "$PACKAGE_SHA256" "$PACKAGE" > SHA256SUMS.txt
-          sha256sum --check SHA256SUMS.txt
-
-      - name: Validate ZIP integrity and required program files
-        shell: python
-        run: |
-          import os, zipfile
-          from pathlib import PurePosixPath
-          with zipfile.ZipFile(os.environ['PACKAGE']) as archive:
-              bad = archive.testzip()
-              if bad:
-                  raise RuntimeError(f'Corrupt archive entry: {bad}')
-              names = {name.replace('\\', '/') for name in archive.namelist()}
-              for name in names:
-                  path = PurePosixPath(name)
-                  if path.is_absolute() or '..' in path.parts or ':' in name:
-                      raise RuntimeError(f'Unsafe archive path: {name}')
-              required = {'codeusagemonit.exe', 'codeusage.exe', 'Panel.xaml',
-                          'pricing.json', 'LICENSE', '使用说明.md',
-                          'source/Windows/App.cs', 'source/Windows/build.ps1'}
-              missing = required - names
-              if missing:
-                  raise RuntimeError(f'Missing release files: {missing}')
-              print(f'Validated {len(names)} files; original ZIP unchanged.')
-
-      - name: Prepare release notes
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat > RELEASE-NOTES.md <<'NOTES'
-          # codeusagemonit 1.1.0
-
-          Windows 原生 AI 编程用量监控。一个托盘图标查看账户额度、重置时间、本机 Token、请求记录和 API 等价费用。
-
-          ## 下载与运行
-
-          下载 Assets 中的 **codeusagemonit-1.1.0-win-x64.zip**，完整解压到可写目录，双击 **codeusagemonit.exe**。
-
-          使用原生 C# / WPF 统计引擎，无需 Node.js。ZIP 内包含命令行工具 **codeusage.exe**、使用说明和完整 1.1.0 源码。更新前先退出托盘程序，保留自己的数据目录。
-
-          ## 主要功能
-
-          - 11 个内置平台及自定义接口，各平台独立刷新和连接。
-          - 小、中、大、完整四种可调整尺寸的视图。
-          - 自定义时间段、Token 构成、请求记录、模型分布和输出速度统计。
-          - 独立设置、背景色、背景图与界面透明度。
-
-          各平台提供的数据依接口与本机日志而定。费用为按本机日志与价格表估算的 API 等价费用，不是订阅账单。
-
-          此 ZIP 是维护者提供的原始 1.1.0 构建，未重新编译或修改。可用附带的 **SHA256SUMS.txt** 校验文件。
-
-          [项目官网](https://codeusagemonit.vercel.app) · [使用文档](https://github.com/fanchengliu/codeusagemonit#readme) · [反馈问题](https://github.com/fanchengliu/codeusagemonit/issues)
-          NOTES
-
-      - name: Upload and publish the verified release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if gh release view "$TAG" --json isDraft > release-state.json 2>/dev/null; then
-            is_draft=$(jq -r '.isDraft' release-state.json)
-          else
-            gh release create "$TAG" --draft --target "$PACKAGE_COMMIT" \
-              --title 'codeusagemonit 1.1.0' --notes-file RELEASE-NOTES.md
-            is_draft=true
-          fi
-
-          # Never replace a published asset. Draft retries may replace assets
-          # only with this exact, checksum-verified original build.
-          if [ "$is_draft" = true ]; then
-            gh release upload "$TAG" "$PACKAGE" SHA256SUMS.txt --clobber
-          fi
-
-          mkdir -p uploaded
-          gh release download "$TAG" --pattern "$PACKAGE" --pattern SHA256SUMS.txt --dir uploaded
-          cmp SHA256SUMS.txt uploaded/SHA256SUMS.txt
-          (cd uploaded && sha256sum --check SHA256SUMS.txt)
-
-          if [ "$is_draft" = true ]; then
-            gh release edit "$TAG" --draft=false --latest --notes-file RELEASE-NOTES.md
-          fi
-          gh release view "$TAG" --json url,isDraft,assets
-
+          echo "This workflow no longer uploads codeusagemonit-1.1.0-win-x64.zip."
+          echo "Use Actions → Build Windows release → replace_assets, tag v1.1.0."
+          exit 1
