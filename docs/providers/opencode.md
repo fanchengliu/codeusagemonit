@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.1.0。连接方式：**API Key**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**API Key**。
 
 ## 数据来源
 
@@ -21,7 +21,7 @@
 
 ## 限制
 
-使用其他模型提供商的 OpenCode 会话不等于拥有 OpenCode Go 订阅。不同于 CodexBar 的部分实现，此版本不使用 OpenCode 浏览器 Cookie。1.1.0 的本机历史与速度解析没有真实开发机样本验证。
+使用其他模型提供商的 OpenCode 会话不等于拥有 OpenCode Go 订阅。不同于 CodexBar 的部分实现，此版本不使用 OpenCode 浏览器 Cookie。本机历史与速度解析没有真实开发机样本验证。
 
 费用为本机记录的 API 等价估算，不是订阅账单。数据范围受服务端返回字段、本机日志与所选时间段限制。
 
@@ -37,4 +37,4 @@
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`Core.cs`（OpenCode 分支 / Parsers.OpenCode）、`Connect.cs`、`MoreAgentLogs.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（OpenCode 分支 / Parsers.OpenCode）、`Connect.cs`、`MoreAgentLogs.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

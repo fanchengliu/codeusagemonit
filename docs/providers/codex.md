@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.1.0。连接方式：**OAuth**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**OAuth**。
 
 ## 数据来源
 
@@ -38,4 +38,4 @@ OAuth 凭据保留在原应用；监控只读使用已有会话。 不存储密�
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Codex）、`UsageDetails.cs`、`LocalLogs.cs`、`Timing.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Codex）、`UsageDetails.cs`、`LocalLogs.cs`、`Timing.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

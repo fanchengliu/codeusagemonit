@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.3.0。连接方式：**API Key**；本机用量来自 **DeepSeek Harness**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**API Key**；本机用量来自 **DeepSeek Harness**。
 
 ## 数据来源
 

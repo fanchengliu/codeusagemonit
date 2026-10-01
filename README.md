@@ -71,7 +71,7 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 
 ### 安装程序（推荐）
 
-从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 [codeusagemonit-setup-1.3.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.3.0/codeusagemonit-setup-1.3.0.exe) 运行。
+从 [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest) 下载 [codeusagemonit-setup-1.0.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.0.0/codeusagemonit-setup-1.0.0.exe) 运行。
 
 - 默认装到 `%LOCALAPPDATA%\Programs\codeusagemonit`，也可以换目录或盘符。
 - 创建开始菜单快捷方式；桌面快捷方式、开机启动、把 `codeusage` 加入用户 PATH 都可选。

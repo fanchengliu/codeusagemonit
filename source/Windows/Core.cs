@@ -109,12 +109,17 @@ namespace CodeUsageMonit {
         public int SyncMinutes = 0;
         // Look for a newer release on GitHub once a day.
         public bool UpdateCheck = true;
+        // Per-platform refresh (Pacing.cs): a platform whose client is writing its logs is read at
+        // least every InUseMinutes; ProviderMinutes holds platforms with their own interval.
+        public bool FastInUse = true;
+        public int InUseMinutes = 2;
+        public Dictionary<string, int> ProviderMinutes = new Dictionary<string, int>();
     }
     public sealed class WindowGeometry { public double Width, Height; public double? Left, Top; }
     public static class AppInfo {
-        public const string ShortVersion = "1.3";
+        public const string ShortVersion = "1.0";
         public const string UserAgent = "codeusagemonit/" + ShortVersion;
-        // Full version from the assembly ("1.3.0").
+        // Full version from the assembly ("1.0.0").
         public static string Version { get { System.Version v = typeof(AppInfo).Assembly.GetName().Version; return v.Major + "." + v.Minor + "." + Math.Max(0, v.Build); } }
     }
     public static class ProviderCatalog {
@@ -610,7 +615,11 @@ namespace CodeUsageMonit {
                         s.Account = NativeCredentials.SqliteText(db, "cursorAuth/cachedEmail"); break;
                     }
                     case "deepseek": {
-                        string key = Store.DeepSeekKey(); Need(key, id); s = Parsers.DeepSeek(await Request("https://api.deepseek.com/user/balance", key, null, null, null).ConfigureAwait(false)); break;
+                        string key = Store.DeepSeekKey();
+                        // No API key but DeepSeek Harness in use: its local usage is all there is to show.
+                        // (The Harness signs in with a DeepSeek platform grant that the balance API does not accept.)
+                        if (String.IsNullOrWhiteSpace(key) && HarnessLogs.Present) { string at = DateTime.UtcNow.ToString("o"); return new ProviderState { Id = id, Status = "ready", Message = "仅本机用量", Plan = "DeepSeek Harness", LastSuccess = at, LastAttempt = at }; }
+                        Need(key, id); s = Parsers.DeepSeek(await Request("https://api.deepseek.com/user/balance", key, null, null, null).ConfigureAwait(false)); break;
                     }
                     case "grok": {
                         object auth = J.File(ConfigPath("GROK_HOME", ".grok", "auth.json")); object entry = J.Dict(auth).Where(p => p.Key == "https://accounts.x.ai/sign-in" || p.Key.StartsWith("https://auth.x.ai::", StringComparison.Ordinal)).Where(p => J.Str(p.Value, "key").Length > 0).OrderByDescending(p => J.Str(p.Value, "expires_at")).Select(p => p.Value).FirstOrDefault();

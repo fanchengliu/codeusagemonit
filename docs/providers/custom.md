@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.1.0。连接方式：**API Key · 自定义**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**API Key · 自定义**。
 
 ## 数据来源
 
@@ -37,4 +37,4 @@
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`CustomProviders.cs`、`Settings.cs`、`Connect.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`CustomProviders.cs`、`Settings.cs`、`Connect.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

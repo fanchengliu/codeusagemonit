@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.1.0。连接方式：**OAuth 设备流**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**OAuth 设备流**。
 
 ## 数据来源
 
@@ -22,7 +22,7 @@
 
 ## 限制
 
-GitHub 企业策略或账户权限可能影响内部额度接口。Copilot CLI 本机日志读取已实现，但 1.1.0 开发机没有真实样本验证；普通 IDE 使用也不一定产生 CLI 日志。没有可用请求耗时，不显示速度。
+GitHub 企业策略或账户权限可能影响内部额度接口。Copilot CLI 本机日志读取已实现，但开发机没有真实样本验证；普通 IDE 使用也不一定产生 CLI 日志。没有可用请求耗时，不显示速度。
 
 费用为本机记录的 API 等价估算，不是订阅账单。数据范围受服务端返回字段、本机日志与所选时间段限制。
 
@@ -38,4 +38,4 @@ GitHub 企业策略或账户权限可能影响内部额度接口。Copilot CLI �
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`Core.cs`（CopilotToken / StartCopilotLogin / PollCopilotLogin / Parsers.Copilot）、`Connect.cs`、`MoreAgentLogs.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（CopilotToken / StartCopilotLogin / PollCopilotLogin / Parsers.Copilot）、`Connect.cs`、`MoreAgentLogs.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -278,7 +279,43 @@ namespace CodeUsageMonit {
             minus.Click += delegate { int i = steps.IndexOf(minutes); if (i > 0) minutes = steps[i - 1]; value.Text = I18n.T("{0} 分钟", minutes); };
             plus.Click += delegate { int i = steps.IndexOf(minutes); if (i < steps.Count - 1) minutes = steps[i + 1]; value.Text = I18n.T("{0} 分钟", minutes); };
             stepper.Children.Add(minus); stepper.Children.Add(value); stepper.Children.Add(plus);
-            AddRow(intervalRow, FieldLabel(I18n.T("自动刷新"), I18n.T("每次刷新会查询所有已启用平台的额度")), stepper); netCard.Children.Add(intervalRow); netCard.Children.Add(Separator());
+            AddRow(intervalRow, FieldLabel(I18n.T("自动刷新"), I18n.T("各平台默认的额度刷新间隔；下面可以单独设置")), stepper); netCard.Children.Add(intervalRow); netCard.Children.Add(Separator());
+            // A platform in use (its client writing logs) is read more often.
+            CheckBox fastInUse = SwitchRow(I18n.T("正在使用的平台更快刷新"), I18n.T("某个工具 10 分钟内写过本机会话记录，就单独按下面的间隔刷新它的额度和本机用量"), config.FastInUse);
+            netCard.Children.Add(fastInUse);
+            int inUseMinutes = Pacing.InUseChoices.Contains(config.InUseMinutes) ? config.InUseMinutes : 2;
+            var inUseRow = Row(); inUseRow.Margin = new Thickness(0, 10, 0, 0);
+            AddRow(inUseRow, FieldLabel(I18n.T("使用中的刷新间隔"), I18n.T("1 分钟最及时，但个别平台的额度接口可能限流")), Segmented(Pacing.InUseChoices.Select(m => new[] { m.ToString(CultureInfo.InvariantCulture), I18n.T("{0} 分钟", m) }).ToArray(), inUseMinutes.ToString(CultureInfo.InvariantCulture), code => inUseMinutes = Int32.Parse(code, CultureInfo.InvariantCulture)));
+            netCard.Children.Add(inUseRow); netCard.Children.Add(Separator());
+            // Platforms with their own interval.
+            var ownMinutes = new Dictionary<string, int>(config.ProviderMinutes ?? new Dictionary<string, int>());
+            var ownList = new StackPanel { Visibility = ownMinutes.Count > 0 ? Visibility.Visible : Visibility.Collapsed };
+            var ownToggle = new Button { Style = Styled("LinkButton"), Content = I18n.T(ownMinutes.Count > 0 ? "收起按平台设置" : "按平台单独设置…"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 0, 0, 0) };
+            ownToggle.Click += delegate { bool open = ownList.Visibility != Visibility.Visible; ownList.Visibility = open ? Visibility.Visible : Visibility.Collapsed; ownToggle.Content = I18n.T(open ? "收起按平台设置" : "按平台单独设置…"); };
+            foreach (string id in ProviderCatalog.All.Where(p => config.Enabled.Contains(p) && !ProviderCatalog.LocalOnly(p))) {
+                string captured = id; int current; ownMinutes.TryGetValue(id, out current); if (!Pacing.OwnChoices.Contains(current)) current = 0;
+                var row = Row(); row.Margin = new Thickness(0, 8, 0, 0);
+                var who = new StackPanel { Orientation = Orientation.Horizontal }; FrameworkElement icon = Icon(id, 14); icon.Margin = new Thickness(0, 0, 8, 0); who.Children.Add(icon); who.Children.Add(Label(ProviderCatalog.Name(id), 12, Ink));
+                var own = new StackPanel { Orientation = Orientation.Horizontal };
+                var less = new Button { Style = Styled("IconButton"), Content = "\uE738", FontSize = 10, Width = 24, Height = 24, ToolTip = I18n.T("更频繁") };
+                var shown = Label("", 11.5, Ink); shown.MinWidth = 64; shown.TextAlignment = TextAlignment.Center; Tabular(shown);
+                var more = new Button { Style = Styled("IconButton"), Content = "\uE710", FontSize = 10, Width = 24, Height = 24, ToolTip = I18n.T("更少") };
+                Action show = () => { int m; ownMinutes.TryGetValue(captured, out m); shown.Text = m > 0 ? I18n.T("{0} 分钟", m) : I18n.T("跟随默认"); shown.Foreground = m > 0 ? Ink : InkFaint; };
+                // − / + from “default” start at the default interval and move one step from there.
+                Action<int> step = delta => {
+                    int m; ownMinutes.TryGetValue(captured, out m); if (m == 0) m = minutes;
+                    int at = 1; for (int k = 1; k < Pacing.OwnChoices.Length; k++) if (Math.Abs(Pacing.OwnChoices[k] - m) < Math.Abs(Pacing.OwnChoices[at] - m)) at = k;
+                    ownMinutes[captured] = Pacing.OwnChoices[Math.Max(1, Math.Min(Pacing.OwnChoices.Length - 1, at + delta))]; show();
+                };
+                less.Click += delegate { step(-1); };
+                more.Click += delegate { step(1); };
+                var useDefault = new Button { Style = Styled("LinkButton"), Content = I18n.T("默认"), Margin = new Thickness(2, 0, -6, 0), ToolTip = I18n.T("跟随默认间隔") };
+                useDefault.Click += delegate { ownMinutes[captured] = 0; show(); };
+                own.Children.Add(less); own.Children.Add(shown); own.Children.Add(more); own.Children.Add(useDefault);
+                show(); AddRow(row, who, own); ownList.Children.Add(row);
+            }
+            ownList.Children.Add(Hint(I18n.T("比默认间隔更长的平台会少查几次；手动刷新（F5）总是查询全部平台。"), 8));
+            netCard.Children.Add(ownToggle); netCard.Children.Add(ownList); netCard.Children.Add(Separator());
             string proxyMode = config.Proxy == "direct" ? "direct" : config.Proxy == "auto" || String.IsNullOrWhiteSpace(config.Proxy) ? "auto" : "custom";
             var proxyBox = new TextBox { Text = proxyMode == "custom" ? config.Proxy : "", Margin = new Thickness(0, 8, 0, 0), Visibility = proxyMode == "custom" ? Visibility.Visible : Visibility.Collapsed };
             System.Windows.Automation.AutomationProperties.SetName(proxyBox, I18n.T("代理地址"));
@@ -358,7 +395,8 @@ namespace CodeUsageMonit {
                     }
                     if (!demo) SetStartup(autoStart.IsChecked == true);
                     frame.SetScale(zoom.Value, false); UpdatePin(); UpdateScaleLabel();
-                    Store.Write("settings.json", config); refreshTimer.Interval = TimeSpan.FromMinutes(minutes);
+                    config.FastInUse = fastInUse.IsChecked == true; config.InUseMinutes = inUseMinutes; config.ProviderMinutes = ownMinutes.Where(p => p.Value > 0).ToDictionary(p => p.Key, p => p.Value);
+                    Store.Write("settings.json", config);
                     CloseSettings();
                     if (languageChanged) LanguageChanged();
                     await Refresh();

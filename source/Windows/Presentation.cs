@@ -40,6 +40,10 @@ namespace CodeUsageMonit {
             else {
                 text = connected + " / " + enabled + " 已连接 · 每 " + config.RefreshMinutes + " 分钟刷新" + (lastRefresh == DateTime.MinValue ? "" : I18n.English ? " · updated " + lastRefresh.ToString("HH:mm") : " · " + lastRefresh.ToString("HH:mm") + " 更新");
                 dot = connected == enabled ? GoodBrush : WarnBrush;
+                List<string> busy = config.FastInUse ? InUseIds() : new List<string>();
+                // A count only, so the line keeps its length; the names are in the tooltip.
+                if (busy.Count > 0) text += " · " + (busy.Count == 1 ? ProviderCatalog.Name(busy[0]) + " 使用中" : busy.Count + " 个平台使用中");
+                status.ToolTip = busy.Count == 0 ? null : I18n.T("使用中（10 分钟内写过本机会话记录），按更快的间隔刷新：") + "\n" + String.Join("\n", busy.Select(id => ProviderCatalog.Name(id) + " · " + I18n.T("{0} 分钟", Pacing.Minutes(config, id, true))));
                 if (Updates.Newer(updateState)) text += " · " + I18n.T("有新版本 v{0}", updateState.Latest);
             }
             status.Text = I18n.T(text); statusDot.Fill = dot;
@@ -255,6 +259,12 @@ namespace CodeUsageMonit {
                 AddRow(row, Label("可用余额", 12.5, InkDim), value); stack.Children.Add(row);
             }
             if (state.Id == "codex" && (state.Status == "ready" || detail) && (state.ResetCreditsAvailable.HasValue || detail)) stack.Children.Add(ResetCredits(state));
+            if (state.Id == "deepseek" && state.Status == "ready" && state.Balances.Count == 0) {
+                stack.Children.Add(Notice("没有填写 API Key，这里只统计本机 DeepSeek Harness 的用量。DeepSeek Harness 的登录查不了 API 余额；想看余额，可以在设置里填写 DeepSeek API Key（可选）。", false));
+                var addKey = new Button { Style = Styled("LinkButton"), Content = "填写 API Key", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 6, 0, 0) };
+                addKey.Click += delegate { settingsTab = "accounts"; OpenSettings(); };
+                stack.Children.Add(addKey);
+            }
             if (state.Status != "ready") {
                 string message = state.Message;
                 if (state.Id == "antigravity" && state.Status == "expired") message = "登录需要更新。请打开 Antigravity 并登录，保持应用运行后刷新。";

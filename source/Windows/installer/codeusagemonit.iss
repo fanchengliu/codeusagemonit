@@ -22,7 +22,7 @@
 ; portable.txt next to the exe forces that portable layout.
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.3.0"
+  #define MyAppVersion "1.0.0"
 #endif
 #ifndef BuildDir
   #define BuildDir "..\..\.."

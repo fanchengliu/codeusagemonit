@@ -81,7 +81,7 @@ Requires Windows 10 or 11 (x64). The .NET Framework 4.8 that ships with Windows 
 
 ### Installer (recommended)
 
-Download and run [codeusagemonit-setup-1.3.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.3.0/codeusagemonit-setup-1.3.0.exe) from [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest).
+Download and run [codeusagemonit-setup-1.0.0.exe](https://github.com/fanchengliu/codeusagemonit/releases/download/v1.0.0/codeusagemonit-setup-1.0.0.exe) from [Releases](https://github.com/fanchengliu/codeusagemonit/releases/latest).
 
 - Installs to `%LOCALAPPDATA%\Programs\codeusagemonit` by default; you can choose another folder or drive.
 - Adds a Start menu shortcut. A desktop shortcut, start with Windows, and adding `codeusage` to your user PATH are optional.

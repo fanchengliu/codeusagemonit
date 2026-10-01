@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.1.0。连接方式：**OAuth**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**OAuth**。
 
 ## 数据来源
 
@@ -22,7 +22,7 @@
 
 ## 限制
 
-这里查询的是 Claude Code 订阅的 OAuth 用量，不是 Anthropic Console API 账单。API Key 或第三方接口用量不一定消耗该订阅额度；第三方记录可在「第三方」页查看。Windows 1.1.0 没有浏览器 Cookie 导入或 CodexBar 的网页 / PTY 回退。
+这里查询的是 Claude Code 订阅的 OAuth 用量，不是 Anthropic Console API 账单。API Key 或第三方接口用量不一定消耗该订阅额度；第三方记录可在「第三方」页查看。Windows 版没有浏览器 Cookie 导入或 CodexBar 的网页 / PTY 回退。
 
 费用为本机记录的 API 等价估算，不是订阅账单。数据范围受服务端返回字段、本机日志与所选时间段限制。
 
@@ -38,4 +38,4 @@ OAuth 凭据保留在原应用；监控只读使用已有会话。 不存储密�
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Claude）、`Connect.cs`、`LocalLogs.cs`、`Timing.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Claude）、`Connect.cs`、`LocalLogs.cs`、`Timing.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

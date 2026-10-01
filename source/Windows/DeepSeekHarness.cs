@@ -11,6 +11,8 @@ namespace CodeUsageMonit {
     // speed. Only numbers are kept; message text is never stored.
     public static class HarnessLogs {
         public static string Root { get { return Path.Combine(LogReader.Home, ".dsh"); } }
+        // DeepSeek Harness has been used on this computer.
+        public static bool Present { get { try { return Directory.Exists(Path.Combine(Root, "sessions")); } catch { return false; } } }
 
         public static LogIndex Scan(LogIndex index, DateTime nowUtc) {
             var paths = LogReader.Files(Path.Combine(Root, "sessions"), "session.v*.jsonl*")

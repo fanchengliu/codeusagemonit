@@ -28,14 +28,21 @@ namespace CodeUsageMonit {
         public double Cost() { return Agents.Values.SelectMany(a => a.Values).Sum(b => b.D); }
     }
     public sealed class ImportResult {
-        public int Rows, Own, Skipped;
+        // Added: hours not seen before. Updated: a newer export of the same hours. Same: already
+        // imported, unchanged (or an older export). Duplicate: identical to this device's own
+        // records for that hour and model, i.e. the same logs copied or synced here.
+        public int Added, Updated, Same, Duplicate, Own, Skipped;
+        public int Rows { get { return Added + Updated; } }
         public List<string> Devices = new List<string>();
         public string Summary() {
-            if (Rows == 0 && Own > 0) return I18n.T("文件里只有本机的数据，无需导入。");
-            string text = Rows == 0 ? I18n.T("没有可导入的用量记录。") : I18n.T("已导入 {0} 台设备的 {1} 条小时记录：{2}", Devices.Count, Rows, String.Join("、", Devices));
+            if (Added + Updated + Same + Duplicate == 0) return Own > 0 ? I18n.T("文件里只有本机的数据，无需导入。") : I18n.T("没有可导入的用量记录。") + (Skipped > 0 ? I18n.T("；{0} 条格式不对或已超过保留期，未导入", Skipped) : "");
+            string text = Rows == 0 ? I18n.T("{0}：没有新的用量，之前已经导入过或与本机记录相同", String.Join("、", Devices))
+                : I18n.T("{0}：新增 {1} 条、更新 {2} 条小时记录", String.Join("、", Devices), Added, Updated);
+            if (Same > 0 && Rows > 0) text += I18n.T("；{0} 条之前已导入，未重复计算", Same);
+            if (Duplicate > 0) text += I18n.T("；{0} 条与本机自己的记录完全一致（多半是复制或同步过来的同一份日志），已自动去重", Duplicate);
             if (Own > 0) text += I18n.T("；跳过本机的 {0} 条", Own);
             if (Skipped > 0) text += I18n.T("；{0} 条格式不对或已超过保留期，未导入", Skipped);
-            return text;
+            return text + I18n.T("。");
         }
     }
 
@@ -169,9 +176,12 @@ namespace CodeUsageMonit {
         private static string OneLine(string s) { return (s ?? "").Replace('\r', ' ').Replace('\n', ' '); }
 
         // ── SQL import ────────────────────────────────────────────────
-        // Reads the INSERT statements of an export (other statements are ignored). Rows of
-        // this device are skipped; every other device's hours replace what was stored for
-        // them hour by hour.
+        // Reads the INSERT statements of an export (other statements are ignored) and merges them
+        // into what this device already has, deciding per hour without asking:
+        //   · rows of this device are skipped (its own logs are the source);
+        //   · a device's hour seen before is updated only by a newer export (totals only grow);
+        //   · an hour / provider / model whose totals equal this device's own record exactly is the
+        //     same usage (logs copied or synced here) and is left out, so it is not counted twice.
         public static ImportResult ImportSql(string text, DateTime nowUtc) {
             DeviceIdentity self = Self();
             var result = new ImportResult();
@@ -183,24 +193,37 @@ namespace CodeUsageMonit {
             }
             var known = new HashSet<string>(UsageScanner.Agents.Select(a => a.Id).Where(id => !AccountWide.Contains(id)));
             DateTime oldest = nowUtc.AddDays(-LogReader.RetainDays);
+            // Valid rows, and their totals per device / agent / hour / provider / model.
+            var rows = new List<ImportRow>();
+            var groups = new Dictionary<string, Bucket>(StringComparer.Ordinal);
+            foreach (var row in usage) {
+                string device = Text(row, "device_id"), agent = Text(row, "agent");
+                if (device == self.Id) { result.Own++; continue; }
+                DateTime hour;
+                if (!SafeId.IsMatch(device ?? "") || agent == null || !known.Contains(agent) || !DateTime.TryParse(Text(row, "hour_utc") ?? "", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out hour) || hour < oldest) { result.Skipped++; continue; }
+                hour = new DateTime(hour.Year, hour.Month, hour.Day, hour.Hour, 0, 0, DateTimeKind.Utc);
+                var r = new ImportRow { Device = device, Agent = agent, Group = agent + "|" + LogIndex.BucketKey(hour, Text(row, "provider") ?? "", Text(row, "model") ?? ""), Key = LogIndex.BucketKey(hour, Text(row, "provider") ?? "", Text(row, "model") ?? "", Text(row, "endpoint")),
+                    Usage = new Bucket { I = Number(row, "input_tokens"), C = Number(row, "cache_read_tokens"), W = Number(row, "cache_write_tokens"), O = Number(row, "output_tokens"), X = Number(row, "other_tokens"), R = Number(row, "requests"),
+                        D = Number(row, "cost_usd"), U = Number(row, "unpriced_tokens"), TN = Number(row, "timed_requests"), TO = Number(row, "timed_output_tokens"), TS = Number(row, "timed_seconds") } };
+                rows.Add(r);
+                Bucket sum; if (!groups.TryGetValue(device + "|" + r.Group, out sum)) groups[device + "|" + r.Group] = sum = new Bucket(); sum.Add(r.Usage, 1);
+            }
+            Dictionary<string, Bucket> local = LocalTotals(rows.Select(r => r.Agent).Distinct());
             var touched = new Dictionary<string, DeviceData>(StringComparer.Ordinal);
             lock (gate) {
-                foreach (var row in usage) {
-                    string device = Text(row, "device_id"), agent = Text(row, "agent");
-                    if (device == self.Id) { result.Own++; continue; }
-                    DateTime hour;
-                    if (!SafeId.IsMatch(device ?? "") || agent == null || !known.Contains(agent) || !DateTime.TryParse(Text(row, "hour_utc") ?? "", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out hour) || hour < oldest) { result.Skipped++; continue; }
+                foreach (ImportRow r in rows) {
+                    Bucket mine;
+                    if (local.TryGetValue(r.Group, out mine) && SameUsage(groups[r.Device + "|" + r.Group], mine)) { result.Duplicate++; continue; }
                     DeviceData d;
-                    if (!touched.TryGetValue(device, out d)) {
-                        d = Imported().FirstOrDefault(x => x.Id == device) ?? new DeviceData { Id = device, Name = device };
-                        touched[device] = d;
+                    if (!touched.TryGetValue(r.Device, out d)) {
+                        d = Imported().FirstOrDefault(x => x.Id == r.Device) ?? new DeviceData { Id = r.Device, Name = r.Device };
+                        touched[r.Device] = d;
                     }
-                    Dictionary<string, Bucket> hours; if (!d.Agents.TryGetValue(agent, out hours)) d.Agents[agent] = hours = new Dictionary<string, Bucket>(StringComparer.Ordinal);
-                    hour = new DateTime(hour.Year, hour.Month, hour.Day, hour.Hour, 0, 0, DateTimeKind.Utc);
-                    hours[LogIndex.BucketKey(hour, Text(row, "provider") ?? "", Text(row, "model") ?? "", Text(row, "endpoint"))] = new Bucket {
-                        I = Number(row, "input_tokens"), C = Number(row, "cache_read_tokens"), W = Number(row, "cache_write_tokens"), O = Number(row, "output_tokens"), X = Number(row, "other_tokens"), R = Number(row, "requests"),
-                        D = Number(row, "cost_usd"), U = Number(row, "unpriced_tokens"), TN = Number(row, "timed_requests"), TO = Number(row, "timed_output_tokens"), TS = Number(row, "timed_seconds") };
-                    result.Rows++;
+                    Dictionary<string, Bucket> hours; if (!d.Agents.TryGetValue(r.Agent, out hours)) d.Agents[r.Agent] = hours = new Dictionary<string, Bucket>(StringComparer.Ordinal);
+                    Bucket before;
+                    if (!hours.TryGetValue(r.Key, out before)) { hours[r.Key] = r.Usage; result.Added++; }
+                    else if (SameUsage(before, r.Usage) || r.Usage.Tokens() < before.Tokens() || (r.Usage.Tokens() == before.Tokens() && r.Usage.R <= before.R)) result.Same++;
+                    else { hours[r.Key] = r.Usage; result.Updated++; }
                 }
                 string cutoff = LogIndex.HourKey(oldest);
                 foreach (DeviceData d in touched.Values) {
@@ -211,8 +234,31 @@ namespace CodeUsageMonit {
                     Save(d);
                     result.Devices.Add(d.Name);
                 }
+                foreach (string device in rows.Where(r => !touched.ContainsKey(r.Device)).Select(r => r.Device).Distinct()) {
+                    Dictionary<string, object> meta; string n = names.TryGetValue(device, out meta) ? Text(meta, "name") : null;
+                    result.Devices.Add(String.IsNullOrWhiteSpace(n) ? device : n);
+                }
             }
             return result;
+        }
+        private sealed class ImportRow { public string Device, Agent, Group, Key; public Bucket Usage; }
+        // This device's own totals per agent / hour / provider / model (all endpoints together).
+        private static Dictionary<string, Bucket> LocalTotals(IEnumerable<string> agents) {
+            var totals = new Dictionary<string, Bucket>(StringComparer.Ordinal);
+            foreach (UsageScanner.Agent agent in UsageScanner.Agents.Where(a => agents.Contains(a.Id))) {
+                LogIndex index = Store.Read<LogIndex>(agent.File);
+                if (index.Version != LogIndex.CurrentVersion) continue;
+                foreach (HourUsage h in index.Entries()) {
+                    string key = agent.Id + "|" + LogIndex.BucketKey(h.Hour, h.Provider, h.Model);
+                    Bucket b; if (!totals.TryGetValue(key, out b)) totals[key] = b = new Bucket();
+                    b.I += h.Input; b.C += h.Cached; b.W += h.CacheWrite; b.O += h.Output; b.X += h.Other; b.R += h.Requests;
+                }
+            }
+            return totals;
+        }
+        // Token counts and requests equal: the same usage, not a coincidence.
+        private static bool SameUsage(Bucket a, Bucket b) {
+            return a.Tokens() > 0 && Math.Abs(a.I - b.I) < .5 && Math.Abs(a.C - b.C) < .5 && Math.Abs(a.W - b.W) < .5 && Math.Abs(a.O - b.O) < .5 && Math.Abs(a.X - b.X) < .5 && Math.Abs(a.R - b.R) < .5;
         }
         private static string Text(Dictionary<string, object> row, string column) { object v; return row.TryGetValue(column, out v) ? v as string : null; }
         private static double Number(Dictionary<string, object> row, string column) {

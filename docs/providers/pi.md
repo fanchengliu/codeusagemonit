@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.1.0。连接方式：**本地文件**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**本地文件**。
 
 ## 数据来源
 
@@ -21,7 +21,7 @@
 
 ## 限制
 
-Pi 在本软件中没有账户剩余额度或重置倒计时。1.1.0 读取器已实现，但开发机没有 Pi 真实数据验证。日志没有可用请求耗时，不显示速度。
+Pi 在本软件中没有账户剩余额度或重置倒计时。读取器已实现，但开发机没有 Pi 真实数据验证。日志没有可用请求耗时，不显示速度。
 
 费用为本机记录的 API 等价估算，不是订阅账单。数据范围受本机日志与所选时间段限制。
 
@@ -37,4 +37,4 @@ Pi 在本软件中没有账户剩余额度或重置倒计时。1.1.0 读取器�
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`Core.cs`（ProviderCatalog.LocalOnly）、`MoreAgentLogs.cs`（ScanPi / PiLine）。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（ProviderCatalog.LocalOnly）、`MoreAgentLogs.cs`（ScanPi / PiLine）。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

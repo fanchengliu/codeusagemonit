@@ -23,7 +23,7 @@ using Drawing = System.Drawing;
 
 [assembly: AssemblyTitle("codeusagemonit")]
 [assembly: AssemblyDescription("A Windows tray monitor for AI coding assistants' quotas and local usage")]
-[assembly: AssemblyVersion("1.3.0.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
 namespace CodeUsageMonit {
     public static class Program {
         private static Mutex mutex;
@@ -151,7 +151,8 @@ namespace CodeUsageMonit {
             tray = new Forms.NotifyIcon { Text = I18n.T("codeusagemonit · 正在读取"), Icon = new Drawing.Icon(System.IO.Path.Combine(Store.Root, "app.ico"), Forms.SystemInformation.SmallIconSize), Visible = true };
             tray.MouseClick += delegate(object sender, Forms.MouseEventArgs e) { if (e.Button == Forms.MouseButtons.Left) app.Dispatcher.BeginInvoke(new Action(ToggleFromTray)); };
             tray.ContextMenuStrip = TrayMenu();
-            refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(config.RefreshMinutes) }; refreshTimer.Tick += async delegate { await Refresh(); await Housekeeping(); };
+            // Every 30 s: the platforms that are due (Pacing.cs), then backups / sync / update check.
+            refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) }; refreshTimer.Tick += async delegate { await RefreshDue(); await Housekeeping(); };
             clockTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) }; clockTimer.Tick += delegate { if (window.IsVisible && !refreshing) Render(); };
             if (demo) ((FrameworkElement)window.FindName("DemoBadge")).Visibility = Visibility.Visible;
             // Compact sizes drag from anywhere, the panel from its header. Right-click anywhere
@@ -278,7 +279,7 @@ namespace CodeUsageMonit {
             foreach (CustomProvider provider in providers) ProviderCatalog.Custom[provider.Id] = provider;
             foreach (string id in ProviderCatalog.All) if (!states.ContainsKey(id)) states[id] = new ProviderState { Id = id };
         }
-        public void Start(bool background) { if (!background) Reveal(); clockTimer.Start(); if (demo) return; ObserveEndpoints(); WatchEndpoints(); refreshTimer.Start(); var a = Refresh(); var b = ScanHistory(); var c = HousekeepingSoon(); }
+        public void Start(bool background) { if (!background) Reveal(); clockTimer.Start(); if (demo) return; ObserveEndpoints(); WatchEndpoints(); WatchActivity(); refreshTimer.Start(); var a = Refresh(); var b = ScanHistory(); var c = HousekeepingSoon(); }
         // Automatic backup, WebDAV sync and the update check, when due (DataSync.cs, Updates.cs).
         private bool housekeeping;
         private UpdateState updateState = new UpdateState();
@@ -351,7 +352,7 @@ namespace CodeUsageMonit {
             try {
                 using (var service = new ProviderService(config)) {
                     var jobs = config.Enabled.Where(ProviderCatalog.IsKnown).Select(async id => {
-                        int serial = BeginFetch(id); ProviderState result = await Task.Run(() => service.Fetch(id));
+                        Fetched(id); int serial = BeginFetch(id); ProviderState result = await Task.Run(() => service.Fetch(id));
                         if (Latest(id, serial)) Accept(id, result); Render();
                     }).ToArray();
                     await Task.WhenAll(jobs);
@@ -381,7 +382,7 @@ namespace CodeUsageMonit {
             if (refreshingIds.Contains(id) || !ProviderCatalog.IsKnown(id)) return;
             refreshingIds.Add(id); Render();
             try {
-                int serial = BeginFetch(id);
+                Fetched(id); int serial = BeginFetch(id);
                 using (var service = new ProviderService(config)) { ProviderState result = await Task.Run(() => service.Fetch(id)); if (Latest(id, serial)) Accept(id, result); }
                 Store.Write("quota-cache.json", states.Values.ToList()); UpdateTray();
             } catch (Exception e) { statusNote = e is ArgumentException ? e.Message : ProviderCatalog.Name(id) + " 刷新未完成"; }

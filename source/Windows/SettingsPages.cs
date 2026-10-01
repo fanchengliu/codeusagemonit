@@ -86,7 +86,7 @@ namespace CodeUsageMonit {
                 try {
                     if (new FileInfo(path).Length > 256L * 1024 * 1024) throw new InvalidDataException(I18n.T("文件超过 256 MB。"));
                     ImportResult result = await Task.Run(() => Devices.ImportSql(File.ReadAllText(path), DateTime.UtcNow));
-                    Say(transferResult, result.Rows > 0 || result.Own > 0, result.Summary());
+                    Say(transferResult, result.Rows + result.Same + result.Duplicate + result.Own > 0, result.Summary());
                     if (result.Rows > 0) { ReloadDevices(false); renderDevices(); }
                 } catch (Exception e) { Say(transferResult, false, I18n.T("导入失败：{0}", e.Message)); }
                 finally { import.IsEnabled = true; }

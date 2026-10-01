@@ -325,7 +325,7 @@ namespace CodeUsageMonit {
                 Require(Math.Abs(narrow.Total.Tokens() - 4000) < 1e-9 && narrow.Endpoints.Last().Total.Tokens() == 0);
             });
             test("SQL export of one device imports once on another, never onto itself", () => {
-                string a = Path.Combine(Path.GetTempPath(), "cum-dev-a-" + Guid.NewGuid().ToString("N")), b = Path.Combine(Path.GetTempPath(), "cum-dev-b-" + Guid.NewGuid().ToString("N"));
+                string a = Path.Combine(Path.GetTempPath(), "cum-dev-a-" + Guid.NewGuid().ToString("N")), b = Path.Combine(Path.GetTempPath(), "cum-dev-b-" + Guid.NewGuid().ToString("N")), c = Path.Combine(Path.GetTempPath(), "cum-dev-c-" + Guid.NewGuid().ToString("N"));
                 string previous = Store.SwapData(a);
                 try {
                     DateTime now = DateTime.UtcNow, h = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc).AddHours(-5);
@@ -343,7 +343,9 @@ namespace CodeUsageMonit {
                     Store.SwapData(b);
                     Store.Write("device.json", new DeviceIdentity { Id = "devicebbbb02", Name = "B-PC" });
                     ImportResult first = Devices.ImportSql(sql, now), again = Devices.ImportSql(sql, now);
-                    Require(first.Rows == 3 && first.Devices.SequenceEqual(new[] { "A-PC" }) && again.Rows == 3);
+                    Require(first.Added == 3 && first.Devices.SequenceEqual(new[] { "A-PC" }) && again.Rows == 0 && again.Same == 3);
+                    // An older export of the same hours never lowers them.
+                    Require(Devices.ImportSql(sql.Replace(", 101, ", ", 50, "), now).Same == 3 && Math.Abs(Devices.Imported().Single().Tokens() - 351) < 1e-9);
                     DeviceData imported = Devices.Imported().Single();
                     Require(imported.Id == "deviceaaaa01" && Math.Abs(imported.Tokens() - 351) < 1e-9 && Math.Abs(imported.Cost() - .5) < 1e-9);
                     Dictionary<string, LogIndex> merged = Devices.Attach(new Dictionary<string, LogIndex>(), Devices.Imported());
@@ -352,7 +354,13 @@ namespace CodeUsageMonit {
                     // A hand-edited id that is not a plain name is refused.
                     Require(Devices.ImportSql(sql.Replace("'deviceaaaa01'", "'../evil'"), now).Skipped == 3);
                     Devices.Remove("deviceaaaa01"); Require(Devices.Imported().Count == 0);
-                } finally { Store.SwapData(previous); foreach (string dir in new[] { a, b }) { try { Directory.Delete(dir, true); } catch { } } }
+                    // C already has the same Codex hour in its own logs (copied or synced): left out.
+                    Store.SwapData(c);
+                    Store.Write("device.json", new DeviceIdentity { Id = "devicecccc03", Name = "C-PC" });
+                    var mine = new LogIndex(); mine.Files.Add(new LogFile { Name = "copied.jsonl", Hours = { { LogIndex.BucketKey(h, "openai", "gpt-6"), new Bucket { I = 101, O = 10, R = 2 } } } }); Store.Write("codex-logs.json", mine);
+                    ImportResult copied = Devices.ImportSql(sql, now);
+                    Require(copied.Duplicate == 1 && copied.Added == 2 && Math.Abs(Devices.Imported().Single().Tokens() - 240) < 1e-9);
+                } finally { Store.SwapData(previous); foreach (string dir in new[] { a, b, c }) { try { Directory.Delete(dir, true); } catch { } } }
             });
             test("DeepSeek Harness sessions: zstd frames, model, cache and speed, read incrementally", () => {
                 // Synthetic session: header + message (2 s, 100 output) in two frames, then a
@@ -395,6 +403,17 @@ namespace CodeUsageMonit {
                     I18n.Localize(mixed); Require(new System.Windows.Documents.TextRange(mixed.ContentStart, mixed.ContentEnd).Text == "Weekly 22% left");
                     I18n.Use("zh"); I18n.Localize(block); Require(block.Text == "近 7 天" && (string)block.ToolTip == "刷新全部");
                 } finally { I18n.Use("zh"); }
+            });
+            test("Per-platform refresh: own interval, faster while in use, never under a minute", () => {
+                var config = new AppConfig { RefreshMinutes = 5, FastInUse = true, InUseMinutes = 2 };
+                config.ProviderMinutes["kimi"] = 30;
+                Require(Pacing.Minutes(config, "codex", false) == 5 && Pacing.Minutes(config, "codex", true) == 2);
+                Require(Pacing.Minutes(config, "kimi", false) == 30 && Pacing.Minutes(config, "kimi", true) == 2);
+                config.FastInUse = false; Require(Pacing.Minutes(config, "codex", true) == 5);
+                config.InUseMinutes = 0; config.FastInUse = true; Require(Pacing.Minutes(config, "codex", true) == 1);
+                DateTime now = new DateTime(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc);
+                Require(Pacing.Due(DateTime.MinValue, 5, now) && Pacing.Due(now.AddMinutes(-5), 5, now) && Pacing.Due(now.AddSeconds(-290), 5, now) && !Pacing.Due(now.AddMinutes(-4), 5, now));
+                Require(Pacing.CountsAsWork("claude", @"C:\u\.claude\projects\p\s.jsonl") && !Pacing.CountsAsWork("cursor", @"C:\u\Cursor\User\globalStorage\storage.json") && Pacing.CountsAsWork("cursor", @"C:\u\Cursor\User\globalStorage\state.vscdb-wal"));
             });
             test("SQL reader handles quotes, comments and several rows per INSERT", () => {
                 var rows = Devices.Inserts("-- note; with a semicolon\nINSERT INTO cum_devices VALUES ('a''b', 'n;x', NULL, '1'); /* x; */ INSERT INTO t (p, q) VALUES (1, 'x'), (2.5e1, 'y');").ToList();
