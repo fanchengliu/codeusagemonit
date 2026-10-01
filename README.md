@@ -241,11 +241,13 @@ cd codeusagemonit
 - [Claude Code Usage Monitor](https://github.com/CodeZeno/Claude-Code-Usage-Monitor)：参考了 Windows 上各客户端登录状态的保存位置。
 - [LiteLLM](https://github.com/BerriAI/litellm) 与 [models.dev](https://github.com/anomalyco/models.dev)：价目表数据来源（MIT）。
 - [Inno Setup](https://jrsoftware.org/isinfo.php)：安装程序；简体中文翻译由 [kira-96](https://github.com/kira-96/Inno-Setup-Chinese-Simplified-Translation) 维护。
-
+也感谢Linux DO: 学AI上L站
 本项目不包含上述项目的代码，也不调用它们的程序。详见 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md)。
 
-## 许可证
+## 社区
+本开源项目已链接并认可 [LINUX DO 社区](https://linux.do/)。
 
+## 许可证
 [MIT](./LICENSE)
 
 codeusagemonit 是独立的开源项目，与 OpenAI、Anthropic、Cursor 等任何被监控的服务均无关联。产品名称和图标归各自所有者。
