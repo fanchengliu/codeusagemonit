@@ -40,6 +40,9 @@ namespace CodeUsageMonit {
             if (args.Contains("--self-test")) return SelfTests.Run();
             if (args.Contains("--probe")) return Probe().GetAwaiter().GetResult();
             if (args.Contains("--demo")) Store.EnableDemoMode();
+            // --restart <pid>: started by a copy that is about to exit (after a restore); wait for it.
+            int restart = Array.IndexOf(args, "--restart"), previous;
+            if (restart >= 0 && restart + 1 < args.Length && Int32.TryParse(args[restart + 1], out previous)) { try { using (Process old = Process.GetProcessById(previous)) old.WaitForExit(15000); } catch { } }
             bool created; mutex = new Mutex(true, instance + ".Instance", out created);
             showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, instance + ".Show");
             if (!created) { showEvent.Set(); showEvent.Dispose(); mutex.Dispose(); return 0; }
@@ -94,7 +97,7 @@ namespace CodeUsageMonit {
         private DateTime lastRefresh = DateTime.MinValue, lastDeactivated = DateTime.MinValue, lastAutoHide = DateTime.MinValue;
         private readonly Dictionary<string, string> icons = new Dictionary<string, string>();
         public MonitorPanel(Application application, bool demoMode) {
-            app = application; demo = demoMode; Directory.CreateDirectory(Store.Data); config = Store.Read<AppConfig>("settings.json");
+            app = application; demo = demoMode; Directory.CreateDirectory(Store.Data); config = Store.Read<AppConfig>("settings.json"); I18n.Use(config.Language); updateState = Updates.State();
             WindowFrame.Normalize(config);
             config.RefreshMinutes = Math.Max(1, Math.Min(60, config.RefreshMinutes)); if (config.Enabled == null || config.Enabled.Length == 0) config.Enabled = ProviderCatalog.DefaultEnabled;
             if (!demo) RegisterCustomProviders(CustomProviders.Load());
@@ -119,7 +122,7 @@ namespace CodeUsageMonit {
                 }
             } catch { }
             history = Store.Read<UsageHistory>("history.json");
-            if (!demo) { usageIndexes = UsageScanner.Load(UsageScanner.Agents.Select(a => a.Id)); usageIndexes.TryGetValue("codex", out codexLogs); usageIndexes.TryGetValue("claude", out claudeLogs); }
+            if (!demo) { localIndexes = UsageScanner.Load(UsageScanner.Agents.Select(a => a.Id)); usageIndexes = WithDevices(localIndexes); usageIndexes.TryGetValue("codex", out codexLogs); usageIndexes.TryGetValue("claude", out claudeLogs); }
             endpointLog = demo ? new EndpointLog() : Store.Read<EndpointLog>("endpoints.json");
             if (demo) SeedDemo(); else BuildThirdParty();
             LoadIcons();
@@ -148,7 +151,7 @@ namespace CodeUsageMonit {
             tray = new Forms.NotifyIcon { Text = "codeusagemonit · 正在读取", Icon = new Drawing.Icon(System.IO.Path.Combine(Store.Root, "app.ico"), Forms.SystemInformation.SmallIconSize), Visible = true };
             tray.MouseClick += delegate(object sender, Forms.MouseEventArgs e) { if (e.Button == Forms.MouseButtons.Left) app.Dispatcher.BeginInvoke(new Action(ToggleFromTray)); };
             tray.ContextMenuStrip = TrayMenu();
-            refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(config.RefreshMinutes) }; refreshTimer.Tick += async delegate { await Refresh(); };
+            refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(config.RefreshMinutes) }; refreshTimer.Tick += async delegate { await Refresh(); await Housekeeping(); };
             clockTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) }; clockTimer.Tick += delegate { if (window.IsVisible && !refreshing) Render(); };
             if (demo) ((FrameworkElement)window.FindName("DemoBadge")).Visibility = Visibility.Visible;
             // Compact sizes drag from anywhere, the panel from its header. Right-click anywhere
@@ -275,7 +278,30 @@ namespace CodeUsageMonit {
             foreach (CustomProvider provider in providers) ProviderCatalog.Custom[provider.Id] = provider;
             foreach (string id in ProviderCatalog.All) if (!states.ContainsKey(id)) states[id] = new ProviderState { Id = id };
         }
-        public void Start(bool background) { if (!background) Reveal(); clockTimer.Start(); if (demo) return; ObserveEndpoints(); WatchEndpoints(); refreshTimer.Start(); var a = Refresh(); var b = ScanHistory(); }
+        public void Start(bool background) { if (!background) Reveal(); clockTimer.Start(); if (demo) return; ObserveEndpoints(); WatchEndpoints(); refreshTimer.Start(); var a = Refresh(); var b = ScanHistory(); var c = HousekeepingSoon(); }
+        // Automatic backup, WebDAV sync and the update check, when due (DataSync.cs, Updates.cs).
+        private bool housekeeping;
+        private UpdateState updateState = new UpdateState();
+        private async Task HousekeepingSoon() { await Task.Delay(TimeSpan.FromSeconds(20)); await Housekeeping(); }
+        private async Task Housekeeping() {
+            if (demo || housekeeping) return;
+            housekeeping = true;
+            try {
+                AppConfig c = config; DateTime now = DateTime.UtcNow;
+                if (Backups.Due(c, now)) await Task.Run(() => { try { Backups.Create(c, true, now); Backups.Prune(c); } catch { } });
+                if (WebDavSync.Due(c, now)) await SyncNow();
+                if (Updates.Due(c, now)) { updateState = await Updates.Check(c, now); UpdateStatus(); }
+            } finally { housekeeping = false; }
+        }
+        private Task<bool> SyncNow() { return SyncNow(config.WebDavUrl, config.WebDavUser, Store.SavedKey(WebDavSync.KeyId)); }
+        // After a restore: start a fresh copy that waits for this one, and leave without saving
+        // (the restored settings must not be overwritten by the ones in memory).
+        private void RestartFresh() {
+            try { Process.Start(new ProcessStartInfo(System.IO.Path.Combine(Store.Root, "codeusagemonit.exe"), "--restart " + Process.GetCurrentProcess().Id + (Program.SideBySide ? " --side-by-side" : "")) { UseShellExecute = false }); } catch { }
+            quitting = true; tray.Visible = false;
+            if (settingsWindow != null) { Window w = settingsWindow; settingsWindow = null; w.Close(); }
+            window.Close(); app.Shutdown();
+        }
         // Endpoint switches (e.g. CC Switch rewriting settings.json / config.toml) are
         // recorded as they happen, so later usage can be attributed to the right relay.
         private void WatchEndpoints() {
@@ -369,7 +395,8 @@ namespace CodeUsageMonit {
                 // page) are read incrementally into hourly indexes; the days derive from them.
                 var ids = UsageScanner.Agents.Select(a => a.Id).Where(id => config.Enabled.Contains(id) || (config.ShowThirdParty && (id == "codex" || id == "claude"))).ToList();
                 Dictionary<string, LogIndex> scanned = await Task.Run(() => UsageScanner.ScanAll(ids, DateTime.UtcNow, true));
-                foreach (var pair in scanned) usageIndexes[pair.Key] = pair.Value;
+                foreach (var pair in scanned) localIndexes[pair.Key] = pair.Value;
+                usageIndexes = WithDevices(localIndexes);
                 usageIndexes.TryGetValue("codex", out codexLogs); usageIndexes.TryGetValue("claude", out claudeLogs);
                 UsageHistory next = HistoryService.FromIndexes(usageIndexes, TimeZoneInfo.Local, DateTime.Today, 30);
                 history = HistoryService.Merge(history, next, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today));
@@ -378,6 +405,23 @@ namespace CodeUsageMonit {
             }
             catch { history.Error = "本地统计暂时不可用"; }
             finally { scanning = false; Render(); }
+        }
+        // Local indexes plus the usage imported from other devices (DataSync.cs).
+        private Dictionary<string, LogIndex> WithDevices(Dictionary<string, LogIndex> local) {
+            try { List<DeviceData> devices = Devices.Imported(); importedDevices = devices.Count; return Devices.Attach(local, devices); } catch { importedDevices = 0; return local; }
+        }
+        private int importedDevices;
+        // This device's own indexes (what the scanners persist); usageIndexes adds the imported devices.
+        private Dictionary<string, LogIndex> localIndexes = new Dictionary<string, LogIndex>();
+        // After an import, a sync or removing a device: rebuild the totals from the indexes.
+        // Merging keeps days whose local logs were deleted; a removed device must disappear.
+        private void ReloadDevices(bool removed) {
+            if (demo) return;
+            usageIndexes = WithDevices(localIndexes); usageIndexes.TryGetValue("codex", out codexLogs); usageIndexes.TryGetValue("claude", out claudeLogs);
+            UsageHistory next = HistoryService.FromIndexes(usageIndexes, TimeZoneInfo.Local, DateTime.Today, 30);
+            history = removed ? next : HistoryService.Merge(history, next, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today));
+            try { Store.Write("history.json", history); } catch { }
+            BuildThirdParty(); Render();
         }
         private void UpdateTray() {
             string text = "codeusagemonit";

@@ -40,6 +40,7 @@ namespace CodeUsageMonit {
             else {
                 text = connected + " / " + enabled + " 已连接 · 每 " + config.RefreshMinutes + " 分钟刷新" + (lastRefresh == DateTime.MinValue ? "" : " · " + lastRefresh.ToString("HH:mm") + " 更新");
                 dot = connected == enabled ? GoodBrush : WarnBrush;
+                if (Updates.Newer(updateState)) text += " · " + I18n.T("有新版本 v{0}", updateState.Latest);
             }
             status.Text = text; statusDot.Fill = dot;
         }
@@ -478,7 +479,7 @@ namespace CodeUsageMonit {
                     AddRow(row, left, right); stack.Children.Add(row);
                 }
             }
-            var foot = Label((account ? "数据来自 Cursor 账户后台，含该账户所有设备 · 没有请求耗时，无法算输出速度" : "数据来自本机日志，不含其他设备") + (data.FromLogs ? " · 按小时统计" : ""), 10.5, InkFaint);
+            var foot = Label((account ? "数据来自 Cursor 账户后台，含该账户所有设备 · 没有请求耗时，无法算输出速度" : ProviderCatalog.UsageSource(state.Id) != null ? I18n.T("数据来自本机 {0} 日志，不含其他设备", ProviderCatalog.UsageSource(state.Id)) : "数据来自本机日志，不含其他设备") + (data.FromLogs ? " · 按小时统计" : ""), 10.5, InkFaint);
             foot.TextWrapping = TextWrapping.Wrap;
             foot.Margin = new Thickness(0, 14, 0, 0); stack.Children.Add(foot);
             return stack;

@@ -13,10 +13,11 @@ namespace CodeUsageMonit {
     //   Codex:       the last tool output / user message → the response's last item.
     //   ZCode / OpenCode: the start and completion times the client records per request.
     //   Grok:        the API duration the client records per turn.
+    //   DeepSeek Harness: the request header → the assistant message carrying the usage.
     public static class OutputTiming {
         public const double MinOutput = 50, MinSeconds = .2, MaxSeconds = 600, MinTimedSeconds = 1;
         // Agents whose local records carry request durations.
-        public static readonly string[] Agents = { "codex", "claude", "zcode", "grok", "opencode" };
+        public static readonly string[] Agents = { "codex", "claude", "zcode", "grok", "opencode", "deepseek" };
         public static bool Supported(string agent) { return Array.IndexOf(Agents, agent) >= 0; }
         public const string Definition = "输出速度 = 输出 Token（含思考 / 推理）÷ 请求耗时（发出请求 → 最后一段输出写入本机日志），包含首字延迟和网络 / 中转站延迟；只统计输出 ≥ 50 Token、耗时 ≤ 10 分钟的请求。这是实际使用的快慢，不是模型基准测试。";
         // Short replies are dominated by the time to first token; stuck or retried requests

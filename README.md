@@ -49,7 +49,7 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 | [Claude](./docs/providers/claude.md) | 复用 Claude Code 的登录 | 5 小时、每周及模型额度 | ✓ | ✓ |
 | [Cursor](./docs/providers/cursor.md) | 读取 Cursor 编辑器保存的会话 | 套餐总量、Auto、API；账户包含时另显示 Grok Bot 每周额度 | ✓¹ | — |
 | [Antigravity](./docs/providers/antigravity.md) | 读取正在运行的桌面应用，已保存的登录作为回退 | 周期额度、模型额度 | ✓ | — |
-| [DeepSeek](./docs/providers/deepseek.md) | API Key（或环境变量 `DEEPSEEK_API_KEY`） | API 账户余额，按币种显示 | — | — |
+| [DeepSeek](./docs/providers/deepseek.md) | API Key（或环境变量 `DEEPSEEK_API_KEY`） | API 账户余额，按币种显示 | ✓² | ✓² |
 | [Grok](./docs/providers/grok.md) | 复用 Grok Build CLI 的登录（`grok login`） | 当前账期共享额度；Build / Chat 为消耗构成 | ✓ | ✓ |
 | [GitHub Copilot](./docs/providers/copilot.md) | GitHub 设备码登录，或复用官方插件已保存的授权 | 每月高级请求、对话额度 | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API Key，可选国内或国际 | 5 小时、每周、每月 | ✓ | — |
@@ -60,6 +60,7 @@ codeusagemonit 把这些信息收到 Windows 托盘里：左键点开就能看�
 
 - 前六个平台默认启用，其余在 设置 → 显示的平台 里打开。
 - ¹ Cursor 本机不留调用记录，用量取自 Cursor 账户后台的逐次调用明细（Token、请求数、模型和每次调用的价格），包含该账户在所有设备上的调用；明细里没有请求耗时，所以没有输出速度。
+- ² DeepSeek 的本机用量和输出速度来自 DeepSeek Harness（`dsh`）的会话记录 `~/.dsh/sessions`；没用 DeepSeek Harness 时只显示 API 余额。
 - 各平台的数据来源、连接步骤和限制见 [`docs/providers/`](./docs/providers/)。
 
 ## 安装

@@ -18,7 +18,7 @@ namespace CodeUsageMonit {
 
         public static int Main(string[] args) {
             try { Console.OutputEncoding = new UTF8Encoding(false); } catch { }
-            var rest = new List<string>(); int days = 7; bool all = false, refresh = false;
+            var rest = new List<string>(); var raw = new List<string>(); int days = 7; bool all = false, refresh = false;
             color = !Console.IsOutputRedirected && String.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_COLOR")) && EnableAnsi();
             for (int i = 0; i < args.Length; i++) {
                 string a = args[i];
@@ -31,7 +31,7 @@ namespace CodeUsageMonit {
                 else if (a == "-h" || a == "--help" || a == "/?") rest.Insert(0, "help");
                 else if (a == "-v" || a == "--version") rest.Insert(0, "version");
                 else if (a.StartsWith("-")) return Fail("未知参数：" + a + "（codeusage help 查看用法）");
-                else rest.Add(a.ToLowerInvariant());
+                else { rest.Add(a.ToLowerInvariant()); raw.Add(a); }
             }
             string command = rest.Count > 0 ? rest[0] : "status";
             var config = Store.Read<AppConfig>("settings.json");
@@ -46,6 +46,10 @@ namespace CodeUsageMonit {
                     case "cost": return Cost(ids, days, refresh);
                     case "thirdparty": case "third-party": return ThirdParty();
                     case "providers": return Providers(config);
+                    case "export": return Export(raw.Count > 1 ? raw[1] : null);
+                    case "import": return raw.Count > 1 ? Import(raw[1]) : Fail("用法：codeusage import <文件.sql>");
+                    case "backup": return Backup(config);
+                    case "sync": return Sync(config);
                     // Diagnostics: field names of Cursor's usage events (no values are printed).
                     case "cursor-fields": Console.WriteLine(CursorUsage.Fields(DateTime.UtcNow)); return 0;
                     case "version": Console.WriteLine("codeusage " + Version + "（codeusagemonit 命令行）"); return 0;
@@ -67,6 +71,10 @@ namespace CodeUsageMonit {
             Row2("  cost", "按天列出本机 Token 与 API 等价费用");
             Row2("  thirdparty", "第三方 API（中转站）用量");
             Row2("  providers", "平台列表、启用状态与凭据来源");
+            Row2("  export [文件]", "把本机（及已导入设备）的用量导出为 SQL");
+            Row2("  import <文件>", "导入另一台设备导出的 SQL");
+            Row2("  backup", "立即备份设置和用量索引");
+            Row2("  sync", "按设置里的 WebDAV 同步各设备的用量");
             Row2("  help | version", "帮助 / 版本");
             Console.WriteLine();
             Console.WriteLine("选项：");
@@ -153,7 +161,7 @@ namespace CodeUsageMonit {
             UsageHistory history = Store.Read<UsageHistory>("history.json");
             if (refresh) {
                 // Same scan the desktop app runs: every agent's local logs → hourly index → days.
-                var indexes = UsageScanner.ScanAll(UsageScanner.Agents.Select(a => a.Id), DateTime.UtcNow, true);
+                var indexes = Devices.Attach(UsageScanner.ScanAll(UsageScanner.Agents.Select(a => a.Id), DateTime.UtcNow, true), Devices.Imported());
                 UsageHistory next = HistoryService.FromIndexes(indexes, TimeZoneInfo.Local, DateTime.Today, 30);
                 history = HistoryService.Merge(history, next, HistoryService.DayKey(DateTime.Today.AddDays(-29)), HistoryService.DayKey(DateTime.Today));
                 try { Store.Write("history.json", history); } catch { }
@@ -200,9 +208,33 @@ namespace CodeUsageMonit {
         private static double? Tps(double output, double seconds) { double? v = OutputTiming.Speed(output, seconds); return v.HasValue ? (double?)Math.Round(v.Value, 1) : null; }
         private static string Cell(IEnumerable<DayUsage> rows) { var list = rows.ToList(); return list.Count == 0 ? "—" : Money(list); }
 
+        // ── data: export / import / backup / sync (DataSync.cs) ──────────
+        private static int Export(string path) {
+            DeviceIdentity self = Devices.Self();
+            if (String.IsNullOrWhiteSpace(path)) path = "codeusagemonit-" + new String(self.Name.Select(c => Char.IsLetterOrDigit(c) || c == (char)45 ? c : (char)95).ToArray()) + "-" + DateTime.Now.ToString("yyyyMMdd-HHmm", CultureInfo.InvariantCulture) + ".sql";
+            File.WriteAllText(path, Devices.ExportSql(DateTime.UtcNow, true), new UTF8Encoding(false));
+            Console.WriteLine("已导出到 " + Path.GetFullPath(path)); return 0;
+        }
+        private static int Import(string path) {
+            if (!File.Exists(path)) return Fail("找不到文件：" + path);
+            Console.WriteLine(Devices.ImportSql(File.ReadAllText(path), DateTime.UtcNow).Summary()); return 0;
+        }
+        private static int Backup(AppConfig config) {
+            string path = Backups.Create(config, false, DateTime.UtcNow);
+            Console.WriteLine("已备份到 " + path); return 0;
+        }
+        private static int Sync(AppConfig config) {
+            if (String.IsNullOrWhiteSpace(config.WebDavUrl)) return Fail("还没有设置 WebDAV（设置 › 数据 › 云同步）");
+            try {
+                string message = WebDavSync.Run(config, config.WebDavUrl, config.WebDavUser, Store.SavedKey(WebDavSync.KeyId), DateTime.UtcNow).GetAwaiter().GetResult();
+                WebDavSync.Record(true, message, DateTime.UtcNow); Console.WriteLine(message); return 0;
+            } catch (Exception e) { string message = e is ProviderException ? e.Message : "同步失败：" + e.Message; WebDavSync.Record(false, message, DateTime.UtcNow); return Fail(message); }
+        }
+
         // ── thirdparty ────────────────────────────────────────────────────
         private static int ThirdParty() {
-            ThirdPartySummary report = ThirdPartyReport.Build(Store.Read<LogIndex>("codex-logs.json"), Store.Read<LogIndex>("claude-logs.json"), Store.Read<EndpointLog>("endpoints.json"), Store.Read<UsageHistory>("history.json"), DateTime.UtcNow, TimeZoneInfo.Local);
+            var indexes = Devices.Attach(new Dictionary<string, LogIndex> { { "codex", Store.Read<LogIndex>("codex-logs.json") }, { "claude", Store.Read<LogIndex>("claude-logs.json") } }, Devices.Imported());
+            ThirdPartySummary report = ThirdPartyReport.Build(indexes["codex"], indexes["claude"], Store.Read<EndpointLog>("endpoints.json"), Store.Read<UsageHistory>("history.json"), DateTime.UtcNow, TimeZoneInfo.Local);
             if (json) {
                 Console.WriteLine(J.Serializer().Serialize(new {
                     endpoints = report.Endpoints.Select(e => new { app = e.App, name = e.Title, host = e.Host, current = e.Current, todayTokens = e.Today, weekTokens = e.Week, monthTokens = e.Month, requests = e.Requests, outputTokensPerSecond = Tps(e.TimedOutput, e.TimedSeconds), officialPriceUsd30 = Round(e.CostMonth), lastUsed = e.LastUsed, mainModel = e.MainModel }),

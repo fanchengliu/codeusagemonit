@@ -2,11 +2,13 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.1.0。连接方式：**API Key**。
+> 适用于 codeusagemonit 1.3.0。连接方式：**API Key**；本机用量来自 **DeepSeek Harness**。
 
 ## 数据来源
 
 使用用户填写的 API Key，或 `DEEPSEEK_API_KEY` 环境变量，向 `api.deepseek.com/user/balance` 查询。环境变量优先于应用内保存的密钥。
+
+本机用量：读取 DeepSeek Harness（`dsh`，`@deepseek-ai/dsh-*`）保存在 `~/.dsh/sessions/<工作区>/<会话>/session.v4.jsonl.zstd` 的会话记录。文件由多个追加的 zstd 帧组成，本软件自带解压（.NET Framework 没有 zstd），增量读取：只解压上次之后新写入的完整帧。每次模型调用由 `request/header`（发出时间、模型）和 `assistant/message`（`usage` 与回复写入时间）组成。
 
 ## 连接步骤
 
@@ -17,10 +19,16 @@
 ## 可以查看什么
 
 - API 账户总余额，按接口返回的币种分别显示。
+- 详情页的**本机用量**（使用 DeepSeek Harness 时）：费用、Token、请求数、Token 构成、柱状图、各模型用量和**输出速度**。
 
 ## 限制
 
-这是 DeepSeek API 余额，不是网页聊天的额度。1.1.0 不从 DeepSeek 读取独立的本机 Token 历史，也不以余额变化推算费用。
+这是 DeepSeek API 余额，不是网页聊天的额度。余额变化不用来推算费用。
+
+- 本机用量只包括 DeepSeek Harness 的调用；直接调用 API 的其他程序不计入。
+- 会话标题的生成调用在记录里没有用量，不计入。
+- `inputTokens` 按“不含缓存命中”的输入处理；若某条记录的 `totalTokens` 表明缓存命中已含在输入里，会自动扣除。目前只用无缓存命中的会话核对过。
+- 数据目录固定为 `~/.dsh`（未发现可改目录的环境变量）。
 
 费用为本机记录的 API 等价估算，不是订阅账单。数据范围受服务端返回字段、本机日志与所选时间段限制。
 
@@ -36,4 +44,4 @@
 
 ## 实现位置
 
-1.1.0 下载包内 `source/Windows/`：`Core.cs`（Store.ProviderKey / ProviderService.Fetch / Parsers.DeepSeek）、`Connect.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（Store.ProviderKey / ProviderService.Fetch / Parsers.DeepSeek）、`Connect.cs`、`DeepSeekHarness.cs`（会话记录）、`Zstd.cs`（解压）。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

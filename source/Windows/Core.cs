@@ -97,11 +97,25 @@ namespace CodeUsageMonit {
         public double? CompactLeft, CompactTop;
         // Size and position of each compact size; the full panel uses WindowLeft/Top/Width/Height.
         public Dictionary<string, WindowGeometry> Layouts = new Dictionary<string, WindowGeometry>();
+        // Interface language: "auto" (follows Windows) | "zh" | "en".
+        public string Language = "auto";
+        // Automatic backups (Backups in DataSync.cs): every BackupHours (0 = off), keeping the
+        // newest BackupKeep automatic ones, in BackupFolder (empty = data\backups).
+        public int BackupHours = 24, BackupKeep = 7;
+        public string BackupFolder = "";
+        // WebDAV sync of usage between devices: folder URL, user name (the password is a
+        // DPAPI key, "webdav"), and how often to sync automatically (0 = only on demand).
+        public string WebDavUrl = "", WebDavUser = "";
+        public int SyncMinutes = 0;
+        // Look for a newer release on GitHub once a day.
+        public bool UpdateCheck = true;
     }
     public sealed class WindowGeometry { public double Width, Height; public double? Left, Top; }
     public static class AppInfo {
         public const string ShortVersion = "1.2";
         public const string UserAgent = "codeusagemonit/" + ShortVersion;
+        // Full version from the assembly ("1.3.0").
+        public static string Version { get { System.Version v = typeof(AppInfo).Assembly.GetName().Version; return v.Major + "." + v.Minor + "." + Math.Max(0, v.Build); } }
     }
     public static class ProviderCatalog {
         public static readonly string[] Ids = { "codex", "claude", "cursor", "antigravity", "deepseek", "grok", "copilot", "kimi", "opencode", "zcode", "pi" };
@@ -118,6 +132,8 @@ namespace CodeUsageMonit {
         // Usage read from the account (Cursor's dashboard) rather than this machine's logs:
         // it covers every device signed in to the account.
         public static bool AccountUsage(string id) { return id == "cursor"; }
+        // The local client a provider's usage is read from, when it is not the obvious one.
+        public static string UsageSource(string id) { return id == "deepseek" ? "DeepSeek Harness" : null; }
         public static string UsageTitle(string id) { return AccountUsage(id) ? "账户用量" : "本机用量"; }
         public static string Name(string id) {
             CustomProvider custom; if (id != null && Custom.TryGetValue(id, out custom)) return custom.Name;
@@ -197,6 +213,9 @@ namespace CodeUsageMonit {
             set { dataPath = value; }
         }
         public static void EnableDemoMode() { Data = Path.Combine(Root, "verification", "demo-data"); }
+        // Self-tests point the data directory at a temporary folder and back, without choosing
+        // (or migrating) the real one.
+        internal static string SwapData(string path) { string old = dataPath; dataPath = path; return old; }
         // Zip, Scoop and install.ps1 keep using <exe>\data. setup.exe writes installed.txt
         // (and HKCU\Software\codeusagemonit\InstallPath); those copies use
         // %LOCALAPPDATA%\codeusagemonit so Program Files can stay read-only.
@@ -648,6 +667,8 @@ namespace CodeUsageMonit {
             catch (UnauthorizedAccessException) { return Failure(id, "无法读取本机登录文件，请检查文件权限"); }
             catch (Exception) { return Failure(id, "无法读取此平台的数据格式，请在原应用登录后重试"); }
         }
+        // A public JSON document (the GitHub releases API for the update check).
+        public Task<object> GetJson(string url) { return Request(url, null, null, null, new Dictionary<string, string> { { "Accept", "application/vnd.github+json" } }); }
         // Cursor: the editor's own session (state.vscdb), sent the way cursor.com expects it.
         private static string CursorDb { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Cursor", "User", "globalStorage", "state.vscdb"); } }
         public static string CursorCookie() {

@@ -91,14 +91,37 @@ namespace CodeUsageMonit {
             ApplyAppearance(alpha, picture, fit, dim, tint);
             if (settingsWindow != null) WindowFrame.ApplyBackdrop(settingsWindow, settingsSurface, "acrylic", alpha, tint);
         }
+        // Five pages share one Save / Cancel bar: 通用 (language, start-up, platforms, window,
+        // look), 认证 (accounts, keys, custom platforms), 数据 (devices, SQL, backups, WebDAV),
+        // 高级 (refresh, proxy, prices, maintenance) and 关于 (version, updates, links).
+        // Buttons on the 数据 page (export, backup, sync…) act at once; everything else on Save.
+        private string settingsTab = "general";
+        private static readonly string[][] SettingsTabs = { new[] { "general", "通用" }, new[] { "accounts", "认证" }, new[] { "data", "数据" }, new[] { "advanced", "高级" }, new[] { "about", "关于" } };
         private FrameworkElement BuildSettings() {
             var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition()); root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var content = new StackPanel();
-            root.Children.Add(new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(14, 6, 8, 8), Margin = new Thickness(0, 0, 4, 0) });
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); root.RowDefinitions.Add(new RowDefinition()); root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var pages = SettingsTabs.ToDictionary(t => t[0], t => new StackPanel());
+            if (!pages.ContainsKey(settingsTab)) settingsTab = "general";
+            var scroll = new ScrollViewer { Content = pages[settingsTab], VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(14, 2, 8, 8), Margin = new Thickness(0, 0, 4, 0) };
+            Grid.SetRow(scroll, 1); root.Children.Add(scroll);
+            FrameworkElement tabs = Segmented(SettingsTabs.Select(t => new[] { t[0], I18n.T(t[1]) }).ToArray(), settingsTab, code => { settingsTab = code; scroll.Content = pages[code]; scroll.ScrollToTop(); });
+            tabs.Margin = new Thickness(14, 10, 14, 4); root.Children.Add(tabs);
+            StackPanel general = pages["general"], accounts = pages["accounts"], dataPage = pages["data"], advanced = pages["advanced"], aboutPage = pages["about"];
+
+            // ── 通用 ── Language and start-up
+            general.Children.Add(SectionTitle(I18n.T("语言与启动")));
+            var startCard = new StackPanel();
+            string language = config.Language == "zh" || config.Language == "en" ? config.Language : "auto";
+            var languageRow = Row();
+            AddRow(languageRow, FieldLabel(I18n.T("界面语言"), I18n.T("“跟随系统”按 Windows 的显示语言")), Segmented(new[] { new[] { "auto", I18n.T("跟随系统") }, new[] { "zh", "中文" }, new[] { "en", "English" } }, language, code => language = code));
+            startCard.Children.Add(languageRow); startCard.Children.Add(Separator());
+            CheckBox autoStart = SwitchRow(I18n.T("登录 Windows 后自动运行"), demo ? I18n.T("演示模式下不可更改") : Program.SideBySide ? I18n.T("并行运行的副本不可更改") : I18n.T("启动后只驻留托盘"), !demo && StartupEnabled()); autoStart.IsEnabled = !demo && !Program.SideBySide;
+            CheckBox hidden = SwitchRow(I18n.T("隐藏账户邮箱的部分字符"), I18n.T("截图或分享时更安全"), config.HideAccounts);
+            startCard.Children.Add(autoStart); startCard.Children.Add(Separator()); startCard.Children.Add(hidden);
+            general.Children.Add(Card(startCard));
 
             // Providers
-            content.Children.Add(SectionTitle("显示的平台"));
+            general.Children.Add(SectionTitle(I18n.T("显示的平台")));
             var providers = new StackPanel();
             var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, -6) };
             var choices = new Dictionary<string, CheckBox>();
@@ -111,41 +134,37 @@ namespace CodeUsageMonit {
                 choices[id] = chip; chips.Children.Add(chip);
             }
             providers.Children.Add(chips);
-            providers.Children.Add(Hint("关闭的平台不再联网查询，也不出现在标签栏。", 10));
+            providers.Children.Add(Hint(I18n.T("关闭的平台不再联网查询，也不出现在标签栏。"), 10));
             providers.Children.Add(Separator());
-            CheckBox thirdPartySwitch = SwitchRow("统计第三方 API 用量", "按本机日志统计经中转站的 Token；服务商的限额无法得知", config.ShowThirdParty);
+            CheckBox thirdPartySwitch = SwitchRow(I18n.T("统计第三方 API 用量"), I18n.T("按本机日志统计经中转站的 Token；服务商的限额无法得知"), config.ShowThirdParty);
             providers.Children.Add(thirdPartySwitch);
-            providers.Children.Add(Separator());
-            Pricing.EnsureLoaded();
-            CheckBox priceSyncSwitch = SwitchRow("每天同步官方价目", "从本项目 GitHub 仓库取最新 pricing.json，只下载文件、不上传任何数据；当前价目 " + Pricing.Day + (Pricing.Source == "synced" ? "（已同步）" : "（随软件内置）"), config.PriceSync);
-            providers.Children.Add(priceSyncSwitch);
-            content.Children.Add(Card(providers));
+            general.Children.Add(Card(providers));
 
             // Window
-            content.Children.Add(SectionTitle("窗口"));
+            general.Children.Add(SectionTitle(I18n.T("窗口")));
             var windowCard = new StackPanel();
             // One window, four sizes: small / medium / large sit on the desktop; full is the panel.
             string displaySize = config.DisplaySize, initialSize = config.DisplaySize;
             var sizeRow = Row();
-            AddRow(sizeRow, FieldLabel("显示尺寸", "拖动边缘可调整每种尺寸的大小"), Segmented(DisplaySizes.Select(s => new[] { s, SizeName(s) }).ToArray(), displaySize, code => displaySize = code));
+            AddRow(sizeRow, FieldLabel(I18n.T("显示尺寸"), I18n.T("拖动边缘可调整每种尺寸的大小")), Segmented(DisplaySizes.Select(s => new[] { s, SizeName(s) }).ToArray(), displaySize, code => displaySize = code));
             windowCard.Children.Add(sizeRow); windowCard.Children.Add(Separator());
-            CheckBox onTop = SwitchRow("置于其他窗口上方", "默认关闭；关闭时小 / 中 / 大尺寸位于桌面层", config.AlwaysOnTop);
-            CheckBox autoHide = SwitchRow("点击其他窗口时自动收起", "仅完整面板；标题栏的图钉按钮也可以切换", config.HideOnDeactivate);
+            CheckBox onTop = SwitchRow(I18n.T("置于其他窗口上方"), I18n.T("默认关闭；关闭时小 / 中 / 大尺寸位于桌面层"), config.AlwaysOnTop);
+            CheckBox autoHide = SwitchRow(I18n.T("点击其他窗口时自动收起"), I18n.T("仅完整面板；标题栏的图钉按钮也可以切换"), config.HideOnDeactivate);
             windowCard.Children.Add(onTop); windowCard.Children.Add(Separator()); windowCard.Children.Add(autoHide); windowCard.Children.Add(Separator());
             var zoomRow = Row(); var zoomValue = Label((config.UiScale * 100).ToString("0") + "%", 12, InkDim); Tabular(zoomValue);
-            AddRow(zoomRow, FieldLabel("界面缩放", "也可以在面板上按 Ctrl + 滚轮"), zoomValue); windowCard.Children.Add(zoomRow);
+            AddRow(zoomRow, FieldLabel(I18n.T("界面缩放"), I18n.T("也可以在面板上按 Ctrl + 滚轮")), zoomValue); windowCard.Children.Add(zoomRow);
             var zoom = new Slider { Minimum = .8, Maximum = 1.4, Value = config.UiScale, TickFrequency = .05, IsSnapToTickEnabled = true, SmallChange = .05, LargeChange = .1, Margin = new Thickness(0, 8, 0, 0) };
-            System.Windows.Automation.AutomationProperties.SetName(zoom, "界面缩放");
+            System.Windows.Automation.AutomationProperties.SetName(zoom, I18n.T("界面缩放"));
             zoom.ValueChanged += delegate { zoomValue.Text = (zoom.Value * 100).ToString("0") + "%"; };
             windowCard.Children.Add(zoom); windowCard.Children.Add(Separator());
-            var placeRow = Row(); var reset = new Button { Style = Styled("SecondaryButton"), Content = "重置" };
+            var placeRow = Row(); var reset = new Button { Style = Styled("SecondaryButton"), Content = I18n.T("重置") };
             reset.Click += delegate { frame.ResetPosition(); };
-            AddRow(placeRow, FieldLabel("窗口位置与尺寸", "当前显示尺寸回到默认位置和大小"), reset); windowCard.Children.Add(placeRow);
-            content.Children.Add(Card(windowCard));
+            AddRow(placeRow, FieldLabel(I18n.T("窗口位置与尺寸"), I18n.T("当前显示尺寸回到默认位置和大小")), reset); windowCard.Children.Add(placeRow);
+            general.Children.Add(Card(windowCard));
 
             // Appearance: surface colour and interface transparency (0 = opaque) — together in
             // the palette, transparency also as a slider — and an optional background picture.
-            content.Children.Add(SectionTitle("外观"));
+            general.Children.Add(SectionTitle(I18n.T("外观")));
             var look = new StackPanel();
             double transparency = Math.Round((1 - config.SurfaceOpacity) * 100);
             Color tint = WindowFrame.ParseTint(config.SurfaceColor);
@@ -159,16 +178,16 @@ namespace CodeUsageMonit {
             var swatchText = Label("", 11.5, Ink); Tabular(swatchText); swatchText.VerticalAlignment = VerticalAlignment.Center;
             var swatchContent = new StackPanel { Orientation = Orientation.Horizontal }; swatchContent.Children.Add(swatch); swatchContent.Children.Add(swatchText);
             swatchContent.Children.Add(new TextBlock { Text = "", FontFamily = IconFont, FontSize = 8, Foreground = InkFaint, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 1, 0, 0) });
-            var colorButton = new Button { Style = Styled("SecondaryButton"), Content = swatchContent, Padding = new Thickness(6, 4, 10, 4), ToolTip = "打开调色盘：颜色与透明度" };
-            System.Windows.Automation.AutomationProperties.SetName(colorButton, "背景颜色");
-            AddRow(colorRow, FieldLabel("背景颜色", "调色盘选颜色和透明度，深色最清楚"), colorButton);
+            var colorButton = new Button { Style = Styled("SecondaryButton"), Content = swatchContent, Padding = new Thickness(6, 4, 10, 4), ToolTip = I18n.T("打开调色盘：颜色与透明度") };
+            System.Windows.Automation.AutomationProperties.SetName(colorButton, I18n.T("背景颜色"));
+            AddRow(colorRow, FieldLabel(I18n.T("背景颜色"), I18n.T("调色盘选颜色和透明度，深色最清楚")), colorButton);
             look.Children.Add(colorRow);
             var transparencyValue = Label(transparency.ToString("0") + "%", 12, InkDim); Tabular(transparencyValue);
             var transparencyRow = Row(); transparencyRow.Margin = new Thickness(0, 12, 0, 0);
-            AddRow(transparencyRow, FieldLabel("界面透明度", "0 为不透明，数值越大越能看到后面的桌面"), transparencyValue);
+            AddRow(transparencyRow, FieldLabel(I18n.T("界面透明度"), I18n.T("0 为不透明，数值越大越能看到后面的桌面")), transparencyValue);
             look.Children.Add(transparencyRow);
             var transparencySlider = new Slider { Minimum = 0, Maximum = 100, Value = transparency, SmallChange = 1, LargeChange = 10, Margin = new Thickness(0, 8, 0, 0) };
-            System.Windows.Automation.AutomationProperties.SetName(transparencySlider, "界面透明度");
+            System.Windows.Automation.AutomationProperties.SetName(transparencySlider, I18n.T("界面透明度"));
             Action refreshSwatch = () => { swatchFill.Background = new SolidColorBrush(Color.FromArgb((byte)Math.Round((1 - transparency / 100) * 255), tint.R, tint.G, tint.B)); swatchText.Text = Hex(tint); };
             transparencySlider.ValueChanged += delegate { transparency = Math.Round(transparencySlider.Value); transparencyValue.Text = transparency.ToString("0") + "%"; refreshSwatch(); preview(); };
             colorButton.Click += delegate {
@@ -183,22 +202,22 @@ namespace CodeUsageMonit {
             var pictureRow = new Grid();
             pictureRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); pictureRow.ColumnDefinitions.Add(new ColumnDefinition()); pictureRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var thumb = new Border { Width = 64, Height = 40, CornerRadius = new CornerRadius(6), BorderBrush = Brush("#26FFFFFF"), BorderThickness = new Thickness(1), Background = Brush("#0AFFFFFF"), Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-            var pictureLabel = FieldLabel("背景图片", picture.Length > 0 ? "已设置 · 复制保存在 data 目录" : "未设置 · 支持 PNG / JPG / BMP / GIF / WebP");
+            var pictureLabel = FieldLabel(I18n.T("背景图片"), picture.Length > 0 ? I18n.T("已设置 · 复制保存在 data 目录") : I18n.T("未设置 · 支持 PNG / JPG / BMP / GIF / WebP"));
             var pictureButtons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var choose = new Button { Style = Styled("SecondaryButton"), Content = "选择图片…" };
-            var clear = new Button { Style = Styled("LinkButton"), Content = "移除", Margin = new Thickness(4, 0, 0, 0) };
-            System.Windows.Automation.AutomationProperties.SetName(choose, "选择背景图片"); System.Windows.Automation.AutomationProperties.SetName(clear, "移除背景图片");
+            var choose = new Button { Style = Styled("SecondaryButton"), Content = I18n.T("选择图片…") };
+            var clear = new Button { Style = Styled("LinkButton"), Content = I18n.T("移除"), Margin = new Thickness(4, 0, 0, 0) };
+            System.Windows.Automation.AutomationProperties.SetName(choose, I18n.T("选择背景图片")); System.Windows.Automation.AutomationProperties.SetName(clear, I18n.T("移除背景图片"));
             pictureButtons.Children.Add(choose); pictureButtons.Children.Add(clear);
             pictureRow.Children.Add(thumb); Grid.SetColumn(pictureLabel, 1); pictureRow.Children.Add(pictureLabel); Grid.SetColumn(pictureButtons, 2); pictureRow.Children.Add(pictureButtons);
             look.Children.Add(pictureRow);
             var fitRow = Row(); fitRow.Margin = new Thickness(0, 12, 0, 0);
-            AddRow(fitRow, FieldLabel("填充方式", null), Segmented(new[] { new[] { "fill", "填满" }, new[] { "fit", "适应" }, new[] { "tile", "平铺" } }, fit, code => { fit = code; preview(); }));
+            AddRow(fitRow, FieldLabel(I18n.T("填充方式"), null), Segmented(new[] { new[] { "fill", I18n.T("填满") }, new[] { "fit", I18n.T("适应") }, new[] { "tile", I18n.T("平铺") } }, fit, code => { fit = code; preview(); }));
             look.Children.Add(fitRow);
             var dimValue = Label((dim * 100).ToString("0") + "%", 12, InkDim); Tabular(dimValue);
             var dimRow = Row(); dimRow.Margin = new Thickness(0, 12, 0, 0);
-            AddRow(dimRow, FieldLabel("图片压暗", "让图片上的文字更清楚"), dimValue); look.Children.Add(dimRow);
+            AddRow(dimRow, FieldLabel(I18n.T("图片压暗"), I18n.T("让图片上的文字更清楚")), dimValue); look.Children.Add(dimRow);
             var dimSlider = new Slider { Minimum = 0, Maximum = 85, Value = dim * 100, SmallChange = 1, LargeChange = 10, Margin = new Thickness(0, 8, 0, 0) };
-            System.Windows.Automation.AutomationProperties.SetName(dimSlider, "图片压暗");
+            System.Windows.Automation.AutomationProperties.SetName(dimSlider, I18n.T("图片压暗"));
             dimSlider.ValueChanged += delegate { dim = Math.Round(dimSlider.Value) / 100; dimValue.Text = (dim * 100).ToString("0") + "%"; preview(); };
             look.Children.Add(dimSlider);
             Action refreshPicture = () => {
@@ -206,86 +225,88 @@ namespace CodeUsageMonit {
                 thumb.Background = image == null ? Brush("#0AFFFFFF") : (Brush)new ImageBrush(image) { Stretch = Stretch.UniformToFill };
                 clear.Visibility = picture.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 fitRow.Visibility = dimRow.Visibility = dimSlider.Visibility = picture.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-                ((TextBlock)((StackPanel)pictureLabel).Children[1]).Text = picture.Length == 0 ? "未设置 · 支持 PNG / JPG / BMP / GIF / WebP" : pictureChanged ? "预览中 · 保存后复制到 data 目录" : "已设置 · 复制保存在 data 目录";
+                ((TextBlock)((StackPanel)pictureLabel).Children[1]).Text = picture.Length == 0 ? I18n.T("未设置 · 支持 PNG / JPG / BMP / GIF / WebP") : pictureChanged ? I18n.T("预览中 · 保存后复制到 data 目录") : I18n.T("已设置 · 复制保存在 data 目录");
             };
             choose.Click += delegate {
-                var dialog = new Microsoft.Win32.OpenFileDialog { Title = "选择背景图片", Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.tif;*.tiff" };
+                var dialog = new Microsoft.Win32.OpenFileDialog { Title = I18n.T("选择背景图片"), Filter = I18n.T("图片") + "|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.tif;*.tiff" };
                 if (dialog.ShowDialog(settingsWindow) != true) return;
-                if (LoadPicture(dialog.FileName) == null) { MessageBox.Show(settingsWindow, "无法读取这张图片（格式不支持或超过 40 MB）。", "codeusagemonit"); return; }
+                if (LoadPicture(dialog.FileName) == null) { MessageBox.Show(settingsWindow, I18n.T("无法读取这张图片（格式不支持或超过 40 MB）。"), "codeusagemonit"); return; }
                 picture = dialog.FileName; pictureChanged = true; refreshPicture(); preview();
             };
             clear.Click += delegate { picture = ""; pictureChanged = true; refreshPicture(); preview(); };
             refreshPicture();
-            content.Children.Add(Card(look));
+            general.Children.Add(Card(look));
 
-            // Data & network
-            content.Children.Add(SectionTitle("数据与网络"));
-            var dataCard = new StackPanel();
-            int minutes = config.RefreshMinutes;
-            var intervalRow = Row(); var stepper = new StackPanel { Orientation = Orientation.Horizontal };
-            var minus = new Button { Style = Styled("IconButton"), Content = "", FontSize = 11, Width = 28, Height = 28, ToolTip = "更频繁" };
-            var value = Label(minutes + " 分钟", 12, Ink); value.MinWidth = 58; value.TextAlignment = TextAlignment.Center; Tabular(value);
-            var plus = new Button { Style = Styled("IconButton"), Content = "", FontSize = 11, Width = 28, Height = 28, ToolTip = "更少" };
-            List<int> steps = RefreshSteps.Concat(new[] { minutes }).Distinct().OrderBy(n => n).ToList();
-            minus.Click += delegate { int i = steps.IndexOf(minutes); if (i > 0) minutes = steps[i - 1]; value.Text = minutes + " 分钟"; };
-            plus.Click += delegate { int i = steps.IndexOf(minutes); if (i < steps.Count - 1) minutes = steps[i + 1]; value.Text = minutes + " 分钟"; };
-            stepper.Children.Add(minus); stepper.Children.Add(value); stepper.Children.Add(plus);
-            AddRow(intervalRow, FieldLabel("自动刷新", "每次刷新会查询所有已启用平台的额度"), stepper); dataCard.Children.Add(intervalRow); dataCard.Children.Add(Separator());
-
-            string proxyMode = config.Proxy == "direct" ? "direct" : config.Proxy == "auto" || String.IsNullOrWhiteSpace(config.Proxy) ? "auto" : "custom";
-            var proxyBox = new TextBox { Text = proxyMode == "custom" ? config.Proxy : "", Margin = new Thickness(0, 8, 0, 0), Visibility = proxyMode == "custom" ? Visibility.Visible : Visibility.Collapsed };
-            System.Windows.Automation.AutomationProperties.SetName(proxyBox, "代理地址");
-            var proxyHint = Hint(ProxyHint(proxyMode), 6);
-            var proxyRow = Row();
-            AddRow(proxyRow, FieldLabel("网络代理", null), Segmented(new[] { new[] { "auto", "自动" }, new[] { "direct", "直连" }, new[] { "custom", "自定义" } }, proxyMode, code => {
-                proxyMode = code; proxyBox.Visibility = code == "custom" ? Visibility.Visible : Visibility.Collapsed; proxyHint.Text = ProxyHint(code);
-                if (code == "custom" && proxyBox.Text.Length == 0) { proxyBox.Text = "http://127.0.0.1:7890"; proxyBox.Focus(); proxyBox.SelectAll(); }
-            }));
-            dataCard.Children.Add(proxyRow); dataCard.Children.Add(proxyBox); dataCard.Children.Add(proxyHint); dataCard.Children.Add(Separator());
-            CheckBox hidden = SwitchRow("隐藏账户邮箱的部分字符", "截图或分享时更安全", config.HideAccounts);
-            CheckBox autoStart = SwitchRow("登录 Windows 后自动运行", demo ? "演示模式下不可更改" : Program.SideBySide ? "并行运行的副本不可更改" : "启动后只驻留托盘", !demo && StartupEnabled()); autoStart.IsEnabled = !demo && !Program.SideBySide;
-            dataCard.Children.Add(hidden); dataCard.Children.Add(Separator()); dataCard.Children.Add(autoStart);
-            content.Children.Add(Card(dataCard));
-
-            // Accounts and keys
-            content.Children.Add(SectionTitle("账号与密钥"));
+            // ── 认证 ── Accounts and keys
+            accounts.Children.Add(SectionTitle(I18n.T("账号与密钥")));
             var keyCard = new StackPanel();
             keyCard.Children.Add(CopilotLoginRow());
             string kimiRegion = config.KimiRegion, zaiRegion = config.ZaiRegion;
             var keyFields = new List<KeyField>();
             foreach (var spec in new[] {
-                new { Id = "deepseek", Title = "DeepSeek", Hint = "查询 API 账户余额" },
-                new { Id = "kimi", Title = "Kimi Code", Hint = "在 kimi.com/code/console 创建 API Key" },
-                new { Id = "opencode", Title = "OpenCode Go", Hint = "OpenCode Go 订阅的 API Key" },
-                new { Id = "zcode", Title = "ZCode · GLM 编码套餐", Hint = "智谱 / Z.ai 的 API Key" } }) {
+                new { Id = "deepseek", Title = "DeepSeek", Hint = I18n.T("查询 API 账户余额") },
+                new { Id = "kimi", Title = "Kimi Code", Hint = I18n.T("在 kimi.com/code/console 创建 API Key") },
+                new { Id = "opencode", Title = "OpenCode Go", Hint = I18n.T("OpenCode Go 订阅的 API Key") },
+                new { Id = "zcode", Title = I18n.T("ZCode · GLM 编码套餐"), Hint = I18n.T("智谱 / Z.ai 的 API Key") } }) {
                 keyCard.Children.Add(Separator());
                 FrameworkElement region = null;
-                if (spec.Id == "kimi") region = Segmented(new[] { new[] { "china", "国内" }, new[] { "international", "国际" } }, kimiRegion, code => kimiRegion = code);
-                if (spec.Id == "zcode") region = Segmented(new[] { new[] { "china", "国内" }, new[] { "global", "国际" } }, zaiRegion, code => zaiRegion = code);
+                if (spec.Id == "kimi") region = Segmented(new[] { new[] { "china", I18n.T("国内") }, new[] { "international", I18n.T("国际") } }, kimiRegion, code => kimiRegion = code);
+                if (spec.Id == "zcode") region = Segmented(new[] { new[] { "china", I18n.T("国内") }, new[] { "global", I18n.T("国际") } }, zaiRegion, code => zaiRegion = code);
                 keyFields.Add(KeyRow(keyCard, spec.Id, spec.Title, spec.Hint, region));
             }
-            keyCard.Children.Add(Hint("密钥以 Windows DPAPI 加密保存在本机 data 目录，只有当前 Windows 用户能解密；同名环境变量优先。", 12));
-            content.Children.Add(Card(keyCard));
-
+            keyCard.Children.Add(Hint(I18n.T("密钥以 Windows DPAPI 加密保存在本机 data 目录，只有当前 Windows 用户能解密；同名环境变量优先。"), 12));
+            accounts.Children.Add(Card(keyCard));
             // Custom providers
-            content.Children.Add(SectionTitle("自定义平台"));
+            accounts.Children.Add(SectionTitle(I18n.T("自定义平台")));
             customList = new StackPanel();
             RenderCustomList();
-            content.Children.Add(Card(customList));
+            accounts.Children.Add(Card(customList));
 
-            // About
-            content.Children.Add(SectionTitle("关于"));
-            var about = new StackPanel();
-            var name = Label("codeusagemonit V" + AppInfo.ShortVersion, 12.5, Ink); name.FontWeight = FontWeights.SemiBold; about.Children.Add(name);
-            about.Children.Add(Hint("code用量监控", 3));
-            about.Children.Add(Hint("数据目录 " + Store.Data, 3));
-            var links = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(-6, 8, 0, 0) };
-            var folder = new Button { Style = Styled("LinkButton"), Content = "打开数据目录" };
-            folder.Click += delegate { try { Process.Start("explorer.exe", "\"" + Store.Data + "\""); } catch { } };
-            var guide = new Button { Style = Styled("LinkButton"), Content = "使用说明" };
-            guide.Click += delegate { string path = Path.Combine(Store.Root, "使用说明.md"); try { if (File.Exists(path)) Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); } catch { } };
-            links.Children.Add(folder); links.Children.Add(guide); about.Children.Add(links);
-            content.Children.Add(Card(about));
+            // ── 数据 ── devices, SQL, backups, WebDAV (SettingsPages.cs)
+            DataFields dataFields = BuildDataPage(dataPage);
+
+            // ── 高级 ── Refresh and network
+            advanced.Children.Add(SectionTitle(I18n.T("刷新与网络")));
+            var netCard = new StackPanel();
+            int minutes = config.RefreshMinutes;
+            var intervalRow = Row(); var stepper = new StackPanel { Orientation = Orientation.Horizontal };
+            var minus = new Button { Style = Styled("IconButton"), Content = "", FontSize = 11, Width = 28, Height = 28, ToolTip = I18n.T("更频繁") };
+            var value = Label(I18n.T("{0} 分钟", minutes), 12, Ink); value.MinWidth = 58; value.TextAlignment = TextAlignment.Center; Tabular(value);
+            var plus = new Button { Style = Styled("IconButton"), Content = "", FontSize = 11, Width = 28, Height = 28, ToolTip = I18n.T("更少") };
+            List<int> steps = RefreshSteps.Concat(new[] { minutes }).Distinct().OrderBy(n => n).ToList();
+            minus.Click += delegate { int i = steps.IndexOf(minutes); if (i > 0) minutes = steps[i - 1]; value.Text = I18n.T("{0} 分钟", minutes); };
+            plus.Click += delegate { int i = steps.IndexOf(minutes); if (i < steps.Count - 1) minutes = steps[i + 1]; value.Text = I18n.T("{0} 分钟", minutes); };
+            stepper.Children.Add(minus); stepper.Children.Add(value); stepper.Children.Add(plus);
+            AddRow(intervalRow, FieldLabel(I18n.T("自动刷新"), I18n.T("每次刷新会查询所有已启用平台的额度")), stepper); netCard.Children.Add(intervalRow); netCard.Children.Add(Separator());
+            string proxyMode = config.Proxy == "direct" ? "direct" : config.Proxy == "auto" || String.IsNullOrWhiteSpace(config.Proxy) ? "auto" : "custom";
+            var proxyBox = new TextBox { Text = proxyMode == "custom" ? config.Proxy : "", Margin = new Thickness(0, 8, 0, 0), Visibility = proxyMode == "custom" ? Visibility.Visible : Visibility.Collapsed };
+            System.Windows.Automation.AutomationProperties.SetName(proxyBox, I18n.T("代理地址"));
+            var proxyHint = Hint(ProxyHint(proxyMode), 6);
+            var proxyRow = Row();
+            AddRow(proxyRow, FieldLabel(I18n.T("网络代理"), null), Segmented(new[] { new[] { "auto", I18n.T("自动") }, new[] { "direct", I18n.T("直连") }, new[] { "custom", I18n.T("自定义") } }, proxyMode, code => {
+                proxyMode = code; proxyBox.Visibility = code == "custom" ? Visibility.Visible : Visibility.Collapsed; proxyHint.Text = ProxyHint(code);
+                if (code == "custom" && proxyBox.Text.Length == 0) { proxyBox.Text = "http://127.0.0.1:7890"; proxyBox.Focus(); proxyBox.SelectAll(); }
+            }));
+            netCard.Children.Add(proxyRow); netCard.Children.Add(proxyBox); netCard.Children.Add(proxyHint);
+            advanced.Children.Add(Card(netCard));
+            // Prices
+            advanced.Children.Add(SectionTitle(I18n.T("价目")));
+            Pricing.EnsureLoaded();
+            CheckBox priceSyncSwitch = SwitchRow(I18n.T("每天同步官方价目"), I18n.T("从本项目 GitHub 仓库取最新 pricing.json，只下载文件、不上传任何数据；当前价目 {0}", Pricing.Day) + (Pricing.Source == "synced" ? I18n.T("（已同步）") : I18n.T("（随软件内置）")), config.PriceSync);
+            advanced.Children.Add(Card(priceSyncSwitch));
+            // Maintenance
+            advanced.Children.Add(SectionTitle(I18n.T("维护")));
+            var maintenance = new StackPanel();
+            var scanRow = Row(); var scanNow = new Button { Style = Styled("SecondaryButton"), Content = I18n.T("立即扫描"), IsEnabled = !demo };
+            scanNow.Click += async delegate { scanNow.IsEnabled = false; await ScanHistory(); scanNow.IsEnabled = true; };
+            AddRow(scanRow, FieldLabel(I18n.T("本机用量"), I18n.T("增量读取各平台日志；平时会每 15 分钟自动扫描")), scanNow); maintenance.Children.Add(scanRow); maintenance.Children.Add(Separator());
+            var folderRow = Row(); var openData = new Button { Style = Styled("SecondaryButton"), Content = I18n.T("打开") };
+            openData.Click += delegate { try { Process.Start("explorer.exe", "\"" + Store.Data + "\""); } catch { } };
+            AddRow(folderRow, FieldLabel(I18n.T("数据目录"), Store.Data), openData); maintenance.Children.Add(folderRow);
+            advanced.Children.Add(Card(maintenance));
+
+            // ── 关于 ── (SettingsPages.cs)
+            CheckBox updateSwitch = BuildAboutPage(aboutPage);
 
             // Action bar
             var bar = new Grid { Margin = new Thickness(14, 0, 14, 10) };
@@ -294,20 +315,25 @@ namespace CodeUsageMonit {
             var line = new Border { Height = 1, Background = Hairline, Margin = new Thickness(-14, 0, -14, 10) }; Grid.SetColumnSpan(line, 3); bar.Children.Add(line);
             var error = new TextBlock { FontSize = 11, Foreground = WarnBrush, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
             Grid.SetRow(error, 1); bar.Children.Add(error);
-            var cancel = new Button { Style = Styled("SecondaryButton"), Content = "取消", Margin = new Thickness(0, 0, 8, 0) };
+            var cancel = new Button { Style = Styled("SecondaryButton"), Content = I18n.T("取消"), Margin = new Thickness(0, 0, 8, 0) };
             cancel.Click += delegate { CloseSettings(); };
             Grid.SetRow(cancel, 1); Grid.SetColumn(cancel, 1); bar.Children.Add(cancel);
-            var save = new Button { Style = Styled("PrimaryButton"), Content = "保存", IsDefault = false };
-            System.Windows.Automation.AutomationProperties.SetName(save, "保存设置");
+            var save = new Button { Style = Styled("PrimaryButton"), Content = I18n.T("保存"), IsDefault = false };
+            System.Windows.Automation.AutomationProperties.SetName(save, I18n.T("保存设置"));
             Grid.SetRow(save, 1); Grid.SetColumn(save, 2); bar.Children.Add(save);
-            Grid.SetRow(bar, 1); root.Children.Add(bar);
+            Grid.SetRow(bar, 2); root.Children.Add(bar);
 
             save.Click += async delegate {
-                if (!choices.Any(p => p.Value.IsChecked == true)) { error.Text = "请至少保留一个平台。"; return; }
+                Action<string, string> fail = (tab, message) => { error.Text = message; if (settingsTab != tab) { settingsTab = tab; scroll.Content = pages[tab]; } };
+                if (!choices.Any(p => p.Value.IsChecked == true)) { fail("general", I18n.T("请至少保留一个平台。")); return; }
                 string proxyValue = proxyMode == "custom" ? proxyBox.Text.Trim() : proxyMode;
-                if (proxyMode == "custom" && proxyValue.Length == 0) { error.Text = "请填写代理地址，例如 http://127.0.0.1:7890"; return; }
+                if (proxyMode == "custom" && proxyValue.Length == 0) { fail("advanced", I18n.T("请填写代理地址，例如 http://127.0.0.1:7890")); return; }
+                string davUrl = dataFields.Url.Text.Trim();
+                if (davUrl.Length > 0) { string davError = WebDavSync.Validate(davUrl); if (davError != null) { fail("data", davError); return; } }
                 try {
                     ProviderService.ResolveProxy(proxyValue);
+                    bool languageChanged = I18n.Resolve(language) != I18n.Language;
+                    config.Language = language; I18n.Use(language);
                     config.Proxy = proxyValue; config.RefreshMinutes = minutes; config.HideAccounts = hidden.IsChecked == true;
                     config.Enabled = ProviderCatalog.All.Where(id => choices.ContainsKey(id) ? choices[id].IsChecked == true : config.Enabled.Contains(id)).ToArray();
                     config.KimiRegion = kimiRegion; config.ZaiRegion = zaiRegion;
@@ -316,7 +342,14 @@ namespace CodeUsageMonit {
                     if (pictureChanged) { if (picture.Length == 0) { RemoveBackground(); config.BackgroundImage = ""; } else config.BackgroundImage = StoreBackground(picture); }
                     if (displaySize != initialSize) config.DisplaySize = displaySize; // applied by CloseSettings below
                     bool thirdPartyOn = thirdPartySwitch.IsChecked == true && !config.ShowThirdParty; config.ShowThirdParty = thirdPartySwitch.IsChecked == true;
-                    config.PriceSync = priceSyncSwitch.IsChecked == true;
+                    config.PriceSync = priceSyncSwitch.IsChecked == true; config.UpdateCheck = updateSwitch.IsChecked == true;
+                    config.BackupHours = dataFields.BackupHours(); config.BackupKeep = dataFields.BackupKeep(); config.BackupFolder = dataFields.BackupFolder();
+                    config.WebDavUrl = davUrl; config.WebDavUser = dataFields.User.Text.Trim(); config.SyncMinutes = dataFields.SyncMinutes();
+                    if (!demo) {
+                        if (dataFields.Forget != null && dataFields.Forget.IsChecked == true) Store.SetProviderKey(WebDavSync.KeyId, "");
+                        else if (dataFields.Password.Password.Length > 0) Store.SetProviderKey(WebDavSync.KeyId, dataFields.Password.Password);
+                        if (dataFields.Device.Text.Trim() != Devices.Self().Name) Devices.Rename(dataFields.Device.Text);
+                    }
                     foreach (KeyField field in keyFields) {
                         if (demo) break;
                         if (field.Remove != null && field.Remove.IsChecked == true) { Store.SetProviderKey(field.Id, ""); states[field.Id] = new ProviderState { Id = field.Id }; }
@@ -326,9 +359,10 @@ namespace CodeUsageMonit {
                     frame.SetScale(zoom.Value, false); UpdatePin(); UpdateScaleLabel();
                     Store.Write("settings.json", config); refreshTimer.Interval = TimeSpan.FromMinutes(minutes);
                     CloseSettings();
+                    if (languageChanged) LanguageChanged();
                     await Refresh();
                     if (thirdPartyOn) { var scan = ScanHistory(); }
-                } catch (Exception ex) { error.Text = ex is ArgumentException ? ex.Message : "设置未能保存，请检查数据目录是否可写。"; }
+                } catch (Exception ex) { error.Text = ex is ArgumentException ? ex.Message : I18n.T("设置未能保存，请检查数据目录是否可写。"); }
             };
             return root;
         }

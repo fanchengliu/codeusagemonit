@@ -324,6 +324,97 @@ namespace CodeUsageMonit {
                 var narrow = ThirdPartyReport.Period(codex, claude, log, new DateTime(2026, 9, 30, 8, 0, 0), new DateTime(2026, 9, 30, 11, 0, 0), new DateTime(2026, 9, 30, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Utc);
                 Require(Math.Abs(narrow.Total.Tokens() - 4000) < 1e-9 && narrow.Endpoints.Last().Total.Tokens() == 0);
             });
+            test("SQL export of one device imports once on another, never onto itself", () => {
+                string a = Path.Combine(Path.GetTempPath(), "cum-dev-a-" + Guid.NewGuid().ToString("N")), b = Path.Combine(Path.GetTempPath(), "cum-dev-b-" + Guid.NewGuid().ToString("N"));
+                string previous = Store.SwapData(a);
+                try {
+                    DateTime now = DateTime.UtcNow, h = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc).AddHours(-5);
+                    Store.Write("device.json", new DeviceIdentity { Id = "deviceaaaa01", Name = "A-PC" });
+                    var codex = new LogIndex(); codex.Files.Add(new LogFile { Name = "r1.jsonl", Hours = { { LogIndex.BucketKey(h, "openai", "gpt-6"), new Bucket { I = 100, O = 10, R = 1, D = .5 } }, { LogIndex.BucketKey(h.AddHours(1), "myrelay", "gpt-6"), new Bucket { I = 40, R = 1 } } } });
+                    codex.Files.Add(new LogFile { Name = "r2.jsonl", Hours = { { LogIndex.BucketKey(h, "openai", "gpt-6"), new Bucket { I = 1, R = 1 } } } }); // same hour, other file: one row
+                    Store.Write("codex-logs.json", codex);
+                    var claude = new LogIndex(); claude.Files.Add(new LogFile { Name = "s.jsonl", Hours = { { LogIndex.BucketKey(h, "anthropic", "opus", "relay.example.com/abc123"), new Bucket { I = 200, R = 2 } } } });
+                    Store.Write("claude-logs.json", claude);
+                    var cursor = new LogIndex(); cursor.Files.Add(new LogFile { Name = "cursor-dashboard", Hours = { { LogIndex.BucketKey(h, "", "auto"), new Bucket { I = 999, R = 1 } } } });
+                    Store.Write("cursor-logs.json", cursor);
+                    string sql = Devices.ExportSql(now, true);
+                    Require(sql.Contains("CREATE TABLE IF NOT EXISTS cum_usage_hours") && !sql.Contains("'cursor'") && sql.Contains("'A-PC'"));
+                    Require(Devices.ImportSql(sql, now).Own == 3);                       // onto itself: nothing
+                    Store.SwapData(b);
+                    Store.Write("device.json", new DeviceIdentity { Id = "devicebbbb02", Name = "B-PC" });
+                    ImportResult first = Devices.ImportSql(sql, now), again = Devices.ImportSql(sql, now);
+                    Require(first.Rows == 3 && first.Devices.SequenceEqual(new[] { "A-PC" }) && again.Rows == 3);
+                    DeviceData imported = Devices.Imported().Single();
+                    Require(imported.Id == "deviceaaaa01" && Math.Abs(imported.Tokens() - 351) < 1e-9 && Math.Abs(imported.Cost() - .5) < 1e-9);
+                    Dictionary<string, LogIndex> merged = Devices.Attach(new Dictionary<string, LogIndex>(), Devices.Imported());
+                    Require(merged.ContainsKey("codex") && merged.ContainsKey("claude") && !merged.ContainsKey("cursor"));
+                    Require(merged["codex"].Entries().Any(e => e.Provider == "myrelay" && e.Endpoint == "?") && merged["claude"].Entries().Single().Endpoint == "relay.example.com/abc123");
+                    // A hand-edited id that is not a plain name is refused.
+                    Require(Devices.ImportSql(sql.Replace("'deviceaaaa01'", "'../evil'"), now).Skipped == 3);
+                    Devices.Remove("deviceaaaa01"); Require(Devices.Imported().Count == 0);
+                } finally { Store.SwapData(previous); foreach (string dir in new[] { a, b }) { try { Directory.Delete(dir, true); } catch { } } }
+            });
+            test("DeepSeek Harness sessions: zstd frames, model, cache and speed, read incrementally", () => {
+                // Synthetic session: header + message (2 s, 100 output) in two frames, then a
+                // flash request whose answer arrives in a third frame (20 output: not timed).
+                byte[] a = Convert.FromBase64String("KLUv/WDgAG0IAAaQMSFgh5sDtR+JyOJyAyo7jtw+QIUKluVVDdHfy/8UEAAWxAkoACkAJQCEGJP8k9dW5mhBKIeEQVEGUkIgyS9j9VGSbywfvZ82I+zBfn7do/8E7yjGt+cKB4ezTGMw2JTSwmKX3S7zXI72nGIdsKb+5GJ4y+g2SPPCxr5q9TbNHgzwfLNtdKe9P+m2eVFWoczLQJpp82LWO7p6sfU8a6wbhBhjSkviaLc+StvrGSAYXYJtlKqjhu0opZTkme2iFTR0bP1JeBQfEBsAMwnXSTRnYU0RsxuJ5yii+aHBKGu0oYhAgHVksQ0iawVwHEz2ZC+AZLjsw+/oDRzBXouVqPIChkC6mCAKCVW0XgoKKLUv/SCf3QMAQsgaG2CJdaCMJ2tPmqn7kZuPooghsVmwYzUhBmEDi4A5/cQtU1a7F/fQaE6zuAqifL3FyNI5T6kNJP7I/MvaFA8ySUPcU37Uj3rlLqPjSEYhpXQYIAwE9ZcmjQx182hk+LVnAhnvNIdWn1lIPwEEAPrwOLC9Fis/ZmoP");
+                byte[] b = Convert.FromBase64String("KLUv/SCszQMAkgcZG2Br21TYk8Z3HS1k8ZLjBAB5UEwvy2EgQ2C0coD3HkKQoc16WzkQi65hFYoqPwjpxn4QwjyvXbBDt2apu2x3eW1dfpIEU0JEAioMBPllVP+kfGP555tQ5mUCvbRZMevz2zz6LgYAM4nGafQmCZYiH5s2BnipKA==");
+                string dir = Path.Combine(Path.GetTempPath(), "cum-dsh-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(dir);
+                try {
+                    Pricing.EnsureLoaded();
+                    string path = Path.Combine(dir, "session.v4.jsonl.zstd");
+                    DateTime now = LogReader.FromMillis(1790833294366 + 3600000.0);
+                    Func<LogIndex, LogIndex> scan = idx => LogReader.Scan(idx, new[] { path }, info => info.FullName.ToLowerInvariant(), now, HarnessLogs.Read);
+                    File.WriteAllBytes(path, a.Concat(b.Take(b.Length - 4)).ToArray()); // the third frame is still being written
+                    LogIndex index = scan(null);
+                    List<HourUsage> first = index.Entries();
+                    Require(first.Count == 1 && first[0].Model == "deepseek-v4-pro" && first[0].Input == 1000 && first[0].Cached == 500 && first[0].Output == 100 && first[0].Cost > 0);
+                    Require(first[0].TimedRequests == 1 && Math.Abs(first[0].TimedSeconds - 2) < 1e-9 && index.Files[0].Offset == a.Length && index.Files[0].Model == "deepseek-flash");
+                    File.WriteAllBytes(path, a.Concat(b).ToArray());
+                    index = scan(index);
+                    Require(index.Entries().Count == 2 && index.Entries().Any(h => h.Model == "deepseek-flash" && h.Input == 300 && h.Output == 20 && h.TimedRequests == 0));
+                    index.Files[0].Offset = 0; index.Files[0].Length = 0; index = scan(index);  // read again from the start
+                    Require(Math.Abs(index.Entries().Sum(h => h.Tokens) - 1920) < 1e-9);
+                } finally { try { Directory.Delete(dir, true); } catch { } }
+            });
+            test("SQL reader handles quotes, comments and several rows per INSERT", () => {
+                var rows = Devices.Inserts("-- note; with a semicolon\nINSERT INTO cum_devices VALUES ('a''b', 'n;x', NULL, '1'); /* x; */ INSERT INTO t (p, q) VALUES (1, 'x'), (2.5e1, 'y');").ToList();
+                Require(rows.Count == 3 && rows[0].Key == "cum_devices" && (string)rows[0].Value["device_id"] == "a'b" && (string)rows[0].Value["name"] == "n;x" && rows[0].Value["exported_utc"] == null);
+                Require(rows[2].Key == "t" && (double)rows[2].Value["p"] == 25 && (string)rows[2].Value["q"] == "y");
+            });
+            test("Backups hold settings and indexes but not keys; restore and pruning", () => {
+                string dir = Path.Combine(Path.GetTempPath(), "cum-backup-" + Guid.NewGuid().ToString("N"));
+                string previous = Store.SwapData(dir);
+                try {
+                    Directory.CreateDirectory(Path.Combine(dir, "devices"));
+                    File.WriteAllText(Path.Combine(dir, "settings.json"), "{}"); File.WriteAllText(Path.Combine(dir, "codex-logs.json"), "{\"Version\":5}");
+                    File.WriteAllText(Path.Combine(dir, "deepseek.key"), "secret"); File.WriteAllText(Path.Combine(dir, "device.json"), "{}"); File.WriteAllText(Path.Combine(dir, "devices", "x1.json"), "{}");
+                    var config = new AppConfig { BackupKeep = 2 }; DateTime now = DateTime.UtcNow;
+                    string zip = Backups.Create(config, true, now);
+                    using (var archive = System.IO.Compression.ZipFile.OpenRead(zip)) {
+                        var names = archive.Entries.Select(e => e.FullName).OrderBy(n => n, StringComparer.Ordinal).ToList();
+                        Require(names.SequenceEqual(new[] { "backup.json", "codex-logs.json", "devices/x1.json", "settings.json" }));
+                    }
+                    for (int i = 1; i <= 3; i++) Backups.Create(config, true, now.AddSeconds(i));
+                    Backups.Create(config, false, now.AddSeconds(9));
+                    Require(Backups.Prune(config) == 2 && Backups.List(config).Count(x => x.Auto) == 2 && Backups.List(config).Count(x => !x.Auto) == 1);
+                    File.WriteAllText(Path.Combine(dir, "settings.json"), "{\"RefreshMinutes\":9}");
+                    Backups.Restore(config, Backups.List(config).First(x => x.Auto).Path, now.AddSeconds(20));
+                    Require(File.ReadAllText(Path.Combine(dir, "settings.json")) == "{}" && File.ReadAllText(Path.Combine(dir, "deepseek.key")) == "secret");
+                    Require(Backups.Included("devices/a.json") && !Backups.Included("devices/a/b.json") && !Backups.Included("../settings.json") && !Backups.Included("deepseek.key") && !Backups.Included("device.json"));
+                } finally { Store.SwapData(previous); try { Directory.Delete(dir, true); } catch { } }
+            });
+            test("WebDAV listing keeps only device files directly in the folder", () => {
+                string xml = "<?xml version=\"1.0\"?><d:multistatus xmlns:d=\"DAV:\">" +
+                    "<d:response><d:href>/dav/cum/devices/</d:href></d:response><d:response><d:href>/dav/cum/devices/abc123.sql</d:href></d:response>" +
+                    "<d:response><d:href>/dav/cum/devices/sub/</d:href></d:response><d:response><d:href>/dav/cum/devices/notes.txt</d:href></d:response>" +
+                    "<d:response><d:href>https://dav.example.com/dav/cum/devices/def456.sql</d:href></d:response><d:response><d:href>/dav/cum/devices/%E4%B8%AD.sql</d:href></d:response></d:multistatus>";
+                Require(WebDavSync.Files(xml, "https://dav.example.com/dav/cum/devices/").SequenceEqual(new[] { "abc123.sql", "def456.sql" }));
+                Require(WebDavSync.Validate("http://dav.example.com/x") != null && WebDavSync.Validate("http://192.168.1.5/dav") == null && WebDavSync.Validate("https://u:p@dav.example.com/") != null);
+            });
+            test("Update check compares versions numerically", () => {
+                Require(Updates.Compare("v1.10.0", "1.9.2") > 0 && Updates.Compare("1.3", "1.3.0") == 0 && Updates.Compare("1.2.0", "1.3.0") < 0 && Updates.Compare("1.3.0-beta", "1.3.0") == 0);
+            });
             test("A truncated log is read again from the start and its surviving records count", () => {
                 string dir = Path.Combine(Path.GetTempPath(), "codeusagemonit-trunc-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(dir);
                 try {

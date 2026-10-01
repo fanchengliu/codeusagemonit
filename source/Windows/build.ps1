@@ -56,7 +56,7 @@ foreach ($frame in $frames) { $dim = if ($frame[0] -ge 256) { 0 } else { $frame[
 foreach ($frame in $frames) { $writer.Write([byte[]]$frame[1]) }
 $writer.Flush(); [System.IO.File]::WriteAllBytes($iconPath, $ico.ToArray())
 
-$references = @('System.dll','System.Core.dll','System.Xml.dll','System.Xaml.dll','System.Security.dll','System.Management.dll','System.Net.Http.dll','System.Web.Extensions.dll','System.Drawing.dll','System.Windows.Forms.dll','WPF\WindowsBase.dll','WPF\PresentationCore.dll','WPF\PresentationFramework.dll')
+$references = @('System.dll','System.Core.dll','System.Xml.dll','System.Xaml.dll','System.Security.dll','System.Management.dll','System.Net.Http.dll','System.Web.Extensions.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','System.Drawing.dll','System.Windows.Forms.dll','WPF\WindowsBase.dll','WPF\PresentationCore.dll','WPF\PresentationFramework.dll')
 $sources = @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.cs' | Select-Object -ExpandProperty FullName)
 # Two executables from the same sources: the desktop app and the codeusage CLI.
 foreach ($target in @(@('winexe', 'codeusagemonit.exe', 'CodeUsageMonit.Program'), @('exe', 'codeusage.exe', 'CodeUsageMonit.CliProgram'))) {
