@@ -1,130 +1,19 @@
 name: Upload codeusagemonit 1.2.0 setup.exe
 
+# Historical upload that kept the original 1.2.0 zip checksum. That zip contained
+# personal usage figures. Do not restore it. Rebuilds go through release.yml.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/release-v1.2.0-installer.yml
 
 permissions:
-  contents: write
-
-concurrency:
-  group: release-v1.2.0-installer
-  cancel-in-progress: false
+  contents: read
 
 jobs:
   installer:
-    if: github.repository == 'fanchengliu/codeusagemonit'
-    runs-on: windows-latest
-    timeout-minutes: 30
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Inno Setup 6.3 or newer
-        shell: powershell
+      - name: Refuse to republish the historical package
         run: |
-          $ErrorActionPreference = 'Stop'
-          choco install innosetup --yes --no-progress --limit-output
-          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 3010) { throw "choco install innosetup failed ($LASTEXITCODE)." }
-
-      - name: Build setup.exe
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          .\source\Windows\build.ps1 -Installer
-          $setup = Join-Path (Get-Location) 'codeusagemonit-setup-1.2.0.exe'
-          if (-not (Test-Path -LiteralPath $setup)) { throw "Expected $setup" }
-
-      - name: Upload setup.exe and append its SHA-256
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $tag = 'v1.2.0'
-          $setupName = 'codeusagemonit-setup-1.2.0.exe'
-          $zipName = 'codeusagemonit-1.2.0-win-x64.zip'
-          $zipLine = 'ef2c9412d3205da697fe942726a90c8ccfd09036a2f21eae9f09ceaa84093bda  ' + $zipName
-          $zipSize = 691758
-          $zipDigest = 'sha256:ef2c9412d3205da697fe942726a90c8ccfd09036a2f21eae9f09ceaa84093bda'
-          $setup = Join-Path (Get-Location) $setupName
-          if (-not (Test-Path -LiteralPath $setup)) { throw "Expected $setup" }
-
-          $raw = & gh release view $tag --json tagName,assets
-          if ($LASTEXITCODE -ne 0) { throw "Release $tag does not exist. Refusing to create it." }
-          if ($raw -is [System.Array]) { $stateJson = [string]::Join("`n", [string[]]$raw) } else { $stateJson = [string]$raw }
-          $before = $stateJson | ConvertFrom-Json
-          if ($before.tagName -ne $tag) { throw "Refusing to edit a release other than $tag." }
-          $listed = @($before.assets)
-          $zipBefore = @($listed | Where-Object { $_.name -eq $zipName })
-          if ($zipBefore.Count -ne 1 -or [int64]$zipBefore[0].size -ne $zipSize) { throw 'The published zip asset is missing or unexpected.' }
-          if ($zipBefore[0].digest -and $zipBefore[0].digest -ne $zipDigest) { throw "Zip digest is $($zipBefore[0].digest)." }
-          $hasSumsAsset = @($listed | Where-Object { $_.name -eq 'SHA256SUMS.txt' }).Count -eq 1
-
-          $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLower()
-          $setupLine = $hash + '  ' + $setupName
-
-          $inDir = Join-Path (Get-Location) 'sums-in'
-          New-Item -ItemType Directory -Path $inDir | Out-Null
-          $sumsPath = Join-Path $inDir 'SHA256SUMS.txt'
-          $hasSums = $false
-          if ($hasSumsAsset) {
-            & gh release download $tag --pattern SHA256SUMS.txt --dir $inDir --clobber
-            if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $sumsPath)) { throw 'SHA256SUMS.txt is on the release but could not be downloaded.' }
-            $hasSums = $true
-          }
-
-          $outDir = Join-Path (Get-Location) 'release-upload'
-          New-Item -ItemType Directory -Path $outDir | Out-Null
-          Copy-Item -LiteralPath $setup -Destination (Join-Path $outDir $setupName)
-
-          if ($hasSums) {
-            $text = [System.IO.File]::ReadAllText($sumsPath)
-            $kept = New-Object System.Collections.Generic.List[string]
-            foreach ($row in ($text -split "`r?`n")) {
-              if ([string]::IsNullOrWhiteSpace($row)) { continue }
-              $clean = $row.TrimEnd()
-              if ($clean -match 'codeusagemonit-setup-.*\.exe$') { continue }
-              [void]$kept.Add($clean)
-            }
-            $zipKept = $false
-            foreach ($row in $kept) { if ($row -eq $zipLine) { $zipKept = $true } }
-            if (-not $zipKept) { throw 'Refusing to replace SHA256SUMS.txt because the published zip line is missing.' }
-            [void]$kept.Add($setupLine)
-            $dest = Join-Path $outDir 'SHA256SUMS.txt'
-            $body = ($kept.ToArray() -join "`n") + "`n"
-            [System.IO.File]::WriteAllText($dest, $body, (New-Object System.Text.UTF8Encoding $false))
-          }
-
-          if ($hasSums) {
-            & gh release upload $tag (Join-Path $outDir $setupName) $dest --clobber
-          } else {
-            & gh release upload $tag (Join-Path $outDir $setupName) --clobber
-          }
-          if ($LASTEXITCODE -ne 0) { throw 'gh release upload failed.' }
-
-          $rawAfter = & gh release view $tag --json tagName,assets
-          if ($LASTEXITCODE -ne 0) { throw 'gh release view failed after upload.' }
-          if ($rawAfter -is [System.Array]) { $json = [string]::Join("`n", [string[]]$rawAfter) } else { $json = [string]$rawAfter }
-          $release = $json | ConvertFrom-Json
-          if ($release.tagName -ne $tag) { throw "Release tag changed to $($release.tagName)." }
-          $assets = @($release.assets)
-          $zip = @($assets | Where-Object { $_.name -eq $zipName })
-          $setupAsset = @($assets | Where-Object { $_.name -eq $setupName })
-          if ($zip.Count -ne 1 -or [int64]$zip[0].size -ne $zipSize) { throw 'The published zip asset is missing or was replaced.' }
-          if ($zip[0].digest -and $zip[0].digest -ne $zipDigest) { throw "Zip digest changed to $($zip[0].digest)." }
-          if ($setupAsset.Count -ne 1) { throw 'setup.exe was not published.' }
-          if ($hasSums) {
-            $checkDir = Join-Path (Get-Location) 'sums-out'
-            New-Item -ItemType Directory -Path $checkDir | Out-Null
-            & gh release download $tag --pattern SHA256SUMS.txt --dir $checkDir --clobber
-            if ($LASTEXITCODE -ne 0) { throw 'Could not re-download SHA256SUMS.txt.' }
-            $published = [System.IO.File]::ReadAllText((Join-Path $checkDir 'SHA256SUMS.txt'))
-            if ($published.IndexOf($zipLine) -lt 0) { throw 'Published SHA256SUMS.txt lost the zip line.' }
-            if ($published.IndexOf($setupLine) -lt 0) { throw 'Published SHA256SUMS.txt is missing the setup line.' }
-          }
-          Write-Output $setupLine
-          Write-Output $json
+          echo "This workflow no longer uploads codeusagemonit-setup-1.2.0.exe or edits SHA256SUMS.txt."
+          echo "Use Actions → Build Windows release → replace_assets, tag v1.2.0."
+          exit 1

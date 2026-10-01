@@ -7,6 +7,14 @@ on:
         description: Upload codeusagemonit-setup-<version>.exe to the GitHub release for AssemblyVersion. A published release keeps its existing zip and SHA256SUMS.txt.
         type: boolean
         default: false
+      replace_assets:
+        description: Replace assets on an existing release. Does not create a release and does not move the tag. v1.2.0 rebuilds this ref with build.ps1 -Installer and replaces the zip, setup.exe and SHA256SUMS.txt. v1.1.0 rebuilds commit 360eb50 (the source synced to the published 1.1.0 package; the v1.1.0 tag tree is still 0.8.0) and replaces the zip and SHA256SUMS.txt.
+        type: boolean
+        default: false
+      tag:
+        description: Release tag to replace when replace_assets is set. v1.2.0 or v1.1.0.
+        type: string
+        default: ''
   push:
     tags:
       - "v*.*.*"
@@ -15,11 +23,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: windows-release-${{ github.ref }}
+  group: windows-release-${{ github.ref }}-${{ inputs.tag }}
   cancel-in-progress: false
 
 jobs:
   release:
+    if: github.event_name != 'workflow_dispatch' || inputs.tag != 'v1.1.0'
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -52,7 +61,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish the GitHub release
-        if: github.repository == 'fanchengliu/codeusagemonit' && (github.event_name == 'push' || inputs.publish == true || inputs.publish == 'true')
+        if: github.repository == 'fanchengliu/codeusagemonit' && (github.event_name == 'push' || inputs.publish == true || inputs.publish == 'true') && inputs.replace_assets != true && inputs.replace_assets != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: powershell
@@ -96,3 +105,246 @@ jobs:
             }
           }
           & gh release view $tag --json url,isDraft,assets
+
+      - name: Replace the published v1.2.0 assets
+        if: github.repository == 'fanchengliu/codeusagemonit' && github.event_name == 'workflow_dispatch' && (inputs.replace_assets == true || inputs.replace_assets == 'true')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Assert-ReleaseZipClean([string]$ZipPath, [string]$ManualSha) {
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $latin1 = [System.Text.Encoding]::GetEncoding(28591)
+            $needles = @(
+              'JDMsNTI0LjMw','Myw1MjQuMzA=','MzUyNC4zMQ==','NTE4LjNN','JDI5NC41Mg==','Mjk0LjUyMjY=',
+              'JDE4OC45MQ==','MTg4LjkxMzQ=','NTg4IOasoQ==','MSw3OTUsNDEx','MTQ1LDQ3Miw4MjQ=',
+              'JDE1NzEuMjA=','NzE2LjQ4TQ==','MTQ0OS41MU0=','MTQzLDEyMCw2NDA='
+            ) | ForEach-Object {
+              $plain = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_))
+              $latin1.GetString([System.Text.Encoding]::UTF8.GetBytes($plain))
+            }
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+            try {
+              $sawManual = $false
+              foreach ($entry in $archive.Entries) {
+                $name = $entry.FullName.Replace('\', '/')
+                if ($name -match '(^|/)VERIFICATION\.md$') { throw "Zip contains $name" }
+                $buffer = New-Object byte[] $entry.Length
+                if ($entry.Length -gt 0) {
+                  $stream = $entry.Open()
+                  try {
+                    $read = 0
+                    while ($read -lt $buffer.Length) {
+                      $n = $stream.Read($buffer, $read, $buffer.Length - $read)
+                      if ($n -le 0) { break }
+                      $read += $n
+                    }
+                  } finally { $stream.Dispose() }
+                }
+                $hay = $latin1.GetString($buffer)
+                foreach ($needle in $needles) { if ($hay.Contains($needle)) { throw "Personal figure remains in $name" } }
+                if ($name -eq '使用说明.md') {
+                  $sawManual = $true
+                  $text = [System.Text.Encoding]::UTF8.GetString($buffer)
+                  if (-not $text.Contains('虚构示例')) { throw '使用说明.md is missing the cleaned example wording.' }
+                  $sha = [System.Security.Cryptography.SHA256]::Create()
+                  try { $entryHash = [System.BitConverter]::ToString($sha.ComputeHash($buffer)).Replace('-', '').ToLower() }
+                  finally { $sha.Dispose() }
+                  if ($entryHash -ne $ManualSha) { throw 'Zip 使用说明.md does not match the file passed to the installer build.' }
+                }
+              }
+              if (-not $sawManual) { throw 'Zip is missing 使用说明.md' }
+            } finally { $archive.Dispose() }
+          }
+          $tag = $env:RELEASE_TAG
+          if ($tag -ne 'v1.2.0') { throw "This job only replaces v1.2.0 (got '$tag'). Refusing to create or edit any other release." }
+          $zipName = 'codeusagemonit-1.2.0-win-x64.zip'
+          $setupName = 'codeusagemonit-setup-1.2.0.exe'
+          $zip = Join-Path (Get-Location) "dist\$zipName"
+          $setup = Join-Path (Get-Location) "dist\$setupName"
+          $sums = Join-Path (Get-Location) 'dist\SHA256SUMS.txt'
+          foreach ($path in @($zip, $setup, $sums)) { if (-not (Test-Path -LiteralPath $path)) { throw "Missing $path" } }
+          $zipHash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower()
+          $setupHash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLower()
+          $expected = @("$zipHash  $zipName", "$setupHash  $setupName")
+          $got = @(Get-Content -LiteralPath $sums | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+          if (($got -join "`n") -ne ($expected -join "`n")) { throw 'SHA256SUMS.txt does not match the built zip and setup.exe.' }
+          $utf8 = New-Object System.Text.UTF8Encoding $false
+          [System.IO.File]::WriteAllText($sums, (($expected -join "`n") + "`n"), $utf8)
+          $manual = Join-Path (Get-Location) '使用说明.md'
+          $manualHash = (Get-FileHash -LiteralPath $manual -Algorithm SHA256).Hash.ToLower()
+          Assert-ReleaseZipClean $zip $manualHash
+          $view = & gh release view $tag --json tagName,isDraft
+          if ($LASTEXITCODE -ne 0) { throw "Release $tag does not exist. Refusing to create it." }
+          $viewText = if ($view -is [System.Array]) { [string]::Join("`n", [string[]]$view) } else { [string]$view }
+          $state = $viewText | ConvertFrom-Json
+          if ($state.tagName -ne $tag) { throw "Refusing to edit release $($state.tagName)." }
+          & gh release upload $tag $zip $setup $sums --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'gh release upload failed.' }
+          $check = Join-Path (Get-Location) 'release-check'
+          New-Item -ItemType Directory -Path $check | Out-Null
+          & gh release download $tag --dir $check --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'gh release download failed.' }
+          $downZip = Join-Path $check $zipName
+          $downSetup = Join-Path $check $setupName
+          $downSums = Join-Path $check 'SHA256SUMS.txt'
+          if ((Get-FileHash -LiteralPath $downZip -Algorithm SHA256).Hash.ToLower() -ne $zipHash) { throw 'Published zip hash mismatch.' }
+          if ((Get-FileHash -LiteralPath $downSetup -Algorithm SHA256).Hash.ToLower() -ne $setupHash) { throw 'Published setup.exe hash mismatch.' }
+          $publishedSums = (Get-Content -LiteralPath $downSums -Raw).Replace("`r`n", "`n")
+          if ($publishedSums -ne (($expected -join "`n") + "`n")) { throw 'Published SHA256SUMS.txt mismatch.' }
+          Assert-ReleaseZipClean $downZip $manualHash
+          Get-Item -LiteralPath $downZip, $downSetup, $downSums | Select-Object Name, Length | Format-Table -AutoSize | Out-String | Write-Output
+          Write-Output "manual-sha256=$manualHash"
+          Write-Output "zip-sha256=$zipHash"
+          Write-Output "setup-sha256=$setupHash"
+
+  rebuild-v110:
+    if: github.event_name == 'workflow_dispatch' && inputs.tag == 'v1.1.0'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout the source synced to the published 1.1.0 package
+        uses: actions/checkout@v4
+        with:
+          # v1.1.0 (119e723) still has AssemblyVersion 0.8.0.0. Commit 360eb50 is the
+          # tree that matches the source inside the published 1.1.0 zip.
+          ref: 360eb508604ba24135b81a20ce2eda373ea276fb
+
+      - name: Clean the manual, build, and replace the v1.1.0 zip
+        if: github.repository == 'fanchengliu/codeusagemonit' && (inputs.replace_assets == true || inputs.replace_assets == 'true')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sha = (& git rev-parse HEAD).Trim()
+          if ($sha -ne '360eb508604ba24135b81a20ce2eda373ea276fb') { throw "Refusing to build $sha." }
+          $app = Get-Content -LiteralPath 'source\Windows\App.cs' -Raw -Encoding UTF8
+          if ($app -notmatch 'AssemblyVersion\("1\.1\.0\.0"\)') { throw 'AssemblyVersion is not 1.1.0.0.' }
+          function Set-Once([string]$Text, [string]$Old, [string]$New) {
+            $count = ([regex]::Matches($Text, [regex]::Escape($Old))).Count
+            if ($count -ne 1) { throw "Expected one occurrence of a manual sentence, found $count." }
+            return $Text.Replace($Old, $New)
+          }
+          function Assert-ReleaseZipClean([string]$ZipPath, [string]$ManualSha) {
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $latin1 = [System.Text.Encoding]::GetEncoding(28591)
+            $figureNeedles = @(
+              'JDMsNTI0LjMw','Myw1MjQuMzA=','MzUyNC4zMQ==','NTE4LjNN','JDI5NC41Mg==','Mjk0LjUyMjY=',
+              'JDE4OC45MQ==','MTg4LjkxMzQ=','NTg4IOasoQ==','MSw3OTUsNDEx','MTQ1LDQ3Miw4MjQ=',
+              'JDE1NzEuMjA=','NzE2LjQ4TQ==','MTQ0OS41MU0=','MTQzLDEyMCw2NDA='
+            ) | ForEach-Object {
+              $plain = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_))
+              $latin1.GetString([System.Text.Encoding]::UTF8.GetBytes($plain))
+            }
+            $dateNeedles = @('MjAyNi0wOS0yOQ==','MjAyNi0wOC0zMQ==','OS0yNA==','OS0yOA==') | ForEach-Object {
+              $plain = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_))
+              $latin1.GetString([System.Text.Encoding]::UTF8.GetBytes($plain))
+            }
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+            try {
+              $sawManual = $false
+              foreach ($entry in $archive.Entries) {
+                $name = $entry.FullName.Replace('\', '/')
+                if ($name -match '(^|/)VERIFICATION\.md$') { throw "Zip contains $name" }
+                $buffer = New-Object byte[] $entry.Length
+                if ($entry.Length -gt 0) {
+                  $stream = $entry.Open()
+                  try {
+                    $read = 0
+                    while ($read -lt $buffer.Length) {
+                      $n = $stream.Read($buffer, $read, $buffer.Length - $read)
+                      if ($n -le 0) { break }
+                      $read += $n
+                    }
+                  } finally { $stream.Dispose() }
+                }
+                $hay = $latin1.GetString($buffer)
+                foreach ($needle in $figureNeedles) { if ($hay.Contains($needle)) { throw "Personal figure remains in $name" } }
+                if ($name -eq '使用说明.md') {
+                  foreach ($needle in $dateNeedles) { if ($hay.Contains($needle)) { throw "Personal date remains in $name" } }
+                }
+                if ($name -eq '使用说明.md') {
+                  $sawManual = $true
+                  $body = [System.Text.Encoding]::UTF8.GetString($buffer)
+                  if (-not $body.Contains('虚构示例')) { throw '使用说明.md is missing the cleaned example wording.' }
+                  $hasher = [System.Security.Cryptography.SHA256]::Create()
+                  try { $entryHash = [System.BitConverter]::ToString($hasher.ComputeHash($buffer)).Replace('-', '').ToLower() }
+                  finally { $hasher.Dispose() }
+                  if ($entryHash -ne $ManualSha) { throw 'Zip 使用说明.md does not match the cleaned manual.' }
+                }
+              }
+              if (-not $sawManual) { throw 'Zip is missing 使用说明.md' }
+            } finally { $archive.Dispose() }
+          }
+          $manualPath = Join-Path (Get-Location) '使用说明.md'
+          $utf8 = New-Object System.Text.UTF8Encoding $false
+          $text = [System.IO.File]::ReadAllText($manualPath)
+          function From-B64([string]$Value) { return [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Value)) }
+          $text = Set-Once $text (From-B64 'LSDkuI4gY2N1c2FnZSAyMC4wLjI2IOWcqOacrOacuiAyMDI2LTA4LTMxIOiHsyAwOS0zMCDnmoTmlbDmja7kuIrpgJDml6XmoLjlr7nvvJrlkITlubPlj7AgVG9rZW4g5a6M5YWo5LiA6Ie077yb6LS555So5Y+q5pyJ5LiA5aSE5beu5byC77yIYGdwdC02LjEtc29sYO+8jGNjdXNhZ2Ug55qE5Lu355uu6KGo5rKh5pyJ6L+Z5Liq5qih5Z6L77yM6K6wICQw77yJ44CC') '- 与 ccusage 20.0.26 逐日核对过：各平台 Token 一致；费用差异来自 ccusage 价目表尚未收录的模型（例如 `gpt-6.1-sol`，那边记 $0）。核对用的是本机日志，具体金额、Token 数和日期不写在这里。'
+          $text = Set-Once $text (From-B64 'MjAyNi0wOS0yOSDnlKjlkIzkuIDku73mnKzmnLrml6Xlv5fpgJDpobnmoLjlr7nov4fvvJo=') '用同一份日志逐项核对时，Token 可以对上，费用经常对不上。下表的用量是**虚构示例**（标了「示例」），只说明差在哪里。`gpt-6-astra` 那一行是公开价目，不是某一次真实账单。'
+          $text = Set-Once $text (From-B64 'fCBDb2RleCDku4rml6UgVG9rZW4gfCAxLDc5NSw0MTEg5paw5aKe6L6T5YWlICsgNTU2LDc3MyDovpPlh7ogKyAxNDMsMTIwLDY0MCDnvJPlrZjlkb3kuK0gPSAxNDUsNDcyLDgyNCB8IOWujOWFqOebuOWQjCB8ICoqVG9rZW4g5Lik6L655LiA6Ie077yM6YO95Y+v5L+hKiogfA==') '| Codex 某日 Token（示例） | 100,000 新增输入 + 20,000 输出 + 800,000 缓存命中 = 920,000 | 完全相同 | **Token 两边一致，都可信** |'
+          $text = Set-Once $text (From-B64 'fCBDb2RleCDku4rml6XotLnnlKggfCAkMjk0LjUyIHwgJDE4OC45MSB8IOW3ruWcqOiuoeS7t+inhOWImSB8') '| Codex 某日费用（示例） | $12.00 | $8.00 | 差在计价规则 |'
+          $text = Set-Once $text (From-B64 '5b2T5aSpIDU4OCDmrKHor7fmsYLph4zmnIkgMjIyIOasoei+k+WFpei2hei/hyAyNzJL77yI5pyA5aSn57qmIDU3OUvvvInvvIzmjInlrpjmlrnliIbmoaPph43mlrDorqHnrpfmraPlpb3lvpfliLAgJDI5NC41Mu+8m+ayoeaciei2hemVv+ivt+axgueahOaXpeWtkO+8iOWmgiA5LTI044CBOS0yOO+8ieS4pOi+uemHkemineWujOWFqOebuOWQjOOAgg==') '示例：某天 100 次请求里有 40 次输入超过 272K（最大约 400K），按官方分档重新计算得到上表的 $12.00；没有超长请求的日子，两边金额相同。'
+          if ($text -notlike '*虚构示例*') { throw 'Cleaned manual is missing the example wording.' }
+          [System.IO.File]::WriteAllText($manualPath, $text, $utf8)
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\source\Windows\build.ps1 -OutputDirectory (Join-Path (Get-Location) 'dist')
+          if ($LASTEXITCODE -ne 0) { throw 'build.ps1 failed.' }
+          $dist = Join-Path (Get-Location) 'dist'
+          foreach ($name in @('codeusagemonit.exe','codeusage.exe','app.ico','Panel.xaml','pricing.json')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $dist $name))) { throw "Missing build output $name" }
+          }
+          $stage = Join-Path ([System.IO.Path]::GetTempPath()) ('codeusagemonit-110-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          try {
+            foreach ($name in @('codeusagemonit.exe','codeusage.exe','app.ico','Panel.xaml','pricing.json','LICENSE','THIRD-PARTY-NOTICES.md','使用说明.md')) {
+              $from = if ($name -match '\.exe$|^app\.ico$|^Panel\.xaml$|^pricing\.json$') { Join-Path $dist $name } else { Join-Path (Get-Location) $name }
+              Copy-Item -LiteralPath $from -Destination (Join-Path $stage $name)
+            }
+            New-Item -ItemType Directory -Path (Join-Path $stage 'icons') | Out-Null
+            Copy-Item -Path (Join-Path $dist 'icons\*') -Destination (Join-Path $stage 'icons')
+            New-Item -ItemType Directory -Path (Join-Path $stage 'licenses') | Out-Null
+            Copy-Item -Path (Join-Path (Get-Location) 'licenses\*') -Destination (Join-Path $stage 'licenses')
+            $sourceStage = Join-Path $stage 'source\Windows'
+            New-Item -ItemType Directory -Path $sourceStage | Out-Null
+            Copy-Item -Path (Join-Path (Get-Location) 'source\Windows\*') -Destination $sourceStage -Recurse
+            $notes = Join-Path $sourceStage 'VERIFICATION.md'
+            if (Test-Path -LiteralPath $notes) { Remove-Item -LiteralPath $notes -Force }
+            if (Test-Path -LiteralPath $notes) { throw 'VERIFICATION.md is still staged.' }
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $zipName = 'codeusagemonit-1.1.0-win-x64.zip'
+            $zip = Join-Path $dist $zipName
+            if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+            [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zip)
+          } finally {
+            Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          $manualHash = (Get-FileHash -LiteralPath $manualPath -Algorithm SHA256).Hash.ToLower()
+          Assert-ReleaseZipClean $zip $manualHash
+          $zipHash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower()
+          $sums = Join-Path $dist 'SHA256SUMS.txt'
+          [System.IO.File]::WriteAllText($sums, ($zipHash + '  ' + $zipName + "`n"), $utf8)
+          $tag = 'v1.1.0'
+          $view = & gh release view $tag --json tagName
+          if ($LASTEXITCODE -ne 0) { throw "Release $tag does not exist. Refusing to create it." }
+          $viewText = if ($view -is [System.Array]) { [string]::Join("`n", [string[]]$view) } else { [string]$view }
+          $state = $viewText | ConvertFrom-Json
+          if ($state.tagName -ne $tag) { throw "Refusing to edit release $($state.tagName)." }
+          & gh release upload $tag $zip $sums --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'gh release upload failed.' }
+          $check = Join-Path (Get-Location) 'release-check'
+          New-Item -ItemType Directory -Path $check | Out-Null
+          & gh release download $tag --dir $check --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'gh release download failed.' }
+          $downZip = Join-Path $check $zipName
+          if ((Get-FileHash -LiteralPath $downZip -Algorithm SHA256).Hash.ToLower() -ne $zipHash) { throw 'Published zip hash mismatch.' }
+          $publishedSums = [System.IO.File]::ReadAllText((Join-Path $check 'SHA256SUMS.txt'))
+          if ($publishedSums -ne ($zipHash + '  ' + $zipName + "`n")) { throw 'Published SHA256SUMS.txt mismatch.' }
+          Assert-ReleaseZipClean $downZip $manualHash
+          Get-Item -LiteralPath $downZip, (Join-Path $check 'SHA256SUMS.txt') | Select-Object Name, Length | Format-Table -AutoSize | Out-String | Write-Output
+          Write-Output "manual-sha256=$manualHash"
+          Write-Output "zip-sha256=$zipHash"
+
+
