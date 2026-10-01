@@ -1,13 +1,9 @@
 name: Replace published release assets
 
-# Adding or editing this file on main runs the replacement once. workflow_dispatch
-# on "Build Windows release" is the normal path; this push trigger exists because
-# the automation token cannot start workflow_dispatch.
+# The one-shot push trigger already ran and replaced the v1.1.0 and v1.2.0
+# assets. workflow_dispatch remains so it can be started from the Actions tab.
+# Do not add a push trigger here; editing this file must not rebuild the releases.
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/replace-published-assets.yml
   workflow_dispatch:
 
 permissions:
