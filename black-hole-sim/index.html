@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schwarzschild Black Hole — GR Null Geodesic Ray Tracer</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="c"></canvas>
+      <div id="hud">
+        <header>
+          <h1>Schwarzschild Black Hole</h1>
+          <p class="subtitle">广义相对论 · 零测地线光线追踪 · 史瓦西度规</p>
+        </header>
+        <dl class="stats">
+          <div><dt>事件视界</dt><dd>r<sub>s</sub> = 2M</dd></div>
+          <div><dt>光子球</dt><dd>r<sub>ph</sub> = 3M</dd></div>
+          <div><dt>ISCO</dt><dd>r<sub>isco</sub> = 6M</dd></div>
+          <div><dt>积分</dt><dd>RK4 测地线</dd></div>
+        </dl>
+        <div class="hint">
+          拖拽旋转 · 滚轮缩放 · 右键平移
+        </div>
+        <div id="fps">— FPS</div>
+      </div>
+      <div id="loading">
+        <div class="spinner"></div>
+        <p>正在编译 GR 光线追踪着色器…</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
