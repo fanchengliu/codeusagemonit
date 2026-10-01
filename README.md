@@ -238,7 +238,7 @@ cd codeusagemonit
 
 ## 致谢
 
-- [CodexBar](https://github.com/steipete/CodexBar)：macOS 上的同类工具，本项目的交互思路参考了它；平台图标取自它的资源文件（MIT）。
+- [CodexBar](https://github.com/steipete/CodexBar)：macOS 上的同类工具，本项目的交互思路参考了它；
 - [ccusage](https://github.com/ccusage/ccusage)：参考了它对各家本地日志格式的解析方式。
 - [Claude Code Usage Monitor](https://github.com/CodeZeno/Claude-Code-Usage-Monitor)：参考了 Windows 上各客户端登录状态的保存位置。
 - [LiteLLM](https://github.com/BerriAI/litellm) 与 [models.dev](https://github.com/anomalyco/models.dev)：价目表数据来源（MIT）。
