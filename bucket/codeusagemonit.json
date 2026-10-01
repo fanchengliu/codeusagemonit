@@ -1,5 +1,5 @@
 {
-    "version": "1.2.0",
+    "version": "1.0.0",
     "description": "Windows tray app and CLI for the remaining quota, reset times, token usage and output speed of Codex, Claude, Cursor and other AI coding tools.",
     "homepage": "https://github.com/fanchengliu/codeusagemonit",
     "license": "MIT",
@@ -9,8 +9,8 @@
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip",
-            "hash": "88272371bc19e3a0636229c143a521332332a07ae050b81b6b0bf2bbde4cb1c9"
+            "url": "https://github.com/fanchengliu/codeusagemonit/releases/download/v1.0.0/codeusagemonit-1.0.0-win-x64.zip",
+            "hash": "2bb1f05a9b5b46a8921148fe81ff4a7790752fc2fcb02edb59d8fc205f0857ef"
         }
     },
     "bin": "codeusage.exe",
