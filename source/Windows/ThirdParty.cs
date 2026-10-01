@@ -142,6 +142,29 @@ namespace CodeUsageMonit {
         private static string FirstNonEmpty(params string[] values) { return values.FirstOrDefault(v => !String.IsNullOrWhiteSpace(v)) ?? ""; }
     }
 
+    // The endpoint log the log readers consult while scanning (a snapshot, so the UI thread
+    // can keep recording switches). Null means "not tracking": buckets get no endpoint.
+    public static class EndpointAttribution {
+        private static EndpointLog snapshot;
+        public static void Use(EndpointLog log) { snapshot = log == null ? null : new EndpointLog { Marks = log.Marks.ToList() }; }
+        // "" official, "?" no mark yet (before tracking began), else "host/fingerprint".
+        public static string At(string app, DateTime utc) {
+            EndpointLog log = snapshot; if (log == null) return null;
+            EndpointMark mark = Endpoints.Resolve(log, app, utc);
+            return mark == null ? "?" : mark.Official ? "" : Id(mark);
+        }
+        public static string Id(EndpointMark mark) { return (mark.Host + "/" + mark.Key).Replace('|', '/'); }
+        // The mark behind a bucket's recorded endpoint (the latest with that host and key, for its name).
+        public static EndpointMark Mark(EndpointLog log, string app, string endpoint) {
+            if (endpoint == null || endpoint == "?") return null;
+            if (endpoint.Length == 0) return new EndpointMark { App = app, Official = true };
+            EndpointMark found = log.Marks.LastOrDefault(m => m.App == app && !m.Official && Id(m) == endpoint);
+            if (found != null) return found;
+            int slash = endpoint.LastIndexOf('/');
+            return new EndpointMark { App = app, Host = slash < 0 ? endpoint : endpoint.Substring(0, slash), Key = slash < 0 ? "" : endpoint.Substring(slash + 1) };
+        }
+    }
+
     public static class ThirdPartyReport {
         public static ThirdPartySummary Build(LogIndex codex, LogIndex claude, EndpointLog log, UsageHistory history, DateTime nowUtc, TimeZoneInfo zone) {
             var summary = new ThirdPartySummary { ClaudeNow = Endpoints.Latest(log, Endpoints.ClaudeApp), CodexNow = Endpoints.Latest(log, Endpoints.CodexApp) };
@@ -155,7 +178,9 @@ namespace CodeUsageMonit {
                 foreach (HourUsage hour in source.Index.Entries()) {
                     DateTime day = TimeZoneInfo.ConvertTimeFromUtc(hour.Hour, zone).Date;
                     if (day < first || day > today) continue;
-                    EndpointMark mark = Endpoints.Resolve(log, source.App, hour.Hour);
+                    // Buckets read since endpoint attribution know their endpoint per request;
+                    // older ones fall back to the endpoint in effect at the top of the hour.
+                    EndpointMark mark = hour.Endpoint != null ? EndpointAttribution.Mark(log, source.App, hour.Endpoint) : Endpoints.Resolve(log, source.App, hour.Hour);
                     EndpointMark target;
                     if (source.App == Endpoints.CodexApp) {
                         // Codex logs say exactly whether a session used a custom provider.

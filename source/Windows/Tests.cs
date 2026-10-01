@@ -279,6 +279,46 @@ namespace CodeUsageMonit {
                 // No request-id: a relay even while settings.json looked official, and before tracking.
                 Require(bare.Month == 25 && !bare.Current && unknown.Host == "" && unknown.Month == 40 && unknown.CostPartial && report.ClaudeUnattributed == 7 && report.AppMonth("claude") == 325);
             });
+            test("The running hour counts in full up to now; past range edges still split by overlap", () => {
+                DateTime hour = new DateTime(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc), now = hour.AddMinutes(15);
+                var index = new LogIndex(); index.Files.Add(new LogFile { Name = "a.jsonl", Hours = { { "2026093010|openai|m", new Bucket { I = 1000, D = 4, R = 4 } }, { "2026093008|openai|m", new Bucket { I = 1000, D = 4, R = 4 } } } });
+                // "Today until now" at 10:15: the 10:00 bucket already holds everything up to now.
+                Bucket today = index.Usage(hour.AddHours(-10), now, null, null, now);
+                Require(Math.Abs(today.Tokens() - 2000) < 1e-9 && Math.Abs(today.D - 8) < 1e-9 && Math.Abs(today.R - 8) < 1e-9);
+                // A range ending at 08:15, asked at 10:15, takes a quarter of the 08:00 bucket.
+                Require(Math.Abs(index.Usage(hour.AddHours(-3), hour.AddHours(-2).AddMinutes(15), null, null, now).Tokens() - 250) < 1e-9);
+                Require(LogIndex.Weight(hour, hour.AddMinutes(-30), now, now) == 1 && LogIndex.Weight(hour, now, hour.AddHours(1), now) == 0 && LogIndex.Weight(hour.AddHours(-2), hour.AddHours(-2).AddMinutes(30), hour, now) == .5);
+            });
+            test("Switching relay inside an hour attributes each request to the endpoint in effect then", () => {
+                var log = new EndpointLog();
+                log.Marks.Add(new EndpointMark { App = "claude", Host = "a.example.com", Key = "aaaaaa", Name = "A", Since = "2026-09-30T09:00:00Z" });
+                log.Marks.Add(new EndpointMark { App = "claude", Host = "b.example.com", Key = "bbbbbb", Name = "B", Since = "2026-09-30T10:30:00Z" });
+                EndpointAttribution.Use(log);
+                try {
+                    // Switched A → B at 10:30; 900 tokens used on B at 10:40.
+                    string line = "{\"type\":\"assistant\",\"timestamp\":\"2026-09-30T10:40:00Z\",\"requestId\":\"req_x\",\"message\":{\"id\":\"msg_x\",\"model\":\"demo-claude\",\"usage\":{\"input_tokens\":800,\"output_tokens\":100}}}";
+                    var claude = new LogIndex(); var state = new LogFile { Name = "s.jsonl" }; claude.Files.Add(state);
+                    using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(line + "\n"))) ClaudeLogs.Read(claude, state, "s.jsonl", stream, 0);
+                    var report = ThirdPartyReport.Build(null, claude, log, new UsageHistory(), new DateTime(2026, 9, 30, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Utc);
+                    var a = report.Endpoints.FirstOrDefault(e => e.Name == "A"); var b = report.Endpoints.First(e => e.Name == "B");
+                    Require(b.Month == 900 && b.Current && (a == null || a.Month == 0));
+                } finally { EndpointAttribution.Use(null); }
+            });
+            test("A truncated log is read again from the start and its surviving records count", () => {
+                string dir = Path.Combine(Path.GetTempPath(), "codeusagemonit-trunc-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(dir);
+                try {
+                    string path = Path.Combine(dir, "rollout.jsonl"); DateTime now = DateTime.UtcNow, at = now.AddHours(-1);
+                    Func<int, int, string> count = (sec, total) => "{\"timestamp\":\"" + at.AddSeconds(sec).ToString("yyyy-MM-ddTHH:mm:ss.fffZ") + "\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":" + total + ",\"output_tokens\":0},\"last_token_usage\":{\"input_tokens\":200,\"output_tokens\":0}}}}";
+                    Func<LogIndex, LogIndex> scan = idx => LogReader.Scan(idx, new[] { path }, info => info.Name, now, (i, st, p, s, off) => CodexLogs.Read(i, st, p, s, off));
+                    File.WriteAllText(path, count(0, 200) + "\n" + count(10, 400) + "\n" + count(20, 600) + "\n");
+                    LogIndex index = scan(null);
+                    Require(Math.Abs(index.Entries().Sum(h => h.Tokens) - 600) < 1e-9);
+                    // 600 tokens in three records → one 200-token record survives.
+                    File.WriteAllText(path, count(0, 200) + "\n"); File.SetLastWriteTimeUtc(path, now.AddMinutes(-1));
+                    index = scan(index);
+                    Require(Math.Abs(index.Entries().Sum(h => h.Tokens) - 200) < 1e-9);
+                } finally { try { Directory.Delete(dir, true); } catch { } }
+            });
             test("Exact window clips hour buckets by overlap, tokens and cost alike", () => {
                 var zone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
                 var index = new LogIndex { CoveredFrom = "2026-09-01T00:00:00Z", Updated = "2026-09-29T10:00:00Z" };

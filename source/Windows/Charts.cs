@@ -161,14 +161,13 @@ namespace CodeUsageMonit {
             for (DateTime t = first; t < endLocal; t = hourly ? t.AddHours(1) : t.AddDays(1)) bars.Add(new ChartBar { Start = t, Hourly = hourly, Current = hourly ? t.Date == nowLocal.Date && t.Hour == nowLocal.Hour : t == nowLocal.Date });
             if (bars.Count == 0) return bars;
             var byStart = bars.ToDictionary(b => b.Start);
-            DateTime startUtc = TimeZoneInfo.ConvertTimeToUtc(startLocal, TimeZoneInfo.Local), endUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, TimeZoneInfo.Local);
+            DateTime startUtc = TimeZoneInfo.ConvertTimeToUtc(startLocal, TimeZoneInfo.Local), endUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, TimeZoneInfo.Local), nowUtcForWeights = DateTime.UtcNow;
             foreach (var source in sources) {
                 if (source.Value == null) continue;
                 foreach (HourUsage hour in source.Value.Entries()) {
                     if (provider != null && !provider(hour.Provider)) continue;
-                    DateTime a = hour.Hour > startUtc ? hour.Hour : startUtc, b = hour.Hour.AddHours(1) < endUtc ? hour.Hour.AddHours(1) : endUtc;
-                    if (b <= a) continue;
-                    double w = (b - a).TotalSeconds / 3600;
+                    double w = LogIndex.Weight(hour.Hour, startUtc, endUtc, nowUtcForWeights);
+                    if (w <= 0) continue;
                     DateTime local = TimeZoneInfo.ConvertTimeFromUtc(hour.Hour, TimeZoneInfo.Local);
                     DateTime slot = hourly ? new DateTime(local.Year, local.Month, local.Day, local.Hour, 0, 0) : local.Date;
                     ChartBar bar; if (!byStart.TryGetValue(slot, out bar)) continue;
@@ -194,10 +193,11 @@ namespace CodeUsageMonit {
             if (!data.FromLogs) { a = a.Date; if (b.TimeOfDay > TimeSpan.Zero || b.Date == a) b = b.Date.AddDays(1); }
             var parts = new Dictionary<string, Bucket>();
             Func<string, string, string> key = (agent, model) => partsByAgent ? agent : model;
-            DateTime aUtc = TimeZoneInfo.ConvertTimeToUtc(a, TimeZoneInfo.Local), bUtc = TimeZoneInfo.ConvertTimeToUtc(b, TimeZoneInfo.Local);
+            DateTime aUtc = TimeZoneInfo.ConvertTimeToUtc(a, TimeZoneInfo.Local), bUtc = TimeZoneInfo.ConvertTimeToUtc(b, TimeZoneInfo.Local), nowUtc = DateTime.UtcNow;
             foreach (var source in sources) foreach (HourUsage hour in source.Value.Entries()) {
-                DateTime x = hour.Hour > aUtc ? hour.Hour : aUtc, y = hour.Hour.AddHours(1) < bUtc ? hour.Hour.AddHours(1) : bUtc; if (y <= x) continue;
-                double w = (y - x).TotalSeconds / 3600; string k = key(source.Key, hour.Model); if (k.Length == 0) k = "（未标注模型）";
+                // The running hour counts in full up to now (LogIndex.Weight), not by the share of the clock hour.
+                double w = LogIndex.Weight(hour.Hour, aUtc, bUtc, nowUtc); if (w <= 0) continue;
+                string k = key(source.Key, hour.Model); if (k.Length == 0) k = "（未标注模型）";
                 Bucket p; if (!parts.TryGetValue(k, out p)) parts[k] = p = new Bucket();
                 foreach (Bucket t in new[] { p, data.Total }) { t.I += hour.Input * w; t.C += hour.Cached * w; t.W += hour.CacheWrite * w; t.O += hour.Output * w; t.X += hour.Other * w; t.R += hour.Requests * w; t.D += hour.Cost * w; t.U += hour.Unpriced * w; t.TN += hour.TimedRequests * w; t.TO += hour.TimedOutput * w; t.TS += hour.TimedSeconds * w; }
             }

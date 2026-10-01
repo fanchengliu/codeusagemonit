@@ -208,7 +208,7 @@ namespace CodeUsageMonit {
                 if (uncached == 0 && cache == 0 && write == 0 && output == 0 && reasoning == 0) continue;
                 string key = "g|" + (eventId != null ? eventId + "|" + row.Key : session + "|" + LogReader.Millis(when) + "|" + row.Key + "|" + uncached + "|" + output + "|" + cache + "|" + write + "|" + reasoning);
                 if (index.Seen.ContainsKey(key)) continue;
-                index.Seen[key] = LogIndex.HourKey(when);
+                LogIndex.See(index, key, when, file);
                 double ticks = LogReader.N(mu, "costUsdTicks");
                 var u = new TokenUse { Input = uncached, Output = output, CacheRead = cache, CacheWrite5m = write };
                 ModelPrice price = ticks > 0 ? null : GrokPrice(row.Key);
@@ -277,7 +277,7 @@ namespace CodeUsageMonit {
             if (u.Total + extra <= 0) return;
             string key = "k|" + session + ":" + messageId + ":" + LogReader.Millis(when) + ":" + model + ":" + u.Input + ":" + u.Output + ":" + u.CacheWrite + ":" + u.CacheRead + ":" + extra;
             if (index.Seen.ContainsKey(key)) return;
-            index.Seen[key] = LogIndex.HourKey(when);
+            LogIndex.See(index, key, when, file);
             var candidates = new List<string>();
             if (model == "kimi-for-coding") candidates.Add(LogReader.Millis(when) < 1776698890072L ? "moonshot/kimi-k2.5" : "moonshot/kimi-k2.6");
             candidates.Add("moonshot/" + model); candidates.Add("kimi/" + model); candidates.Add(model);

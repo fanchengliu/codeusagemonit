@@ -121,7 +121,7 @@ namespace CodeUsageMonit {
                 Open entry;
                 if (!open.TryGetValue(timingKey, out entry)) {
                     if (index.Seen.ContainsKey(timingKey)) return; // timed in another file or an earlier scan
-                    index.Seen[timingKey] = hour;
+                    index.Seen[timingKey] = hour + "\t" + file.Name;
                     long start = parent == null ? 0 : Time(parent);
                     entry = new Open { Key = bucketKey, Start = start > 0 && start <= ms ? start : -1, Last = ms, Output = output };
                     open[timingKey] = entry;

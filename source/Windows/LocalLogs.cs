@@ -35,15 +35,18 @@ namespace CodeUsageMonit {
         public Dictionary<string, Bucket> Hours = new Dictionary<string, Bucket>();
     }
     public sealed class HourUsage {
-        public DateTime Hour; public string Provider = "", Model = "";
+        // Endpoint: null on buckets without one (other agents, official Codex); "" official,
+        // "?" before endpoint tracking began, else "host/fingerprint" of the third-party endpoint.
+        public DateTime Hour; public string Provider = "", Model = "", Endpoint;
         public double Tokens, Requests, Cost, Input, Cached, CacheWrite, Output, Other, Unpriced, TimedRequests, TimedOutput, TimedSeconds;
     }
     public sealed class LogIndex {
-        public const int CurrentVersion = 4;
+        public const int CurrentVersion = 5;
         public int Version = CurrentVersion;
         public string CoveredFrom = "", Updated = "", Pricing = "";
         public List<LogFile> Files = new List<LogFile>();
-        // De-duplication keys → "yyyyMMddHH…" (the hour prefix lets old keys expire).
+        // De-duplication keys → "yyyyMMddHH \t owner file …" (the hour prefix lets old keys
+        // expire; the owner lets a truncated file give back the keys it had claimed).
         public Dictionary<string, string> Seen = new Dictionary<string, string>();
         private List<HourUsage> entries;
         public bool Covers(DateTime utc) { DateTime from; return Parse(CoveredFrom, out from) && from <= utc; }
@@ -55,32 +58,41 @@ namespace CodeUsageMonit {
                 string[] parts = pair.Key.Split('|'); DateTime at;
                 if (!DateTime.TryParseExact(parts[0], "yyyyMMddHH", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out at)) continue;
                 Bucket b = pair.Value;
-                list.Add(new HourUsage { Hour = at, Provider = parts.Length > 1 ? parts[1] : "", Model = parts.Length > 2 ? parts[2] : "", Tokens = b.Tokens(), Requests = b.R, Cost = b.D, Input = b.I, Cached = b.C, CacheWrite = b.W, Output = b.O, Other = b.X, Unpriced = b.U, TimedRequests = b.TN, TimedOutput = b.TO, TimedSeconds = b.TS });
+                list.Add(new HourUsage { Hour = at, Provider = parts.Length > 1 ? parts[1] : "", Model = parts.Length > 2 ? parts[2] : "", Endpoint = parts.Length > 3 ? parts[3] : null, Tokens = b.Tokens(), Requests = b.R, Cost = b.D, Input = b.I, Cached = b.C, CacheWrite = b.W, Output = b.O, Other = b.X, Unpriced = b.U, TimedRequests = b.TN, TimedOutput = b.TO, TimedSeconds = b.TS });
             }
             entries = list; return entries;
         }
         public double Tokens(DateTime startUtc, DateTime endUtc) { return Tokens(startUtc, endUtc, null); }
         // Tokens recorded in [startUtc, endUtc). Hour buckets that straddle an edge are
-        // weighted by overlap, so a window starting at 10:33 takes ~45% of the 10:00 bucket.
+        // weighted by overlap (see Weight), so a window starting at 10:33 takes ~45% of a past
+        // 10:00 bucket, while the running hour counts in full up to now.
         public double Tokens(DateTime startUtc, DateTime endUtc, Func<string, bool> provider) {
-            double sum = 0;
+            double sum = 0; DateTime nowUtc = DateTime.UtcNow;
             foreach (HourUsage hour in Entries()) {
                 if (provider != null && !provider(hour.Provider)) continue;
-                DateTime a = hour.Hour > startUtc ? hour.Hour : startUtc, b = hour.Hour.AddHours(1) < endUtc ? hour.Hour.AddHours(1) : endUtc;
-                if (b > a) sum += hour.Tokens * (b - a).TotalSeconds / 3600;
+                sum += hour.Tokens * Weight(hour.Hour, startUtc, endUtc, nowUtc);
             }
             return sum;
         }
+        // Share of the hour bucket starting at hourUtc that falls in [startUtc, endUtc). The
+        // hour still running can only hold usage up to now, so it spans [hour, now]: asking
+        // for "today until now" at 10:15 counts the whole 10:00 bucket, not a quarter of it.
+        public static double Weight(DateTime hourUtc, DateTime startUtc, DateTime endUtc, DateTime nowUtc) {
+            DateTime spanEnd = hourUtc.AddHours(1); if (nowUtc > hourUtc && nowUtc < spanEnd) spanEnd = nowUtc;
+            DateTime a = hourUtc > startUtc ? hourUtc : startUtc, b = spanEnd < endUtc ? spanEnd : endUtc;
+            if (b <= a) return 0;
+            return Math.Min(1, (b - a).TotalSeconds / (spanEnd - hourUtc).TotalSeconds);
+        }
         // Usage in [startUtc, endUtc), each hour weighted by its overlap with the range.
         public Bucket Usage(DateTime startUtc, DateTime endUtc, Func<string, bool> provider) { return Usage(startUtc, endUtc, provider, null); }
-        public Bucket Usage(DateTime startUtc, DateTime endUtc, Func<string, bool> provider, Func<string, bool> model) {
+        public Bucket Usage(DateTime startUtc, DateTime endUtc, Func<string, bool> provider, Func<string, bool> model) { return Usage(startUtc, endUtc, provider, model, DateTime.UtcNow); }
+        public Bucket Usage(DateTime startUtc, DateTime endUtc, Func<string, bool> provider, Func<string, bool> model, DateTime nowUtc) {
             var sum = new Bucket();
             foreach (HourUsage hour in Entries()) {
                 if (provider != null && !provider(hour.Provider)) continue;
                 if (model != null && !model(hour.Model)) continue;
-                DateTime a = hour.Hour > startUtc ? hour.Hour : startUtc, b = hour.Hour.AddHours(1) < endUtc ? hour.Hour.AddHours(1) : endUtc;
-                if (b <= a) continue;
-                double w = (b - a).TotalSeconds / 3600;
+                double w = Weight(hour.Hour, startUtc, endUtc, nowUtc);
+                if (w <= 0) continue;
                 sum.I += hour.Input * w; sum.C += hour.Cached * w; sum.W += hour.CacheWrite * w; sum.O += hour.Output * w; sum.X += hour.Other * w; sum.R += hour.Requests * w; sum.D += hour.Cost * w; sum.U += hour.Unpriced * w;
                 sum.TN += hour.TimedRequests * w; sum.TO += hour.TimedOutput * w; sum.TS += hour.TimedSeconds * w;
             }
@@ -91,8 +103,16 @@ namespace CodeUsageMonit {
             return false;
         }
         public static string HourKey(DateTime when) { return when.ToUniversalTime().ToString("yyyyMMddHH", CultureInfo.InvariantCulture); }
-        internal static string BucketKey(DateTime when, string provider, string model) { return HourKey(when) + "|" + (provider ?? "").Replace('|', '/') + "|" + (model ?? "").Replace('|', '/'); }
+        internal static string BucketKey(DateTime when, string provider, string model) { return BucketKey(when, provider, model, null); }
+        internal static string BucketKey(DateTime when, string provider, string model, string endpoint) { return HourKey(when) + "|" + (provider ?? "").Replace('|', '/') + "|" + (model ?? "").Replace('|', '/') + (endpoint == null ? "" : "|" + endpoint.Replace('|', '/')); }
         internal static void Add(LogFile file, DateTime when, string provider, string model, Bucket amounts) { Add(file, BucketKey(when, provider, model), amounts, 1); }
+        internal static void Add(LogFile file, DateTime when, string provider, string model, Bucket amounts, string endpoint) { Add(file, BucketKey(when, provider, model, endpoint), amounts, 1); }
+        // Claims a de-duplication key for the file it was read from.
+        internal static void See(LogIndex index, string key, DateTime when, LogFile owner) { index.Seen[key] = HourKey(when) + "\t" + (owner == null ? "" : owner.Name); }
+        internal static string Owner(string seen) {
+            int a = seen.IndexOf('\t'); if (a < 0) return "";
+            int b = seen.IndexOf('\t', a + 1); return b < 0 ? seen.Substring(a + 1) : seen.Substring(a + 1, b - a - 1);
+        }
         internal static void Add(LogFile file, string key, Bucket amounts, double sign) {
             Bucket bucket; if (!file.Hours.TryGetValue(key, out bucket)) { bucket = new Bucket(); file.Hours[key] = bucket; }
             bucket.Add(amounts, sign);
@@ -126,7 +146,7 @@ namespace CodeUsageMonit {
                 LogFile state; if (!byName.TryGetValue(name, out state)) { state = new LogFile { Name = name }; byName[name] = state; index.Files.Add(state); }
                 long stamp = info.LastWriteTimeUtc.Ticks;
                 if (state.Length == info.Length && state.Stamp == stamp) continue;
-                if (info.Length < state.Offset) { state.Offset = 0; state.LastTotal = ""; state.Provider = ""; state.Model = ""; state.Tier = ""; state.Replay = ""; state.Hours.Clear(); }
+                if (info.Length < state.Offset) Reset(index, state);
                 try {
                     using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16, FileOptions.SequentialScan)) {
                         long length = stream.Length; stream.Seek(state.Offset, SeekOrigin.Begin);
@@ -136,6 +156,16 @@ namespace CodeUsageMonit {
             }
             Finish(index, nowUtc, seen);
             return index;
+        }
+        // A file that shrank (rewritten or truncated) is read again from the start: its hours,
+        // parser and timing state go, and so do the de-duplication keys it had claimed;
+        // otherwise its surviving records would be taken for copies of themselves.
+        internal static void Reset(LogIndex index, LogFile state) {
+            state.Offset = 0; state.LastTotal = ""; state.Provider = ""; state.Model = ""; state.Tier = ""; state.Replay = ""; state.Parent = ""; state.Fallback = false;
+            state.MarkMs = 0; state.StartMs = 0; state.EndMs = 0; state.Recent = ""; state.Open = "";
+            state.Hours.Clear();
+            foreach (string key in index.Seen.Where(p => String.Equals(LogIndex.Owner(p.Value), state.Name, StringComparison.OrdinalIgnoreCase)).Select(p => p.Key).ToList()) index.Seen.Remove(key);
+            index.InvalidateEntries();
         }
         // Deleted session files keep their counted hours, so usage does not shrink when a
         // client prunes old threads; only hours beyond the retention window are dropped.
@@ -420,7 +450,7 @@ namespace CodeUsageMonit {
             // The same event copied into several files (resumed or forked threads) counts once.
             string key = "x|" + LogReader.Millis(when) + "|" + model + "|" + raw.Key();
             if (index.Seen.ContainsKey(key)) return;
-            index.Seen[key] = LogIndex.HourKey(when);
+            LogIndex.See(index, key, when, state);
             ModelPrice price = Pricing.Find(model);
             bool fast = state.Tier == "fast" || (context.FastDefault && state.Tier != "standard");
             double cost = Pricing.CodexCost(price, raw.Input, raw.Cached, raw.CacheWrite, raw.Output) * (fast && price != null ? price.Fast : 1);
@@ -428,7 +458,9 @@ namespace CodeUsageMonit {
             if (price == null) bucket.U = bucket.Tokens();
             // Output includes the reasoning tokens (reasoning_output_tokens is a part of it).
             if (OutputTiming.Accept(raw.Output, seconds)) { bucket.TN = 1; bucket.TO = raw.Output; bucket.TS = seconds; }
-            LogIndex.Add(state, when, state.Provider.Length == 0 ? Official : state.Provider, model, bucket);
+            string provider = state.Provider.Length == 0 ? Official : state.Provider;
+            // Relay requests remember which endpoint was configured at that moment.
+            LogIndex.Add(state, when, provider, model, bucket, IsOfficial(provider) ? null : EndpointAttribution.At(Endpoints.CodexApp, when));
         }
     }
 
@@ -540,16 +572,19 @@ namespace CodeUsageMonit {
             string display = synthetic ? "" : fast ? model + "-fast" : model;
             // Anthropic always returns a request-id; its absence is a strong hint of a relay.
             string provider = requestId != null ? "" : NoRequestId;
-            Record(index, state, when, provider, display, bucket, messageId, requestId, session, sidechain, speed.Length > 0);
-            return LogIndex.BucketKey(when, provider, display);
+            // The endpoint configured at the moment of the request (not at the top of the hour),
+            // so switching relays at 10:30 splits the 10:00 hour correctly.
+            string endpoint = EndpointAttribution.At(Endpoints.ClaudeApp, when);
+            Record(index, state, when, provider, display, endpoint, bucket, messageId, requestId, session, sidechain, speed.Length > 0);
+            return LogIndex.BucketKey(when, provider, display, endpoint);
         }
         // Seen record: hour \t file \t bucket-key \t I C W O R D U \t sidechain \t speed
         private static string Encode(string hour, LogFile file, string key, Bucket b, bool sidechain, bool speed) {
             var c = CultureInfo.InvariantCulture;
             return hour + "\t" + file.Name + "\t" + key + "\t" + String.Join(" ", new[] { b.I, b.C, b.W, b.O, b.R, b.D, b.U }.Select(v => v.ToString("R", c))) + "\t" + (sidechain ? 1 : 0) + "\t" + (speed ? 1 : 0);
         }
-        private static void Record(LogIndex index, LogFile file, DateTime when, string provider, string model, Bucket b, string messageId, string requestId, string session, bool sidechain, bool speed) {
-            string key = LogIndex.BucketKey(when, provider, model), hour = LogIndex.HourKey(when);
+        private static void Record(LogIndex index, LogFile file, DateTime when, string provider, string model, string endpoint, Bucket b, string messageId, string requestId, string session, bool sidechain, bool speed) {
+            string key = LogIndex.BucketKey(when, provider, model, endpoint), hour = LogIndex.HourKey(when);
             if (messageId == null) { LogIndex.Add(file, key, b, 1); return; }
             string exact = "c|" + messageId + "|" + (requestId != null ? "r|" + requestId : "s|" + session + "|" + LogReader.Millis(when));
             string existing = null, value;

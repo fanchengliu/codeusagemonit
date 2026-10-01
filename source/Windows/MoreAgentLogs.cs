@@ -45,7 +45,7 @@ namespace CodeUsageMonit {
             double? recorded = J.Num(usage, "cost", "total");
             string key = "p|" + LogReader.Millis(when) + "|" + model + "|" + u.Input + "|" + u.Output + "|" + u.CacheRead + "|" + u.CacheWrite + "|" + extra;
             if (index.Seen.ContainsKey(key)) return;
-            index.Seen[key] = LogIndex.HourKey(when);
+            LogIndex.See(index, key, when, file);
             string provider = J.Str(message, "provider").Trim();
             ModelPrice price = model.Length == 0 ? null : (provider.Length > 0 ? Pricing.Find(provider + "/" + model) : null) ?? Pricing.Find(model);
             LogIndex.Add(file, when, "", model, Priced(u, extra, price, recorded));
@@ -107,7 +107,7 @@ namespace CodeUsageMonit {
                     if (session.Length > 0 && latest.TryGetValue(session + "|" + model, out shut) && when <= shut) continue;
                     string span = J.Str(record, "spanId"); if (span.Length == 0) span = J.Str(record, "spanContext", "spanId");
                     string key = "o|" + (span.Length > 0 ? span : LogReader.Millis(when) + "|" + model);
-                    if (index.Seen.ContainsKey(key)) continue; index.Seen[key] = LogIndex.HourKey(when);
+                    if (index.Seen.ContainsKey(key)) continue; LogIndex.See(index, key, when, file);
                     double input = LogReader.N(attributes, "gen_ai.usage.input_tokens"), read = LogReader.N(attributes, "gen_ai.usage.cache_read.input_tokens");
                     double write = Math.Max(LogReader.N(attributes, "gen_ai.usage.cache_write.input_tokens"), LogReader.N(attributes, "gen_ai.usage.cache_creation.input_tokens"));
                     var u = new TokenUse { Input = Math.Max(0, input - read - write), Output = LogReader.N(attributes, "gen_ai.usage.output_tokens"), CacheRead = read, CacheWrite5m = write };

@@ -23,6 +23,7 @@ namespace CodeUsageMonit {
         // Scans the given agents in parallel; each index is read from and written to data/.
         public static Dictionary<string, LogIndex> ScanAll(IEnumerable<string> ids, DateTime nowUtc, bool persist) {
             Pricing.EnsureLoaded();
+            if (persist) { try { EndpointAttribution.Use(Store.Read<EndpointLog>("endpoints.json") ?? new EndpointLog()); } catch { EndpointAttribution.Use(new EndpointLog()); } }
             var wanted = new HashSet<string>(ids);
             var tasks = Agents.Where(a => wanted.Contains(a.Id)).Select(a => Task.Run(() => {
                 LogIndex index = null;
