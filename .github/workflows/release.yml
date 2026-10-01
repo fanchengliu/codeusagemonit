@@ -1,6 +1,16 @@
 name: Build Windows release
 
 on:
+  workflow_call:
+    inputs:
+      replace_assets:
+        description: Replace assets on an existing release. Does not create a release and does not move the tag.
+        type: boolean
+        required: true
+      tag:
+        description: v1.2.0 or v1.1.0.
+        type: string
+        required: true
   workflow_dispatch:
     inputs:
       publish:
@@ -28,7 +38,7 @@ concurrency:
 
 jobs:
   release:
-    if: github.event_name != 'workflow_dispatch' || inputs.tag != 'v1.1.0'
+    if: inputs.tag != 'v1.1.0'
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -107,7 +117,7 @@ jobs:
           & gh release view $tag --json url,isDraft,assets
 
       - name: Replace the published v1.2.0 assets
-        if: github.repository == 'fanchengliu/codeusagemonit' && github.event_name == 'workflow_dispatch' && (inputs.replace_assets == true || inputs.replace_assets == 'true')
+        if: github.repository == 'fanchengliu/codeusagemonit' && (inputs.replace_assets == true || inputs.replace_assets == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
@@ -201,7 +211,7 @@ jobs:
           Write-Output "setup-sha256=$setupHash"
 
   rebuild-v110:
-    if: github.event_name == 'workflow_dispatch' && inputs.tag == 'v1.1.0'
+    if: inputs.tag == 'v1.1.0'
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
