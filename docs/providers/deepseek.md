@@ -2,7 +2,7 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.0.0。连接方式：**API Key**；本机用量来自 **DeepSeek Harness**。
+> 适用于 codeusagemonit 1.0.0。连接方式：**API Key（可选）**；本机用量来自 **DeepSeek Harness**。
 
 ## 数据来源
 
@@ -19,6 +19,7 @@
 ## 可以查看什么
 
 - API 账户总余额，按接口返回的币种分别显示。
+- 只用 DeepSeek Harness、没填 API Key 时，卡片显示“DeepSeek Harness · 本机用量”，不提示连接。DeepSeek Harness 自己的登录（`~/.dsh/.credentials.yaml` 里的 DeepSeek 开放平台授权）查不了 API 余额：`api.deepseek.com/user/balance` 返回 401，平台接口返回 “invalid token”，所以余额仍需 API Key。
 - 详情页的**本机用量**（使用 DeepSeek Harness 时）：费用、Token、请求数、Token 构成、柱状图、各模型用量和**输出速度**。
 
 ## 限制
