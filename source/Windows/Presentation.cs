@@ -152,7 +152,7 @@ namespace CodeUsageMonit {
                 }
                 stack.Children.Add(chips);
             }
-            var note = Label("本机会话日志 × 官方 API 价目估算，不是订阅账单 ⓘ", 10.5, InkFaint);
+            var note = Label("本机会话日志（Cursor 为账户后台）× 官方 API 价目估算，不是订阅账单 ⓘ", 10.5, InkFaint);
             note.Margin = new Thickness(0, 10, 0, 0); note.ToolTip = PricingHint(); stack.Children.Add(note);
             return stack;
         }
@@ -414,7 +414,8 @@ namespace CodeUsageMonit {
             var stack = new StackPanel();
             var head = new Grid();
             head.ColumnDefinitions.Add(new ColumnDefinition()); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var title = Label("本机用量", 13, Ink); title.FontWeight = FontWeights.SemiBold; head.Children.Add(title);
+            var title = Label(ProviderCatalog.UsageTitle(state.Id), 13, Ink); title.FontWeight = FontWeights.SemiBold; head.Children.Add(title);
+            bool account = ProviderCatalog.AccountUsage(state.Id);
             var picker = RangeButton(state.Id, Render, false); picker.Margin = new Thickness(8, -3, 8, -3); Grid.SetColumn(picker, 1); head.Children.Add(picker);
             var badge = Label("API 等价 ⓘ", 10.5, InkFaint); badge.ToolTip = PricingHint(); Grid.SetColumn(badge, 2); head.Children.Add(badge);
             stack.Children.Add(head);
@@ -422,9 +423,9 @@ namespace CodeUsageMonit {
             Bucket total = data.Total;
             bool timed = OutputTiming.Supported(state.Id);
             var figures = new UniformGrid { Columns = timed ? 4 : 3, Margin = new Thickness(0, 12, 0, 0) };
-            figures.Children.Add(BigFigure("费用", total.D > 0 || total.Tokens() > total.U ? Usd(total.D) : "—", total.U > 0 ? "部分模型没有价目，未计入费用" : "按各模型官方 API 单价估算，不是订阅账单"));
+            figures.Children.Add(BigFigure("费用", total.D > 0 || total.Tokens() > total.U ? Usd(total.D) : "—", total.U > 0 ? "部分模型没有价目，未计入费用" : account ? "Cursor 后台给出的每次调用 API 等价价格，不是订阅账单" : "按各模型官方 API 单价估算，不是订阅账单"));
             figures.Children.Add(BigFigure("Token", Compact(total.Tokens()), "新增输入 + 输出 + 缓存命中 + 缓存写入"));
-            figures.Children.Add(BigFigure("请求", total.R > 0 ? total.R.ToString("N0", CultureInfo.InvariantCulture) : "—", data.FromLogs ? "本机日志里的模型请求次数" : "这一时间段只有按日汇总，没有请求次数"));
+            figures.Children.Add(BigFigure("请求", total.R > 0 ? total.R.ToString("N0", CultureInfo.InvariantCulture) : "—", data.FromLogs ? (account ? "Cursor 后台记录的模型调用次数（含按次计入套餐的请求）" : "本机日志里的模型请求次数") : "这一时间段只有按日汇总，没有请求次数"));
             if (timed) figures.Children.Add(BigFigure("输出速度", OutputTiming.Text(total.Speed()), ProviderCatalog.Name(state.Id) + "：" + (total.Speed().HasValue ? "这一时间段 " + Math.Round(total.TN).ToString("N0", CultureInfo.InvariantCulture) + " 次请求计时，" + Compact(total.TO) + " 输出 Token ÷ " + Duration(total.TS) + "\n" : "这一时间段没有可计时的请求\n") + OutputTiming.Definition));
             stack.Children.Add(figures);
             UIElement composition = Composition(total.I, total.O, total.C, total.W, "Token 构成");
@@ -477,7 +478,8 @@ namespace CodeUsageMonit {
                     AddRow(row, left, right); stack.Children.Add(row);
                 }
             }
-            var foot = Label("数据来自本机日志，不含其他设备" + (data.FromLogs ? " · 按小时统计" : ""), 10.5, InkFaint);
+            var foot = Label((account ? "数据来自 Cursor 账户后台，含该账户所有设备 · 没有请求耗时，无法算输出速度" : "数据来自本机日志，不含其他设备") + (data.FromLogs ? " · 按小时统计" : ""), 10.5, InkFaint);
+            foot.TextWrapping = TextWrapping.Wrap;
             foot.Margin = new Thickness(0, 14, 0, 0); stack.Children.Add(foot);
             return stack;
         }
@@ -694,7 +696,7 @@ namespace CodeUsageMonit {
         private static string PricingHint() {
             Pricing.EnsureLoaded();
             return "费用 = 本机会话日志里每次请求的 Token × 该模型的官方 API 单价（价目表 pricing.json 整理自公开的 LiteLLM / models.dev 价目，每天与本项目仓库同步一次，断网时用内置价目；当前价目 " + Pricing.Day + (Pricing.Source == "synced" ? "，已同步" : "，随软件内置") + "）。\n" +
-                "逐次请求计价：已计入缓存折扣、缓存写入（1 小时缓存按 2 倍输入价）、长上下文分档（例如单次请求输入超过 272K 时整次按长上下文价）和 Codex 优先 / fast 档的倍率。日志里自带费用的记录（Grok、部分 Claude、OpenCode）直接使用记录值。\n" +
+                "逐次请求计价：已计入缓存折扣、缓存写入（1 小时缓存按 2 倍输入价）、长上下文分档（例如单次请求输入超过 272K 时整次按长上下文价）和 Codex 优先 / fast 档的倍率。日志里自带费用的记录（Grok、部分 Claude、OpenCode）直接使用记录值；Cursor 没有本机日志，用量和每次调用的价格取自 Cursor 账户后台。\n" +
                 "订阅套餐（如 Pro）实际按月费计费，这里只是 API 等价参考。";
         }
         private static string Compact(double n) {

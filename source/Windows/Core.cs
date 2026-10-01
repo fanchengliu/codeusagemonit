@@ -115,6 +115,10 @@ namespace CodeUsageMonit {
         public static bool IsKnown(string id) { return Ids.Contains(id) || Custom.ContainsKey(id); }
         // Providers without an account quota: only local session logs.
         public static bool LocalOnly(string id) { return id == "pi"; }
+        // Usage read from the account (Cursor's dashboard) rather than this machine's logs:
+        // it covers every device signed in to the account.
+        public static bool AccountUsage(string id) { return id == "cursor"; }
+        public static string UsageTitle(string id) { return AccountUsage(id) ? "账户用量" : "本机用量"; }
         public static string Name(string id) {
             CustomProvider custom; if (id != null && Custom.TryGetValue(id, out custom)) return custom.Name;
             switch (id) { case "codex": return "Codex"; case "claude": return "Claude"; case "cursor": return "Cursor"; case "antigravity": return "Antigravity"; case "deepseek": return "DeepSeek"; case "grok": return "Grok"; case "copilot": return "Copilot"; case "kimi": return "Kimi"; case "opencode": return "OpenCode"; case "zcode": return "ZCode"; case "pi": return "Pi"; case ThirdParty: return "第三方"; default: return "概览"; }
@@ -578,16 +582,12 @@ namespace CodeUsageMonit {
                     }
                     case "cursor": {
                         string db = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Cursor\User\globalStorage\state.vscdb");
-                        string token = NativeCredentials.SqliteText(db, "cursorAuth/accessToken"); Need(token, id); object claims = J.Jwt(token); string sub = J.Str(claims, "sub"); if (sub.Contains("|")) sub = sub.Substring(sub.LastIndexOf('|') + 1); Need(sub, id);
-                        string cookie = sub + "%3A%3A" + token;
+                        string cookie = CursorCookie(); Need(cookie, id);
                         var headers = new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" } };
                         s = Parsers.Cursor(await Request("https://cursor.com/api/usage-summary", null, cookie, null, headers).ConfigureAwait(false));
                         // Grok Bot is a separate weekly allowance. A missing or rejected call
                         // must not turn the whole Cursor provider into an error.
-                        try {
-                            var sandHeaders = new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" }, { "Origin", "https://cursor.com" }, { "Referer", "https://cursor.com/dashboard" }, { "Accept", "application/json" } };
-                            Parsers.CursorGrokBot(s, await Request("https://cursor.com/api/dashboard/get-sand-usage-status", null, cookie, "{}", sandHeaders).ConfigureAwait(false));
-                        } catch { }
+                        try { Parsers.CursorGrokBot(s, await CursorDashboard("get-sand-usage-status", "{}").ConfigureAwait(false)); } catch { }
                         s.Account = NativeCredentials.SqliteText(db, "cursorAuth/cachedEmail"); break;
                     }
                     case "deepseek": {
@@ -647,6 +647,19 @@ namespace CodeUsageMonit {
             catch (HttpRequestException) { return Failure(id, "网络连接失败，请检查代理设置"); }
             catch (UnauthorizedAccessException) { return Failure(id, "无法读取本机登录文件，请检查文件权限"); }
             catch (Exception) { return Failure(id, "无法读取此平台的数据格式，请在原应用登录后重试"); }
+        }
+        // Cursor: the editor's own session (state.vscdb), sent the way cursor.com expects it.
+        private static string CursorDb { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Cursor", "User", "globalStorage", "state.vscdb"); } }
+        public static string CursorCookie() {
+            string token = NativeCredentials.SqliteText(CursorDb, "cursorAuth/accessToken"); if (String.IsNullOrWhiteSpace(token)) return "";
+            string sub = J.Str(J.Jwt(token), "sub"); if (sub.Contains("|")) sub = sub.Substring(sub.LastIndexOf('|') + 1);
+            return sub.Length == 0 ? "" : sub + "%3A%3A" + token;
+        }
+        // POST cursor.com/api/dashboard/<endpoint> with the editor session.
+        public Task<object> CursorDashboard(string endpoint, string body) {
+            string cookie = CursorCookie(); if (cookie.Length == 0) throw new ProviderException(ProviderCatalog.Help("cursor"), "setup");
+            var headers = new Dictionary<string, string> { { "User-Agent", "Mozilla/5.0" }, { "Origin", "https://cursor.com" }, { "Referer", "https://cursor.com/dashboard" }, { "Accept", "application/json" } };
+            return Request("https://cursor.com/api/dashboard/" + endpoint, null, cookie, body, headers, 25);
         }
         public Task<ProviderState> FetchCustom(CustomProvider provider, string secret) { return CustomProviders.Fetch(client, provider, secret, DateTime.UtcNow); }
         // API-key providers: a rejected key is a settings problem, not an expired app login.

@@ -46,6 +46,8 @@ namespace CodeUsageMonit {
                     case "cost": return Cost(ids, days, refresh);
                     case "thirdparty": case "third-party": return ThirdParty();
                     case "providers": return Providers(config);
+                    // Diagnostics: field names of Cursor's usage events (no values are printed).
+                    case "cursor-fields": Console.WriteLine(CursorUsage.Fields(DateTime.UtcNow)); return 0;
                     case "version": Console.WriteLine("codeusage " + Version + "（codeusagemonit 命令行）"); return 0;
                     case "help": Help(); return 0;
                     default: return Fail("未知命令：" + command + "（codeusage help 查看用法）");

@@ -294,7 +294,7 @@ namespace CodeUsageMonit {
                 var metrics = new StackPanel();
                 metrics.Children.Add(new Border { Height = 1, Background = Hairline, Margin = new Thickness(0, 12, 0, 8) });
                 var period = Row(); period.Margin = new Thickness(0, 0, 0, 6);
-                AddRow(period, Label("本机用量", 10.5, InkDim), RangeButton(state.Id, RenderCompact, true)); metrics.Children.Add(period);
+                AddRow(period, Label(ProviderCatalog.UsageTitle(state.Id), 10.5, InkDim), RangeButton(state.Id, RenderCompact, true)); metrics.Children.Add(period);
                 bool timed = OutputTiming.Supported(state.Id);
                 var grid = new UniformGrid { Columns = timed ? 4 : 3 };
                 grid.Children.Add(Metric("费用", data.Total.D > 0 || data.Total.Tokens() > data.Total.U ? Usd(data.Total.D) : "—")); grid.Children.Add(Metric("Token", Compact(data.Total.Tokens()))); grid.Children.Add(Metric("请求", data.Total.R > 0 ? data.Total.R.ToString("N0", CultureInfo.InvariantCulture) : "—"));

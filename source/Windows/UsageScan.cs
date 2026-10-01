@@ -12,6 +12,8 @@ namespace CodeUsageMonit {
         public static readonly Agent[] Agents = {
             new Agent { Id = "codex", File = "codex-logs.json", Scan = CodexLogs.Scan },
             new Agent { Id = "claude", File = "claude-logs.json", Scan = ClaudeLogs.Scan },
+            // Cursor has no local log: its dashboard's usage events (CursorUsage.cs).
+            new Agent { Id = "cursor", File = "cursor-logs.json", Scan = CursorUsage.Scan },
             new Agent { Id = "antigravity", File = "antigravity-logs.json", Scan = AgentLogs.ScanAntigravity },
             new Agent { Id = "zcode", File = "zcode-logs.json", Scan = AgentLogs.ScanZcode },
             new Agent { Id = "grok", File = "grok-logs.json", Scan = AgentLogs.ScanGrok },

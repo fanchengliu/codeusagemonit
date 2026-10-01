@@ -319,6 +319,23 @@ namespace CodeUsageMonit {
                     Require(Math.Abs(index.Entries().Sum(h => h.Tokens) - 200) < 1e-9);
                 } finally { try { Directory.Delete(dir, true); } catch { } }
             });
+            test("Cursor dashboard events fold into hourly buckets per model, once each", () => {
+                var index = new LogIndex { CoveredFrom = "2026-09-01T00:00:00Z" }; var file = new LogFile { Name = "cursor-dashboard" }; index.Files.Add(file);
+                object page = J.Serializer().DeserializeObject("{\"totalUsageEventsCount\":3,\"usageEventsDisplay\":[" +
+                    "{\"timestamp\":\"1790000000000\",\"model\":\"claude-x\",\"kind\":\"USAGE_EVENT_KIND_USAGE_BASED\",\"tokenUsage\":{\"inputTokens\":100,\"outputTokens\":20,\"cacheReadTokens\":300,\"cacheWriteTokens\":5,\"totalCents\":12.5}}," +
+                    "{\"timestamp\":\"1790000060000\",\"model\":\"default\",\"tokenUsage\":{\"inputTokens\":10,\"outputTokens\":1}}," +
+                    "{\"timestamp\":\"1790000120000\",\"model\":\"claude-x\",\"kind\":\"USAGE_EVENT_KIND_INCLUDED_IN_PRO\"}]}");
+                List<object> events = CursorUsage.Events(page).ToList();
+                Require(events.Count == 3);
+                foreach (object e in events) CursorUsage.Add(index, file, e);
+                foreach (object e in events) CursorUsage.Add(index, file, e); // a re-fetched page counts once
+                List<HourUsage> hours = index.Entries().ToList();
+                HourUsage x = hours.Single(h => h.Model == "claude-x"), auto = hours.Single(h => h.Model == "auto");
+                Require(x.Hour == new DateTime(2026, 9, 21, 14, 0, 0, DateTimeKind.Utc) && x.Endpoint == null);
+                Require(x.Requests == 2 && x.Input == 100 && x.Output == 20 && x.Cached == 300 && x.CacheWrite == 5 && Math.Abs(x.Cost - .125) < 1e-9);
+                Require(auto.Requests == 1 && auto.Tokens == 11);
+                Require(CursorUsage.Body(new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 9, 2, 0, 0, 0, DateTimeKind.Utc), 2).Contains("\"startDate\":\"1788220800000\""));
+            });
             test("Exact window clips hour buckets by overlap, tokens and cost alike", () => {
                 var zone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
                 var index = new LogIndex { CoveredFrom = "2026-09-01T00:00:00Z", Updated = "2026-09-29T10:00:00Z" };
