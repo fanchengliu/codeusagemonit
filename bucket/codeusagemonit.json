@@ -10,7 +10,7 @@
     "architecture": {
         "64bit": {
             "url": "https://github.com/fanchengliu/codeusagemonit/releases/download/v1.2.0/codeusagemonit-1.2.0-win-x64.zip",
-            "hash": "ef2c9412d3205da697fe942726a90c8ccfd09036a2f21eae9f09ceaa84093bda"
+            "hash": "88272371bc19e3a0636229c143a521332332a07ae050b81b6b0bf2bbde4cb1c9"
         }
     },
     "bin": "codeusage.exe",
