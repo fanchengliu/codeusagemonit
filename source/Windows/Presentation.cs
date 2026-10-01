@@ -246,6 +246,7 @@ namespace CodeUsageMonit {
                 var more = new Button { Style = Styled("LinkButton"), Content = "查看其余 " + (state.Quotas.Count - preview) + " 项额度 ›", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-6, 8, 0, 0) };
                 more.Click += delegate { SelectProvider(state.Id); }; stack.Children.Add(more);
             }
+            if (state.ProductUsage != null && state.ProductUsage.Count > 0) stack.Children.Add(ProductUsageBlock(state));
             foreach (var balance in state.Balances) {
                 var row = Row(); row.Margin = new Thickness(0, 14, 0, 0);
                 var value = Label(balance.Currency + " " + balance.Amount.ToString("N2", CultureInfo.InvariantCulture), 20, Ink); value.FontWeight = FontWeights.SemiBold; Tabular(value);
@@ -261,6 +262,18 @@ namespace CodeUsageMonit {
                 if (state.Status == "error") stack.Children.Add(ReconnectToggle(state.Id));
                 if (state.Status == "setup" || state.Status == "expired" || (state.Status == "error" && connectionDetails.Contains(state.Id))) stack.Children.Add(ConnectPanel(state));
             }
+        }
+        private UIElement ProductUsageBlock(ProviderState state) {
+            var breakdown = new StackPanel { Margin = new Thickness(0, 12, 0, 0), Opacity = state.Stale ? .62 : 1 };
+            breakdown.Children.Add(Label("本期消耗构成 · 共用当前账期额度", 10.5, InkFaint));
+            foreach (var product in state.ProductUsage) {
+                var row = Row(); row.Margin = new Thickness(0, 5, 0, 0);
+                var amount = Label("已消耗总额度 " + product.UsedPercent.ToString("0.#") + "%", 11, InkDim);
+                Tabular(amount); AddRow(row, Label(product.DisplayName, 11, InkDim), amount);
+                row.ToolTip = "该消耗已计入当前账期的已用额度，各产品共享上方显示的剩余额度。";
+                breakdown.Children.Add(row);
+            }
+            return breakdown;
         }
         private UIElement ReconnectToggle(string id) {
             bool open = connectionDetails.Contains(id);

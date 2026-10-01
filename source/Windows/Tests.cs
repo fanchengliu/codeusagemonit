@@ -80,10 +80,11 @@ namespace CodeUsageMonit {
             });
             test("Grok product shares split the one allowance and are not quotas", () => {
                 var s = Parsers.Grok(J.Parse("{\"config\":{\"creditUsagePercent\":63,\"productUsage\":[{\"product\":\"GROK_BUILD\",\"usagePercent\":55},{\"product\":\"CHAT\",\"usagePercent\":8}]}}"));
-                Require(s.Quotas.Count == 1 && s.Quotas[0].Remaining == 37);
+                Require(s.Quotas.Count == 1 && s.Quotas[0].Remaining == 37 && s.ProductUsage.Count == 2 && s.ProductUsage[0].DisplayName == "Build" && s.ProductUsage[1].DisplayName == "Chat");
                 var old = new ProviderState { Id = "grok" }; Parsers.Add(old, "当前账期", 63, null); Parsers.Add(old, "Build 占比", 55, null);
-                Require(Parsers.Normalize(old).Quotas.Count == 1 && old.Quotas[0].Label == "当前账期");
+                Require(Parsers.Normalize(old).Quotas.Count == 1 && old.Quotas[0].Label == "当前账期" && old.Quotas[0].Remaining == 37 && old.ProductUsage.Count == 0);
             });
+            GrokTests.Run(test);
             test("Percentages are bounded and nonnumeric values ignored", () => {
                 var s = new ProviderState(); Parsers.Add(s, "one", -10, null); Parsers.Add(s, "two", 150, null); Parsers.Add(s, "bad", "NaN", null); Require(s.Quotas.Count == 2 && s.Quotas[0].Remaining == 100 && s.Quotas[1].Remaining == 0);
             });

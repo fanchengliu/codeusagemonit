@@ -25,10 +25,25 @@ namespace CodeUsageMonit {
         public double Remaining { get { return Math.Max(0, 100 - Used); } }
     }
     public sealed class Balance { public string Currency; public double Amount; }
+    public sealed class ProductConsumption {
+        public string Product;
+        // Percentage points taken from the shared allowance, not a quota of its own.
+        public double UsedPercent;
+        [ScriptIgnore]
+        public string DisplayName {
+            get {
+                if (String.IsNullOrEmpty(Product)) return "";
+                if (Product.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0) return "Build";
+                if (Product.IndexOf("chat", StringComparison.OrdinalIgnoreCase) >= 0) return "Chat";
+                return Product;
+            }
+        }
+    }
     public sealed class ProviderState {
         public string Id, Status = "loading", Message = "等待首次读取", Plan = "", Account = "", LastSuccess = "", LastAttempt = "";
         public List<Quota> Quotas = new List<Quota>();
         public List<Balance> Balances = new List<Balance>();
+        public List<ProductConsumption> ProductUsage = new List<ProductConsumption>();
         public bool Stale;
         public int? ResetCreditsAvailable;
         public List<string> ResetCreditExpiries = new List<string>();
@@ -359,14 +374,37 @@ namespace CodeUsageMonit {
             var s = new ProviderState { Id = "grok", Plan = J.Str(root, "subscriptionTier") }; object c = J.Get(root, "config");
             object end = J.Get(c, "currentPeriod", "end"); if (J.Get(end, "seconds") != null) end = J.Get(end, "seconds");
             // One shared allowance. productUsage (Build / Chat) splits what was spent from it;
-            // a product's share is not a quota of its own, so it gets no meter.
+            // a product's share is not a quota of its own, so it gets no remaining meter.
             Add(s, "当前账期", J.Get(c, "creditUsagePercent"), end);
+            double? sharedUsed = J.Num(c, "creditUsagePercent");
+            var products = new List<ProductConsumption>(); var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool valid = sharedUsed.HasValue && sharedUsed >= 0 && sharedUsed <= 100;
+            foreach (object product in J.Arr(J.Get(c, "productUsage"))) {
+                string name = J.Str(product, "product").Trim(); double? used = J.Num(product, "usagePercent");
+                if (name.Length == 0 || !used.HasValue || used < 0 || used > 100 || !names.Add(name)) { valid = false; break; }
+                products.Add(new ProductConsumption { Product = name, UsedPercent = used.Value });
+            }
+            // Allow one percentage point for independently rounded product shares.
+            if (valid && products.Count > 0 && Math.Abs(products.Sum(p => p.UsedPercent) - sharedUsed.Value) <= 1)
+                s.ProductUsage = products;
             if (s.Plan.Length == 0) s.Plan = "Grok Build"; return s;
         }
         // Readings cached by older versions: before 1.2 Grok's Build share was saved as a quota.
+        // Its complement (for example "Build 剩余 45%") is not spendable allowance.
         public static ProviderState Normalize(ProviderState s) {
-            if (s != null && s.Id == "grok") s.Quotas.RemoveAll(q => q.Label == "Build 占比");
+            if (s == null) return null;
+            if (s.ProductUsage == null) s.ProductUsage = new List<ProductConsumption>();
+            if (s.Id == "grok" && s.Quotas != null) s.Quotas.RemoveAll(q => q.Label == "Build 占比");
             return s;
+        }
+        // A failed refresh keeps the last good reading, including the consumption breakdown.
+        public static void RetainLastGood(ProviderState incoming, ProviderState old) {
+            if (incoming == null || (incoming.Status != "error" && incoming.Status != "expired")) return;
+            if (old == null) old = new ProviderState();
+            incoming.Quotas = old.Quotas; incoming.Balances = old.Balances; incoming.ProductUsage = old.ProductUsage ?? new List<ProductConsumption>();
+            incoming.LastSuccess = old.LastSuccess; incoming.Plan = old.Plan; incoming.Account = old.Account;
+            incoming.ResetCreditsAvailable = old.ResetCreditsAvailable; incoming.ResetCreditExpiries = old.ResetCreditExpiries; incoming.ResetCreditsUpdated = old.ResetCreditsUpdated;
+            incoming.Stale = (old.Quotas != null && old.Quotas.Count > 0) || (old.Balances != null && old.Balances.Count > 0);
         }
         // GET api.github.com/copilot_internal/user. Snapshots report percent_remaining; the
         // monthly quota resets on quota_reset_date. Unlimited pools have no meter.

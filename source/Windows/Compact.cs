@@ -287,6 +287,7 @@ namespace CodeUsageMonit {
                 var credits = Row(); credits.Margin = new Thickness(0, 10, 0, 0);
                 AddRow(credits, Label("限额重置额度", 11, InkDim), Label(state.ResetCreditsAvailable + " 次可用", 11, Ink)); quotas.Children.Add(credits);
             }
+            if (state.ProductUsage != null && state.ProductUsage.Count > 0) quotas.Children.Add(ProductUsageBlock(state));
             Grid.SetRow(quotas, 2); root.Children.Add(quotas);
             if (days.Count > 0 || usageIndexes.ContainsKey(state.Id)) {
                 RangeData data = RangeUsage(new List<string> { state.Id }, RangeFor(state.Id), false, state.Id);

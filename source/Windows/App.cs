@@ -336,7 +336,7 @@ namespace CodeUsageMonit {
         // A failed read keeps the last good values (marked stale) instead of blanking them.
         private void Accept(string id, ProviderState incoming) {
             ProviderState old; if (!states.TryGetValue(id, out old)) old = new ProviderState { Id = id };
-            if (incoming.Status == "error" || incoming.Status == "expired") { incoming.Quotas = old.Quotas; incoming.Balances = old.Balances; incoming.LastSuccess = old.LastSuccess; incoming.Plan = old.Plan; incoming.Account = old.Account; incoming.ResetCreditsAvailable = old.ResetCreditsAvailable; incoming.ResetCreditExpiries = old.ResetCreditExpiries; incoming.ResetCreditsUpdated = old.ResetCreditsUpdated; incoming.Stale = old.Quotas.Count > 0 || old.Balances.Count > 0; }
+            Parsers.RetainLastGood(incoming, old);
             states[id] = incoming;
         }
         // A full refresh and a single-provider refresh can overlap; only the newest fetch
