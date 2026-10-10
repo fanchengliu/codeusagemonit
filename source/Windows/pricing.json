@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-08T09:15Z",
+  "updated": "2026-10-10T08:28Z",
   "unit": "USD per 1M tokens",
   "sources": ["https://github.com/BerriAI/litellm (model_prices_and_context_window.json)","https://models.dev (context tiers)"],
   "models": {
@@ -217,6 +217,7 @@
     "gpt-daybreak-red-latest": {"in":12.5,"out":75,"cr":1.25,"cw":15.625,"long":{"at":272000,"in":25,"out":112.5,"cr":2.5,"cw":31.25}},
     "gpt-image-2": {"in":5,"out":30,"cr":1.25},
     "gpt-realtime-2.1": {"in":4,"out":24,"cr":0.4},
+    "gpt-rosalind-discovery": {"in":5,"out":25,"cr":0.5},
     "gpt-rosalind-research": {"in":5,"out":25,"cr":0.5},
     "kimi-k2.6": {"in":0.95,"out":4,"cr":0.16},
     "kimi-k2.7-code": {"in":0.95,"out":4,"cr":0.19},

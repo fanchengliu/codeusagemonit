@@ -211,6 +211,7 @@
 "gpt-daybreak-red-latest":{"src":"litellm:gpt-daybreak-red-latest","in":12.5,"out":75,"cr":1.25,"cw":15.625},
 "gpt-image-2":{"src":"modelsdev:openai","in":5,"out":30,"cr":1.25},
 "gpt-realtime-2.1":{"src":"litellm:gpt-realtime-2.1","in":4,"out":24,"cr":0.4},
+"gpt-rosalind-discovery":{"src":"litellm:gpt-rosalind-discovery","in":5,"out":25,"cr":0.5},
 "gpt-rosalind-research":{"src":"litellm:gpt-rosalind-research","in":5,"out":25,"cr":0.5},
 "kimi-k2.6":{"src":"litellm:moonshot/kimi-k2.6","in":0.95,"out":4,"cr":0.16},
 "kimi-k2.7-code":{"src":"litellm:moonshot/kimi-k2.7-code","in":0.95,"out":4,"cr":0.19},
