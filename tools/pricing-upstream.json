@@ -91,6 +91,7 @@
 "gemini-3.7-flash":{"src":"litellm:gemini-3.7-flash","in":0.75,"out":3.75,"cr":0.075},
 "gemini-3.8-flash":{"src":"litellm:gemini-3.8-flash","in":0.75,"out":3.75,"cr":0.075},
 "gemini-3.8-flash-cyber":{"src":"litellm:gemini-3.8-flash-cyber","in":1.5,"out":7.5,"cr":0.15},
+"gemini-4-argon":{"src":"litellm:gemini/gemini-4-argon","in":2,"out":10,"cr":0.1},
 "gemini-embedding-001":{"src":"litellm:gemini-embedding-001","in":0.15,"out":0},
 "gemini-embedding-2":{"src":"litellm:gemini-embedding-2","in":0.2,"out":0},
 "gemini-exp-1206":{"src":"litellm:gemini-exp-1206","in":0.3,"out":2.5,"cr":0.03},
