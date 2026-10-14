@@ -327,6 +327,10 @@ namespace CodeUsageMonit {
             }));
             netCard.Children.Add(proxyRow); netCard.Children.Add(proxyBox); netCard.Children.Add(proxyHint);
             advanced.Children.Add(Card(netCard));
+            // Sign-ins kept fresh by the platforms' own CLIs (SessionRecovery)
+            advanced.Children.Add(SectionTitle(I18n.T("登录续期")));
+            CheckBox renewSwitch = SwitchRow(I18n.T("令牌过期时用官方 CLI 续期"), I18n.T("Claude Code、Grok 的登录令牌过期，或 Antigravity 桌面端未运行时，在后台隐藏运行它们自己的命令行（claude、grok models、agy /usage）续期或查询；不发送任何提问，也不读写刷新令牌"), config.RenewSessions);
+            advanced.Children.Add(Card(renewSwitch));
             // Prices
             advanced.Children.Add(SectionTitle(I18n.T("价目")));
             Pricing.EnsureLoaded();
@@ -380,7 +384,7 @@ namespace CodeUsageMonit {
                     if (pictureChanged) { if (picture.Length == 0) { RemoveBackground(); config.BackgroundImage = ""; } else config.BackgroundImage = StoreBackground(picture); }
                     if (displaySize != initialSize) config.DisplaySize = displaySize; // applied by CloseSettings below
                     bool thirdPartyOn = thirdPartySwitch.IsChecked == true && !config.ShowThirdParty; config.ShowThirdParty = thirdPartySwitch.IsChecked == true;
-                    config.PriceSync = priceSyncSwitch.IsChecked == true; config.UpdateCheck = updateSwitch.IsChecked == true;
+                    config.PriceSync = priceSyncSwitch.IsChecked == true; config.UpdateCheck = updateSwitch.IsChecked == true; config.RenewSessions = renewSwitch.IsChecked == true;
                     config.BackupHours = dataFields.BackupHours(); config.BackupKeep = dataFields.BackupKeep(); config.BackupFolder = dataFields.BackupFolder();
                     config.WebDavUrl = davUrl; config.WebDavUser = dataFields.User.Text.Trim(); config.SyncMinutes = dataFields.SyncMinutes();
                     if (!demo) {

@@ -114,6 +114,9 @@ namespace CodeUsageMonit {
         public bool FastInUse = true;
         public int InUseMinutes = 2;
         public Dictionary<string, int> ProviderMinutes = new Dictionary<string, int>();
+        // An expired Claude Code / Grok sign-in is renewed by briefly running that platform's own
+        // CLI out of sight (SessionRecovery); off = only report that it has expired.
+        public bool RenewSessions = true;
     }
     public sealed class WindowGeometry { public double Width, Height; public double? Left, Top; }
     public static class AppInfo {
@@ -123,7 +126,7 @@ namespace CodeUsageMonit {
         public static string Version { get { System.Version v = typeof(AppInfo).Assembly.GetName().Version; return v.Major + "." + v.Minor + "." + Math.Max(0, v.Build); } }
     }
     public static class ProviderCatalog {
-        public static readonly string[] Ids = { "codex", "claude", "cursor", "antigravity", "deepseek", "grok", "copilot", "kimi", "opencode", "zcode", "pi" };
+        public static readonly string[] Ids = { "codex", "claude", "cursor", "antigravity", "deepseek", "grok", "copilot", "kimi", "opencode", "zcode", "devin", "pi" };
         // New installs start with the original six; the rest are opt-in in Settings.
         public static readonly string[] DefaultEnabled = { "codex", "claude", "cursor", "antigravity", "deepseek", "grok" };
         // Not a quota provider: a page of usage that went through third-party endpoints.
@@ -142,11 +145,11 @@ namespace CodeUsageMonit {
         public static string UsageTitle(string id) { return AccountUsage(id) ? "账户用量" : "本机用量"; }
         public static string Name(string id) {
             CustomProvider custom; if (id != null && Custom.TryGetValue(id, out custom)) return custom.Name;
-            switch (id) { case "codex": return "Codex"; case "claude": return "Claude"; case "cursor": return "Cursor"; case "antigravity": return "Antigravity"; case "deepseek": return "DeepSeek"; case "grok": return "Grok"; case "copilot": return "Copilot"; case "kimi": return "Kimi"; case "opencode": return "OpenCode"; case "zcode": return "ZCode"; case "pi": return "Pi"; case ThirdParty: return "第三方"; default: return "概览"; }
+            switch (id) { case "codex": return "Codex"; case "claude": return "Claude"; case "cursor": return "Cursor"; case "antigravity": return "Antigravity"; case "deepseek": return "DeepSeek"; case "grok": return "Grok"; case "copilot": return "Copilot"; case "kimi": return "Kimi"; case "opencode": return "OpenCode"; case "zcode": return "ZCode"; case "devin": return "Devin"; case "pi": return "Pi"; case ThirdParty: return "第三方"; default: return "概览"; }
         }
         public static string Color(string id) {
             CustomProvider custom; if (id != null && Custom.TryGetValue(id, out custom)) return custom.Color.Length > 0 ? custom.Color : "#A9B4C6";
-            switch (id) { case "codex": return "#63D5E5"; case "claude": return "#E8AB8C"; case "cursor": return "#80DDAB"; case "antigravity": return "#B8A0F5"; case "deepseek": return "#7FA9FF"; case "grok": return "#D8DEE9"; case "copilot": return "#E58FD0"; case "kimi": return "#F4C95D"; case "opencode": return "#A6D96A"; case "zcode": return "#F2874E"; case "pi": return "#A9B4C6"; case ThirdParty: return "#9DB4CF"; default: return "#8CB9FF"; }
+            switch (id) { case "codex": return "#63D5E5"; case "claude": return "#E8AB8C"; case "cursor": return "#80DDAB"; case "antigravity": return "#B8A0F5"; case "deepseek": return "#7FA9FF"; case "grok": return "#D8DEE9"; case "copilot": return "#E58FD0"; case "kimi": return "#F4C95D"; case "opencode": return "#A6D96A"; case "zcode": return "#F2874E"; case "devin": return "#58C9B0"; case "pi": return "#A9B4C6"; case ThirdParty: return "#9DB4CF"; default: return "#8CB9FF"; }
         }
         public static string Help(string id) {
             if (id != null && Custom.ContainsKey(id)) return "检查接口地址、字段路径和密钥（设置 → 自定义平台），然后刷新。";
@@ -161,6 +164,7 @@ namespace CodeUsageMonit {
                 case "kimi": return "填写 Kimi Code API Key（在 kimi.com/code/console 创建），或设置环境变量 KIMI_CODE_API_KEY。";
                 case "opencode": return "OpenCode Go 订阅：填写 OpenCode API Key，或设置环境变量 OPENCODE_API_KEY。";
                 case "zcode": return "填写智谱 / Z.ai 的 API Key（GLM 编码套餐），或设置环境变量 Z_AI_API_KEY。";
+                case "devin": return "打开 Devin Desktop（原 Windsurf）并登录，保持应用运行后刷新。只读取本机数据。";
                 case "pi": return "Pi 没有账户额度，这里只统计本机日志中的用量。";
                 default: return "";
             }
@@ -571,6 +575,19 @@ namespace CodeUsageMonit {
             }
         }
         private static string Home { get { return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); } }
+        private Task<object> ClaudeUsage(string token) { return Request("https://api.anthropic.com/api/oauth/usage", token, null, null, new Dictionary<string, string> { { "anthropic-beta", "oauth-2025-04-20" } }); }
+        private static ProviderException ClaudeExpired(bool renewTried) {
+            return new ProviderException(renewTried ? "Claude Code 的登录令牌已过期，后台续期暂未成功。运行一次 Claude Code（必要时重新登录）后刷新。" : "Claude Code 的登录令牌已过期。运行一次 Claude Code 即可自动续期，然后刷新。", "expired");
+        }
+        private Task<object> GrokRequest(string url, SessionRecovery.GrokCredential grok, string body) {
+            var headers = new Dictionary<string, string> { { "X-XAI-Token-Auth", "xai-grok-cli" }, { "x-grok-client-mode", "cli" }, { "x-grok-client-version", "1.0.0" } };
+            if (grok.UserId.Length > 0) headers.Add("x-userid", grok.UserId);
+            if (body != null) headers.Add("Connect-Protocol-Version", "1");
+            return Request(url, grok.Key, null, body, headers);
+        }
+        private static ProviderException GrokExpired(bool renewTried) {
+            return new ProviderException(renewTried ? "Grok 登录已过期，后台续期暂未成功。在终端运行一次 grok（必要时重新登录）后刷新。" : "Grok 登录已过期。在终端运行一次 grok 即可续期，然后刷新。", "expired");
+        }
         private static string ConfigPath(string variable, string fallback, string file) { string path = Environment.GetEnvironmentVariable(variable); if (String.IsNullOrWhiteSpace(path)) path = Path.Combine(Home, fallback); path = Environment.ExpandEnvironmentVariables(path); if (path.StartsWith("~")) path = Home + path.Substring(1); return Path.Combine(path, file); }
         public static string CodexHome() { return Path.GetDirectoryName(ConfigPath("CODEX_HOME", ".codex", "auth.json")); }
         public async Task<ProviderState> Fetch(string id) {
@@ -596,10 +613,22 @@ namespace CodeUsageMonit {
                         break;
                     }
                     case "claude": {
-                        object a = J.File(ConfigPath("CLAUDE_CONFIG_DIR", ".claude", ".credentials.json")); string token = J.Str(a, "claudeAiOauth", "accessToken"); Need(token, id);
-                        object usage;
-                        try { usage = await Request("https://api.anthropic.com/api/oauth/usage", token, null, null, new Dictionary<string, string> { { "anthropic-beta", "oauth-2025-04-20" } }).ConfigureAwait(false); }
-                        catch (ProviderException e) { if (e.State == "expired") throw new ProviderException("Claude Code 的登录令牌已过期。运行一次 Claude Code 即可自动续期，然后刷新。", "expired"); throw; }
+                        string credentials = ConfigPath("CLAUDE_CONFIG_DIR", ".claude", ".credentials.json");
+                        object a = J.File(credentials); string token = J.Str(a, "claudeAiOauth", "accessToken"); Need(token, id);
+                        // The token lasts about 8 hours and only the claude CLI renews it: let it do so
+                        // (SessionRecovery) before asking with a token that is known to have expired.
+                        bool renew = config.RenewSessions, renewed = false;
+                        if (renew && SessionRecovery.ClaudeExpired(a, DateTime.UtcNow) && await SessionRecovery.RenewClaude(credentials, DateTime.UtcNow).ConfigureAwait(false)) { a = J.File(credentials); token = J.Str(a, "claudeAiOauth", "accessToken"); Need(token, id); renewed = true; }
+                        object usage = null; bool rejected = false;
+                        try { usage = await ClaudeUsage(token).ConfigureAwait(false); }
+                        catch (ProviderException e) { if (e.State != "expired") throw; rejected = true; }
+                        if (rejected) {
+                            // A 401: renew once (unless that just happened) and ask again.
+                            if (!renew || renewed || !await SessionRecovery.RenewClaude(credentials, DateTime.UtcNow).ConfigureAwait(false)) throw ClaudeExpired(renew);
+                            a = J.File(credentials); token = J.Str(a, "claudeAiOauth", "accessToken"); Need(token, id);
+                            try { usage = await ClaudeUsage(token).ConfigureAwait(false); }
+                            catch (ProviderException e) { if (e.State == "expired") throw ClaudeExpired(renew); throw; }
+                        }
                         s = Parsers.Claude(usage);
                         string plan = J.Str(a, "claudeAiOauth", "subscriptionType"); if (plan.Length > 0) s.Plan = "Claude " + CultureInfo.InvariantCulture.TextInfo.ToTitleCase(plan);
                         try { s.Account = J.Str(J.File(Path.Combine(Home, ".claude.json")), "oauthAccount", "emailAddress"); } catch { } break;
@@ -622,13 +651,37 @@ namespace CodeUsageMonit {
                         Need(key, id); s = Parsers.DeepSeek(await Request("https://api.deepseek.com/user/balance", key, null, null, null).ConfigureAwait(false)); break;
                     }
                     case "grok": {
-                        object auth = J.File(ConfigPath("GROK_HOME", ".grok", "auth.json")); object entry = J.Dict(auth).Where(p => p.Key == "https://accounts.x.ai/sign-in" || p.Key.StartsWith("https://auth.x.ai::", StringComparison.Ordinal)).Where(p => J.Str(p.Value, "key").Length > 0).OrderByDescending(p => J.Str(p.Value, "expires_at")).Select(p => p.Value).FirstOrDefault();
-                        string token = J.Str(entry, "key"); Need(token, id); var headers = new Dictionary<string, string> { { "X-XAI-Token-Auth", "xai-grok-cli" }, { "x-grok-client-mode", "cli" }, { "x-grok-client-version", "1.0.0" } }; string userId = J.Str(entry, "user_id"); if (userId.Length > 0) headers.Add("x-userid", userId);
-                        s = Parsers.Grok(await Request("https://cli-chat-proxy.grok.com/v1/billing?format=credits", token, null, null, headers).ConfigureAwait(false)); break;
+                        // Session recovery and the credits fallback follow GitHub issue #17 (@xing-skyline).
+                        string authPath = ConfigPath("GROK_HOME", ".grok", "auth.json");
+                        SessionRecovery.GrokCredential grok = SessionRecovery.ReadGrok(authPath); Need(grok.Key, id);
+                        bool renew = config.RenewSessions, renewed = false;
+                        if (renew && SessionRecovery.GrokExpired(grok, DateTime.UtcNow) && await SessionRecovery.RenewGrok(DateTime.UtcNow).ConfigureAwait(false)) { grok = SessionRecovery.ReadGrok(authPath); Need(grok.Key, id); renewed = true; }
+                        object billing = null; bool rejected = false;
+                        try { billing = await GrokRequest("https://cli-chat-proxy.grok.com/v1/billing?format=credits", grok, null).ConfigureAwait(false); }
+                        catch (ProviderException e) { if (e.State != "expired") throw; rejected = true; }
+                        if (rejected) {
+                            // A 401 proves only that this token was refused. Another client may already
+                            // have saved a newer one; otherwise the CLI renews it. One retry, no more.
+                            SessionRecovery.GrokCredential newer = SessionRecovery.ReadGrok(authPath);
+                            if (newer.Key.Length == 0 || newer.Key == grok.Key) {
+                                if (!renew || renewed || !await SessionRecovery.RenewGrok(DateTime.UtcNow).ConfigureAwait(false)) throw GrokExpired(renew);
+                                newer = SessionRecovery.ReadGrok(authPath); Need(newer.Key, id);
+                            }
+                            grok = newer;
+                            try { billing = await GrokRequest("https://cli-chat-proxy.grok.com/v1/billing?format=credits", grok, null).ConfigureAwait(false); }
+                            catch (ProviderException e) { if (e.State == "expired") throw GrokExpired(renew); throw; }
+                        }
+                        s = Parsers.Grok(billing);
+                        // A new period can come without a percentage: ask the credits service instead.
+                        if (s.Quotas.Count == 0) { try { SessionRecovery.AddGrokCredits(s, await GrokRequest("https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig", grok, "{}").ConfigureAwait(false), DateTime.UtcNow); } catch (ProviderException) { } }
+                        break;
                     }
                     case "antigravity": {
                         ProviderState local = await LocalAntigravity.TryRead().ConfigureAwait(false);
                         if (local != null) { s = local; break; }
+                        // Desktop app closed: the agy CLI's own usage report keeps its sign-in in its hands (#17).
+                        ProviderState agy = config.RenewSessions ? await SessionRecovery.ReadAgy(DateTime.UtcNow).ConfigureAwait(false) : null;
+                        if (agy != null) { s = agy; break; }
                         string credential = NativeCredentials.GenericCredential("gemini:antigravity"); Need(credential, id); object auth = J.Parse(credential); string token = J.Str(auth, "token", "access_token"); Need(token, id);
                         const string endpoint = "https://cloudcode-pa.googleapis.com/v1internal:"; var headers = new Dictionary<string, string> { { "User-Agent", "antigravity" } };
                         object loaded = await Request(endpoint + "loadCodeAssist", token, null, "{\"metadata\":{\"ideType\":\"ANTIGRAVITY\"}}", headers).ConfigureAwait(false);
@@ -639,7 +692,13 @@ namespace CodeUsageMonit {
                             s = Parsers.Antigravity(await Request(endpoint + "fetchAvailableModels", token, null, body, headers).ConfigureAwait(false));
                             if (s.Quotas.Count > 0 && s.Quotas.All(q => q.Used == 0)) throw new ProviderException("仅检测到模型可用性，尚未取得真实额度。请打开 Antigravity 后刷新。", "setup");
                         }
+                        string tier = J.Str(loaded, "paidTier", "name"); if (tier.Length == 0) tier = J.Str(loaded, "currentTier", "name");
+                        if (tier.Length > 0) s.Plan = tier;
                         break;
+                    }
+                    case "devin": {
+                        // GitHub issue #16: read-only, from Devin Desktop on this machine.
+                        s = await LocalDevin.TryRead(DateTime.UtcNow).ConfigureAwait(false); break;
                     }
                     case "copilot": {
                         string token = CopilotToken(); Need(token, id);
@@ -784,6 +843,20 @@ namespace CodeUsageMonit {
         public static string SqliteText(string path, string key) {
             if (!File.Exists(path)) return ""; IntPtr db = IntPtr.Zero, stmt = IntPtr.Zero;
             try { if (sqlite3_open_v2(Encoding.UTF8.GetBytes(path + "\0"), out db, 1, IntPtr.Zero) != 0) return ""; sqlite3_busy_timeout(db, 1500); string query = "SELECT value FROM ItemTable WHERE key='" + key.Replace("'", "''") + "' LIMIT 1"; byte[] sql = Encoding.UTF8.GetBytes(query + "\0"); if (sqlite3_prepare_v2(db, sql, sql.Length, out stmt, IntPtr.Zero) != 0 || sqlite3_step(stmt) != 100) return ""; int count = sqlite3_column_bytes(stmt, 0); if (count < 1 || count > 1024 * 1024) return ""; byte[] b = new byte[count]; Marshal.Copy(sqlite3_column_text(stmt, 0), b, 0, count); return Encoding.UTF8.GetString(b); }
+            finally { if (stmt != IntPtr.Zero) sqlite3_finalize(stmt); if (db != IntPtr.Zero) sqlite3_close(db); }
+        }
+        [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] private static extern IntPtr sqlite3_column_blob(IntPtr stmt, int column);
+        // The raw bytes of the first column of the first row of a read-only query (a VS Code
+        // style state.vscdb may store a value as a UTF-8 or UTF-16 BLOB); null on any failure.
+        public static byte[] SqliteBytes(string path, string query) {
+            if (!File.Exists(path)) return null; IntPtr db = IntPtr.Zero, stmt = IntPtr.Zero;
+            try {
+                if (sqlite3_open_v2(Encoding.UTF8.GetBytes(path + "\0"), out db, 1, IntPtr.Zero) != 0) return null; sqlite3_busy_timeout(db, 1500);
+                byte[] sql = Encoding.UTF8.GetBytes(query + "\0"); if (sqlite3_prepare_v2(db, sql, sql.Length, out stmt, IntPtr.Zero) != 0 || sqlite3_step(stmt) != 100) return null;
+                IntPtr data = sqlite3_column_blob(stmt, 0); int count = sqlite3_column_bytes(stmt, 0);
+                if (data == IntPtr.Zero || count < 1 || count > 1024 * 1024) return null;
+                byte[] b = new byte[count]; Marshal.Copy(data, b, 0, count); return b;
+            } catch { return null; }
             finally { if (stmt != IntPtr.Zero) sqlite3_finalize(stmt); if (db != IntPtr.Zero) sqlite3_close(db); }
         }
     }

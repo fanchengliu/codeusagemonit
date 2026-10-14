@@ -470,19 +470,37 @@ namespace CodeUsageMonit {
             { "gemini-3.1-pro-high", "gemini-3.1-pro" }, { "gemini-3.1-pro-low", "gemini-3.1-pro" }, { "gemini-3-pro-high", "gemini-3-pro" }, { "gemini-3-pro-low", "gemini-3-pro" },
             { "claude 3.7 sonnet", "claude-3-7-sonnet" }, { "claude 3.7 sonnet thinking", "claude-3-7-sonnet" }, { "claude 3.5 sonnet", "claude-3-5-sonnet" }, { "claude 3.5 haiku", "claude-3-5-haiku" }, { "claude 3 opus", "claude-3-opus" }
         };
-        private static string NormalizeAg(string raw) {
+        // Reasoning efforts that Antigravity lists as model variants: "Claude Opus 5.5 (Medium)".
+        private static readonly string[] AgEfforts = { "extra low", "minimal", "low", "medium", "high", "xhigh", "max" };
+        internal static string NormalizeAg(string raw) {
             string trimmed = (raw ?? "").Trim(); if (trimmed.Length == 0) return null;
             string lower = trimmed.ToLowerInvariant();
-            foreach (string version in new[] { "3.8", "3.7", "3.6" }) foreach (string effort in new[] { "high", "medium", "low" })
-                if (lower == "gemini " + version + " flash (" + effort + ")") return "gemini-" + version + "-flash-" + effort;
-            string b = lower.Contains('(') ? lower.Substring(0, lower.IndexOf('(')).Trim() : lower;
-            string mapped; if (AgNames.TryGetValue(b, out mapped)) return mapped;
-            string converted = b.Replace(' ', '-');
-            return converted.StartsWith("gemini-") || converted.StartsWith("claude-") || converted.StartsWith("gpt-") ? converted : trimmed;
+            if (lower.StartsWith("model_", StringComparison.Ordinal)) {
+                string fixedName; if (AgNames.TryGetValue(lower, out fixedName)) return fixedName;
+                // An id newer than this program: the name the language server gave it.
+                string label = AntigravityModels.Label(lower); if (label != null && !label.StartsWith("model_", StringComparison.OrdinalIgnoreCase)) return NormalizeAg(label);
+                return trimmed;
+            }
+            // "<model> (<effort>)" keeps the effort as a suffix (gemini-3.8-flash-high, claude-opus-5-5-medium);
+            // any other bracket ("(Thinking)") is dropped.
+            string effort = null; int open = lower.IndexOf('(');
+            if (open > 0 && lower.EndsWith(")")) { string inner = lower.Substring(open + 1, lower.Length - open - 2).Trim().Replace('-', ' '); if (AgEfforts.Contains(inner)) effort = inner.Replace(' ', '-'); }
+            string b = open >= 0 ? lower.Substring(0, open).Trim() : lower;
+            string mapped; bool listed = AgNames.TryGetValue(b, out mapped);
+            if (!listed) mapped = b.Replace(' ', '-');
+            // Claude versions are written with hyphens, as in Claude Code's own logs (claude-opus-5-5).
+            if (mapped.StartsWith("claude-")) mapped = mapped.Replace('.', '-');
+            if (!(mapped.StartsWith("gemini-") || mapped.StartsWith("claude-") || mapped.StartsWith("gpt-"))) return trimmed;
+            // Older models in the table keep one entry each, as before; Gemini 3.6–3.8 Flash and
+            // models newer than the table keep one per effort.
+            bool perEffort = !listed || mapped == "gemini-3.8-flash" || mapped == "gemini-3.7-flash" || mapped == "gemini-3.6-flash";
+            return effort != null && perEffort && !mapped.EndsWith("-" + effort) ? mapped + "-" + effort : mapped;
         }
-        private static ModelPrice AntigravityPrice(string model, ulong? provider) {
+        internal static ModelPrice AntigravityPrice(string model, ulong? provider) {
+            // An effort variant is priced as its model, and only by an exact match: fuzzy matching
+            // could borrow a neighbour's price (gemini-3.8-flash-high must not become -flash-lite).
             string alias = null;
-            foreach (string v in new[] { "3.8", "3.7", "3.6" }) foreach (string e in new[] { "high", "medium", "low" }) if (model == "gemini-" + v + "-flash-" + e) alias = "gemini-" + v + "-flash";
+            foreach (string e in AgEfforts) { string suffix = "-" + e.Replace(' ', '-'); if (model.EndsWith(suffix) && model.Length > suffix.Length) { alias = model.Substring(0, model.Length - suffix.Length); break; } }
             var models = new List<string> { model }; if (alias != null) models.Add(alias);
             bool google = provider == 3 || provider == 24 || provider == 30;
             var candidates = new List<string>();

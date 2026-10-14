@@ -23,7 +23,7 @@ using Drawing = System.Drawing;
 
 [assembly: AssemblyTitle("codeusagemonit")]
 [assembly: AssemblyDescription("A Windows tray monitor for AI coding assistants' quotas and local usage")]
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
 namespace CodeUsageMonit {
     public static class Program {
         private static Mutex mutex;
@@ -236,6 +236,7 @@ namespace CodeUsageMonit {
             // One key provider stays unconnected so the demo shows connecting from a card.
             states["opencode"] = new ProviderState { Id = "opencode", Status = "setup", Message = ProviderCatalog.Help("opencode") };
             states["zcode"].Plan = "GLM Pro"; states["zcode"].Quotas.Insert(0, new Quota { Label = "5 小时", Used = 31, ResetUtc = DateTime.UtcNow.AddHours(1.1).ToString("o"), WindowSeconds = 18000 });
+            states["devin"].Plan = "Devin Pro"; states["devin"].Quotas.Insert(0, new Quota { Label = "每日", Used = 46, ResetUtc = DateTime.UtcNow.AddHours(7.5).ToString("o"), WindowSeconds = 86400 });
             states["pi"] = new ProviderState { Id = "pi", Status = "ready", Message = "仅本机用量", Plan = "本机日志", LastSuccess = DateTime.UtcNow.ToString("o") };
             for (int i = 0; i < 30; i++) {
                 string day = HistoryService.DayKey(DateTime.Today.AddDays(i - 29));

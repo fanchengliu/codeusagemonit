@@ -6,7 +6,7 @@
 
 **AI coding quotas and usage, in your Windows tray**
 
-Remaining quota and reset times for Codex, Claude, Cursor and 8 more AI coding tools, along with local token usage and output speed, in one small window.
+Remaining quota and reset times for Codex, Claude, Cursor and 9 more AI coding tools, along with local token usage and output speed, in one small window.
 
 [![Release](https://img.shields.io/github/v/release/fanchengliu/codeusagemonit?style=flat-square&color=38bdf8)](https://github.com/fanchengliu/codeusagemonit/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/fanchengliu/codeusagemonit/total?style=flat-square&color=818cf8)](https://github.com/fanchengliu/codeusagemonit/releases)
@@ -60,13 +60,14 @@ Light theme: full panel on the left, large in the center, small at the top right
 | [Codex](./docs/providers/codex.md) | Your existing Codex CLI or app sign-in | Windows the account reports (e.g. 5-hour, weekly), reset credits | ✓ | ✓ |
 | [Claude](./docs/providers/claude.md) | Your existing Claude Code sign-in | 5-hour, weekly and per-model quotas | ✓ | ✓ |
 | [Cursor](./docs/providers/cursor.md) | The session saved by the Cursor editor | Plan total, Auto, API; plus the Grok Bot weekly quota when the plan includes one | ✓¹ | — |
-| [Antigravity](./docs/providers/antigravity.md) | The running desktop app, with the saved sign-in as a fallback | Period and per-model quotas | ✓ | — |
+| [Antigravity](./docs/providers/antigravity.md) | The running desktop app, then the agy CLI, with the saved sign-in as a fallback | Period and per-model quotas, subscription tier | ✓ | — |
 | [DeepSeek](./docs/providers/deepseek.md) | API key (or `DEEPSEEK_API_KEY`) | API account balance per currency | ✓² | ✓² |
 | [Grok](./docs/providers/grok.md) | Your existing Grok Build CLI sign-in (`grok login`) | One shared billing-period allowance; Build / Chat shown as consumption | ✓ | ✓ |
 | [GitHub Copilot](./docs/providers/copilot.md) | GitHub device login, or an official client's saved authorisation | Monthly premium requests and chat | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API key, China or international | 5-hour, weekly, monthly | ✓ | — |
 | [OpenCode Go](./docs/providers/opencode.md) | API key | 5-hour, weekly, monthly | ✓ | ✓ |
 | [ZCode (Zhipu / Z.ai)](./docs/providers/zcode.md) | API key (GLM Coding Plan), China or international | 5-hour, weekly, MCP tool calls | ✓ | ✓ |
+| [Devin](./docs/providers/devin.md) | Reads the running Devin Desktop (formerly Windsurf), then its local cache | Daily, weekly | — | — |
 | [Pi](./docs/providers/pi.md) | No sign-in needed | No account quota; local usage only | ✓ | — |
 | [Custom](./docs/providers/custom.md) | Any GET endpoint that returns JSON; the key is stored encrypted | Up to 6 quota windows, or a balance | — | — |
 
@@ -189,7 +190,7 @@ No. Cost = tokens of each request in your local logs × that model's official AP
 <details>
 <summary><b>Do I have to sign in to every account again?</b></summary>
 
-No. Codex, Claude Code, Cursor, Antigravity and Grok reuse the sign-in already on your PC; DeepSeek, Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.
+No. Codex, Claude Code, Cursor, Antigravity, Grok and Devin reuse the sign-in already on your PC; DeepSeek, Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.
 
 </details>
 

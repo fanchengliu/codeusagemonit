@@ -6,7 +6,7 @@
 
 **Windows 的 AI 编程额度与用量监控**
 
-Codex、Claude、Cursor 等 11 款编程工具的剩余额度和重置时间，连同本机 Token 用量和输出速度，放在一个小窗口里。
+Codex、Claude、Cursor 等 12 款编程工具的剩余额度和重置时间，连同本机 Token 用量和输出速度，放在一个小窗口里。
 
 [![Release](https://img.shields.io/github/v/release/fanchengliu/codeusagemonit?style=flat-square&color=38bdf8)](https://github.com/fanchengliu/codeusagemonit/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/fanchengliu/codeusagemonit/total?style=flat-square&color=818cf8)](https://github.com/fanchengliu/codeusagemonit/releases)
@@ -50,13 +50,14 @@ codeusagemonit 把这些信息统一整合：点开就能看到每个平台还�
 | [Codex](./docs/providers/codex.md) | 复用 Codex CLI 或 Codex 应用的登录 | 账户返回的周期额度（如 5 小时、每周）、限额重置额度 | ✓ | ✓ |
 | [Claude](./docs/providers/claude.md) | 复用 Claude Code 的登录 | 5 小时、每周及模型额度 | ✓ | ✓ |
 | [Cursor](./docs/providers/cursor.md) | 读取 Cursor 编辑器保存的会话 | 套餐总量、Auto、API；账户包含时另显示 Grok Bot 每周额度 | ✓¹ | — |
-| [Antigravity](./docs/providers/antigravity.md) | 读取正在运行的桌面应用，已保存的登录作为回退 | 周期额度、模型额度 | ✓ | — |
+| [Antigravity](./docs/providers/antigravity.md) | 读取正在运行的桌面应用，其次 agy CLI，已保存的登录作为回退 | 周期额度、模型额度、订阅等级 | ✓ | — |
 | [DeepSeek](./docs/providers/deepseek.md) | API Key（或环境变量 `DEEPSEEK_API_KEY`） | API 账户余额，按币种显示 | ✓² | ✓² |
 | [Grok](./docs/providers/grok.md) | 复用 Grok Build CLI 的登录（`grok login`） | 当前账期共享额度；Build / Chat 为消耗构成 | ✓ | ✓ |
 | [GitHub Copilot](./docs/providers/copilot.md) | GitHub 设备码登录，或复用官方插件已保存的授权 | 每月高级请求、对话额度 | ✓ | — |
 | [Kimi Code](./docs/providers/kimi.md) | API Key，可选国内或国际 | 5 小时、每周、每月 | ✓ | — |
 | [OpenCode Go](./docs/providers/opencode.md) | API Key | 5 小时、每周、每月 | ✓ | ✓ |
 | [ZCode（智谱 / Z.ai）](./docs/providers/zcode.md) | API Key（GLM 编码套餐），可选国内或国际 | 5 小时、每周、MCP 工具调用 | ✓ | ✓ |
+| [Devin](./docs/providers/devin.md) | 读取正在运行的 Devin Desktop（原 Windsurf），其次它的本机缓存 | 每日、每周 | — | — |
 | [Pi](./docs/providers/pi.md) | 无需登录 | 没有账户额度，只统计本机用量 | ✓ | — |
 | [自定义平台](./docs/providers/custom.md) | 任意返回 JSON 的 GET 接口，密钥单独加密保存 | 最多 6 个额度窗口，或余额 | — | — |
 
@@ -179,7 +180,7 @@ codeusage status --json          # 输出 JSON，便于接进脚本或状态栏
 <details>
 <summary><b>需要把每个账号重新登录一遍吗？</b></summary>
 
-不需要。Codex、Claude Code、Cursor、Antigravity、Grok 复用本机已有的登录；DeepSeek、Kimi、OpenCode、ZCode 填 API Key；Copilot 用 GitHub 设备码登录。
+不需要。Codex、Claude Code、Cursor、Antigravity、Grok、Devin 复用本机已有的登录；DeepSeek、Kimi、OpenCode、ZCode 填 API Key；Copilot 用 GitHub 设备码登录。
 
 </details>
 

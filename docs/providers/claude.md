@@ -2,11 +2,17 @@
 
 [← 返回项目](../../README.md) · [下载](https://github.com/fanchengliu/codeusagemonit/releases)
 
-> 适用于 codeusagemonit 1.0.0。连接方式：**OAuth**。
+> 适用于 codeusagemonit 1.0.1。连接方式：**OAuth**。
 
 ## 数据来源
 
 读取 Claude Code 的 `%USERPROFILE%/.claude/.credentials.json`，或 `CLAUDE_CONFIG_DIR` 指定目录中的同名文件。使用 OAuth access token 向 `api.anthropic.com/api/oauth/usage` 查询。
+
+## 自动续期
+
+这个令牌大约 8 小时过期，只有 Claude Code CLI 运行时才会续期；Claude 桌面应用用的是它自己的登录，不会更新这个文件。所以只用桌面应用时，卡片经常提示「登录令牌已过期」。
+
+现在令牌到期（或接口返回 401）时，本程序在后台隐藏启动一次 `claude`：它启动时自己续期并保存令牌，本程序看到文件更新后立即结束它，再查询一次。不输入任何内容、不向模型发送请求，也不读写刷新令牌；最长等待 25 秒，10 分钟内最多一次。可在「设置 → 高级 → 登录续期」关闭。
 
 ## 连接步骤
 
@@ -32,10 +38,10 @@ OAuth 凭据保留在原应用；监控只读使用已有会话。 不存储密�
 
 ## 常见问题
 
-先运行一次 Claude Code 刷新会话，再刷新卡片。403 也可能与网络代理、账户访问或服务端限制有关；旧读数会保留时间标记，不代表当前成功。
+自动续期没有成功时（例如 `claude` 不在 PATH 上，或需要重新登录），运行一次 Claude Code 刷新会话，再刷新卡片。403 也可能与网络代理、账户访问或服务端限制有关；旧读数会保留时间标记，不代表当前成功。
 
 查询失败时，界面可能保留上次成功读数；请结合更新时间与错误提示判断。
 
 ## 实现位置
 
-`source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Claude）、`Connect.cs`、`LocalLogs.cs`、`Timing.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。
+`source/Windows/`：`Core.cs`（ProviderService.Fetch / Parsers.Claude）、`SessionRecovery.cs`、`BackgroundCli.cs`、`Connect.cs`、`LocalLogs.cs`、`Timing.cs`。本文依据该版本代码核对；服务商接口或客户端格式变化时可能需要更新。

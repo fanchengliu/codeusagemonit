@@ -24,7 +24,7 @@ The files in `icons/` are the logos of the monitored products, used unmodified o
 
 ### CodexBar
 - https://github.com/steipete/CodexBar — MIT, Copyright (c) 2026 Peter Steinberger. License text kept in `licenses/CodexBar-MIT.txt`.
-- The Windows application re-implements, in its own C#, the provider-overview idea and the published behaviour of the providers' quota endpoints (Codex windows and reset credits, Claude utilization, Antigravity local endpoints, DeepSeek balances). Apart from the provider logos above, no CodexBar file is included.
+- The Windows application re-implements, in its own C#, the provider-overview idea and the published behaviour of the providers' quota endpoints (Codex windows and reset credits, Claude utilization, Antigravity local endpoints and agy usage report, DeepSeek balances, the Devin / Windsurf plan status and cached plan fields). Apart from the provider logos above, no CodexBar file is included.
 
 ### Claude Code Usage Monitor (CodeZeno)
 - https://github.com/CodeZeno/Claude-Code-Usage-Monitor — MIT. License text kept in `licenses/CodeZeno-MIT.txt`.

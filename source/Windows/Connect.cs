@@ -44,7 +44,7 @@ namespace CodeUsageMonit {
             else if (KeyProviders.Contains(id)) KeyConnect(panel, state, narrow);
             else if (id == "copilot") CopilotConnect(panel, state);
             else if (id == "codex" || id == "claude" || id == "grok") CliConnect(panel, id);
-            else if (id == "cursor" || id == "antigravity") AppConnect(panel, id);
+            else if (id == "cursor" || id == "antigravity" || id == "devin") AppConnect(panel, id);
             string note;
             if (connectNotes.TryGetValue(id, out note) && note.Length > 0) { TextBlock line = Hint(note, 6); line.Foreground = InkDim; panel.Children.Add(line); }
             return panel;
@@ -213,13 +213,13 @@ namespace CodeUsageMonit {
         // ── Desktop apps: Cursor / Antigravity ────────────────────────────
         private void AppConnect(StackPanel panel, string id) {
             string name = ProviderCatalog.Name(id);
-            string path = id == "antigravity" ? LocalAntigravity.FindApplication() : FindCursor();
+            string path = id == "antigravity" ? LocalAntigravity.FindApplication() : id == "devin" ? LocalDevin.FindApplication() : FindCursor();
             var row = ButtonRow();
             if (path.Length > 0) {
                 var open = ConnectButton("打开 " + name, true);
                 open.IsEnabled = !demo;
                 open.Click += delegate {
-                    try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); connectNotes[id] = "已打开 " + name + "。登录后" + (id == "antigravity" ? "保持应用运行，" : "") + "点“我已登录，刷新”。"; }
+                    try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); connectNotes[id] = "已打开 " + name + "。登录后" + (id == "antigravity" || id == "devin" ? "保持应用运行，" : "") + "点“我已登录，刷新”。"; }
                     catch { connectNotes[id] = "无法启动 " + name + "。"; }
                     Render();
                 };
