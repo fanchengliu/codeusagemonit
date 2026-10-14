@@ -23,7 +23,7 @@ using Drawing = System.Drawing;
 
 [assembly: AssemblyTitle("codeusagemonit")]
 [assembly: AssemblyDescription("A Windows tray monitor for AI coding assistants' quotas and local usage")]
-[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.0.2.0")]
 namespace CodeUsageMonit {
     public static class Program {
         private static Mutex mutex;
@@ -31,10 +31,12 @@ namespace CodeUsageMonit {
         private static EventWaitHandle quitEvent;
         // --side-by-side: a second copy (another folder, its own data) beside the installed one,
         // e.g. to try a new build. It never touches the autostart entry.
-        public static bool SideBySide;
+        public static bool SideBySide, Updated;
         [STAThread] public static int Main(string[] args) {
             if (args.Contains("--demo") && args.Contains("--probe")) return 2;
             SideBySide = args.Contains("--side-by-side");
+            // --updated: started by an update (setup.exe or the portable swap) that just finished.
+            Updated = args.Contains("--updated");
             string instance = @"Local\codeusagemonit" + (args.Contains("--demo") ? ".Preview" : SideBySide ? ".SideBySide" : "");
             if (args.Contains("--quit")) { try { using (var signal = EventWaitHandle.OpenExisting(instance + ".Quit")) signal.Set(); } catch (WaitHandleCannotBeOpenedException) { } return 0; }
             if (args.Contains("--self-test")) return SelfTests.Run();
@@ -280,7 +282,7 @@ namespace CodeUsageMonit {
             foreach (CustomProvider provider in providers) ProviderCatalog.Custom[provider.Id] = provider;
             foreach (string id in ProviderCatalog.All) if (!states.ContainsKey(id)) states[id] = new ProviderState { Id = id };
         }
-        public void Start(bool background) { if (!background) Reveal(); clockTimer.Start(); if (demo) return; ObserveEndpoints(); WatchEndpoints(); WatchActivity(); refreshTimer.Start(); var a = Refresh(); var b = ScanHistory(); var c = HousekeepingSoon(); }
+        public void Start(bool background) { if (!background) Reveal(); clockTimer.Start(); if (demo) return; ObserveEndpoints(); WatchEndpoints(); WatchActivity(); refreshTimer.Start(); var a = Refresh(); var b = ScanHistory(); var c = HousekeepingSoon(); var d = UpdateOnStart(); }
         // Automatic backup, WebDAV sync and the update check, when due (DataSync.cs, Updates.cs).
         private bool housekeeping;
         private UpdateState updateState = new UpdateState();
@@ -292,7 +294,7 @@ namespace CodeUsageMonit {
                 AppConfig c = config; DateTime now = DateTime.UtcNow;
                 if (Backups.Due(c, now)) await Task.Run(() => { try { Backups.Create(c, true, now); Backups.Prune(c); } catch { } });
                 if (WebDavSync.Due(c, now)) await SyncNow();
-                if (Updates.Due(c, now)) { updateState = await Updates.Check(c, now); UpdateStatus(); }
+                if (Updates.Due(c, now)) { updateState = await Updates.Check(c, now); UpdateStatus(); OfferUpdate(); }
             } finally { housekeeping = false; }
         }
         private Task<bool> SyncNow() { return SyncNow(config.WebDavUrl, config.WebDavUser, Store.SavedKey(WebDavSync.KeyId)); }
@@ -333,7 +335,7 @@ namespace CodeUsageMonit {
             if (demo) return;
             try { thirdParty = ThirdPartyReport.Build(codexLogs, claudeLogs, endpointLog, history, DateTime.UtcNow, TimeZoneInfo.Local); } catch { thirdParty = new ThirdPartySummary(); }
         }
-        public void Reveal() { if (!window.IsVisible) { frame.Restore(); window.Show(); if (frame.PinnedToDesktop) frame.SendToBottom(); } if (!frame.PinnedToDesktop) window.Activate(); Render(); }
+        public void Reveal() { if (!window.IsVisible) { frame.Restore(); window.Show(); if (frame.PinnedToDesktop) frame.SendToBottom(); } if (!frame.PinnedToDesktop) window.Activate(); Render(); ShowPendingUpdate(); }
         private void UpdatePin() {
             window.Topmost = config.AlwaysOnTop;
             bool keepOpen = !config.HideOnDeactivate;
@@ -449,7 +451,7 @@ namespace CodeUsageMonit {
         }
         private bool StartupEnabled() { using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) return key != null && key.GetValue("codeusagemonit") != null; }
         private void SetStartup(bool enabled) { if (Program.SideBySide) return; using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")) { if (enabled) key.SetValue("codeusagemonit", "\"" + System.IO.Path.Combine(Store.Root, "codeusagemonit.exe") + "\" --background"); else key.DeleteValue("codeusagemonit", false); } }
-        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; tray.Visible = false; if (settingsWindow != null) settingsWindow.Close(); window.Close(); app.Shutdown(); }
+        public void Quit() { frame.Capture(); SaveConfig(); quitting = true; tray.Visible = false; if (settingsWindow != null) settingsWindow.Close(); if (updateWindow != null) { Window w = updateWindow; updateWindow = null; w.Close(); } window.Close(); app.Shutdown(); }
         public void Dispose() { quitting = true; frame.Dispose(); refreshTimer.Stop(); clockTimer.Stop(); foreach (var watcher in watchers) watcher.Dispose(); tray.Visible = false; tray.Dispose(); }
     }
 }

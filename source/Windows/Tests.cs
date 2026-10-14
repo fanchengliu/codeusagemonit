@@ -86,6 +86,7 @@ namespace CodeUsageMonit {
             });
             GrokTests.Run(test);
             RecoveryTests.Run(test);
+            UpdateTests.Run(test);
             test("Percentages are bounded and nonnumeric values ignored", () => {
                 var s = new ProviderState(); Parsers.Add(s, "one", -10, null); Parsers.Add(s, "two", 150, null); Parsers.Add(s, "bad", "NaN", null); Require(s.Quotas.Count == 2 && s.Quotas[0].Remaining == 100 && s.Quotas[1].Remaining == 0);
             });

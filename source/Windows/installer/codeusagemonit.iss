@@ -22,7 +22,7 @@
 ; portable.txt next to the exe forces that portable layout.
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.1"
+  #define MyAppVersion "1.0.2"
 #endif
 #ifndef BuildDir
   #define BuildDir "..\..\.."
@@ -118,6 +118,8 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\codeusagemonit.exe"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+; An update started from inside the app runs this setup with /VERYSILENT /restart=1 and the app
+; quits; DeinitializeSetup below opens it again, also when the install did not go through.
 
 [Code]
 var
@@ -156,6 +158,34 @@ begin
   if RunHelper('stop', ExpandConstant('{tmp}\setup-helper.ps1')) <> 0 then
     Result := 'codeusagemonit is still running from this folder. Quit it from the tray icon and run setup again.' + #13#10 +
       '这个文件夹里的 codeusagemonit 仍在运行。请在托盘图标上右键退出，然后重新安装。';
+end;
+
+{ Setup run by the app's updater (/restart=1, silent). /sidebyside=1 keeps a side-by-side copy so. }
+function RelaunchAfterUpdate: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:restart|0}') = '1');
+end;
+
+function RelaunchParameters: String;
+begin
+  Result := '--updated';
+  if ExpandConstant('{param:sidebyside|0}') = '1' then Result := Result + ' --side-by-side';
+end;
+
+procedure DeinitializeSetup;
+var
+  ResultCode: Integer;
+  Exe: String;
+begin
+  if not RelaunchAfterUpdate then Exit;
+  try
+    { The new exe after a successful install, the previous one if setup stopped early. }
+    Exe := ExpandConstant('{app}\codeusagemonit.exe');
+    if FileExists(Exe) then
+      ExecAsOriginalUser(Exe, RelaunchParameters, ExpandConstant('{app}'), SW_SHOWNORMAL, ewNoWait, ResultCode);
+  except
+    { The app folder is not known when setup stops before it is set: nothing to start then. }
+  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

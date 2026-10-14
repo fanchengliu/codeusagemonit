@@ -246,7 +246,7 @@ namespace CodeUsageMonit {
             var updateLabel = FieldLabel(I18n.T("检查更新"), "");
             var updateText = (TextBlock)((StackPanel)updateLabel).Children[1]; updateText.TextWrapping = TextWrapping.Wrap; updateText.TextTrimming = TextTrimming.None;
             var updateButtons = new StackPanel { Orientation = Orientation.Horizontal };
-            var download = new Button { Style = Styled("PrimaryButton"), Content = I18n.T("前往下载"), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
+            var download = new Button { Style = Styled("PrimaryButton"), Content = I18n.T("立即更新"), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed, IsEnabled = !demo };
             var check = new Button { Style = Styled("SecondaryButton"), Content = I18n.T("检查更新") };
             updateButtons.Children.Add(download); updateButtons.Children.Add(check);
             AddRow(updateRow, updateLabel, updateButtons); card.Children.Add(updateRow);
@@ -260,15 +260,17 @@ namespace CodeUsageMonit {
                     : u.Latest.Length > 0 ? I18n.T("已是最新版本 · {0} 检查", when)
                     : I18n.T("当前 v{0}", AppInfo.Version));
             };
-            download.Click += delegate { string url = updateState.Url.Length > 0 ? updateState.Url : Updates.Releases; try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { } };
+            // The update dialog shows what is new and installs it (UpdatePrompt.cs).
+            download.Click += delegate { ShowUpdate(); };
             check.Click += async delegate {
                 check.IsEnabled = false; updateText.Foreground = InkDim; updateText.Text = I18n.T("正在检查…");
                 updateState = await Updates.Check(config, DateTime.UtcNow);
                 showUpdate(); UpdateStatus(); check.IsEnabled = true;
+                if (Updates.Newer(updateState) && !demo) ShowUpdate();
             };
             showUpdate();
             card.Children.Add(Separator());
-            CheckBox auto = SwitchRow(I18n.T("每天自动检查更新"), I18n.T("只向 GitHub 查询最新版本号，不上传任何数据"), config.UpdateCheck);
+            CheckBox auto = SwitchRow(I18n.T("自动检查更新"), I18n.T("打开软件时和每天检查一次，有新版本会提示并可一键更新；只向 GitHub 查询版本信息，不上传任何数据"), config.UpdateCheck);
             card.Children.Add(auto);
             page.Children.Add(Card(card));
 

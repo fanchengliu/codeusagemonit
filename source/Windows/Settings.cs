@@ -52,7 +52,7 @@ namespace CodeUsageMonit {
                 FontFamily = window.FontFamily, FontSize = window.FontSize, Foreground = window.Foreground, UseLayoutRounding = true, SnapsToDevicePixels = true,
                 WindowStartupLocation = WindowStartupLocation.Manual
             };
-            try { w.Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri(Path.Combine(Store.Root, "app.ico"))); } catch { }
+            ImageSource icon = AppIcon(); if (icon != null) w.Icon = icon;
             System.Windows.Shell.WindowChrome.SetWindowChrome(w, new System.Windows.Shell.WindowChrome { CaptionHeight = 0, ResizeBorderThickness = new Thickness(7), GlassFrameThickness = new Thickness(-1), CornerRadius = new CornerRadius(8), UseAeroCaptionButtons = false });
             // Beside the panel when there is room, otherwise centred on the panel's screen.
             Rect area = SystemParameters.WorkArea;

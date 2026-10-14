@@ -41,7 +41,8 @@ codeusagemonit puts all of it in the Windows tray. Click the icon to see what's 
 - **Four sizes.** A full panel plus large, medium and small compact views that sit on the desktop. Right-click to switch; every size can be resized.
 - **Adjustable look.** Background colour (colour picker with 10 presets), transparency, a background image, and UI zoom (Ctrl + mouse wheel).
 - **Several computers, backups.** Export your local usage as SQL (it also loads straight into SQLite) and import it on another computer to see both together; importing twice counts nothing twice. Or point several computers at one WebDAV folder and they sync. Settings and usage indexes are backed up on a schedule with a retention count, and restore is one click.
-- **English or Chinese.** Switch the interface language in Settings; it applies at once. Settings are grouped into General, Accounts, Data, Advanced and About, where you can check for updates.
+- **English or Chinese.** Switch the interface language in Settings; it applies at once. Settings are grouped into General, Accounts, Data, Advanced and About.
+- **One-click updates.** When a new version is out, the app tells you as it opens and lists what changed; Update now downloads, verifies and installs it, then reopens the app with your settings and data intact.
 - **CLI.** `codeusage` shares the app's settings, keys and caches, and supports `--json` for scripts and status bars; `export`, `import`, `backup` and `sync` work there too.
 - **Your data stays on your PC.** No browser cookies, no conversation content, no telemetry.
 
@@ -86,7 +87,7 @@ Download and run [codeusagemonit-setup-1.0.1.exe](https://github.com/fanchengliu
 
 - Installs to `%LOCALAPPDATA%\Programs\codeusagemonit` by default; you can choose another folder or drive.
 - Adds a Start menu shortcut. A desktop shortcut, start with Windows, and adding `codeusage` to your user PATH are optional.
-- To update, run the new installer; settings and keys are kept. To uninstall, use Windows Settings → Apps, which asks before deleting your settings.
+- To update, click Update now when the app offers a new version, or run the new installer yourself; settings and keys are kept. To uninstall, use Windows Settings → Apps, which asks before deleting your settings.
 
 ### Scoop
 

@@ -107,8 +107,10 @@ namespace CodeUsageMonit {
         // DPAPI key, "webdav"), and how often to sync automatically (0 = only on demand).
         public string WebDavUrl = "", WebDavUser = "";
         public int SyncMinutes = 0;
-        // Look for a newer release on GitHub once a day.
+        // Look for a newer release on GitHub when the app starts and once a day, and offer it
+        // (UpdatePrompt.cs) unless it is SkippedVersion.
         public bool UpdateCheck = true;
+        public string SkippedVersion = "";
         // Per-platform refresh (Pacing.cs): a platform whose client is writing its logs is read at
         // least every InUseMinutes; ProviderMinutes holds platforms with their own interval.
         public bool FastInUse = true;

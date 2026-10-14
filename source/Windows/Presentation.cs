@@ -47,6 +47,9 @@ namespace CodeUsageMonit {
                 if (Updates.Newer(updateState)) text += " · " + I18n.T("有新版本 v{0}", updateState.Latest);
             }
             status.Text = I18n.T(text); statusDot.Fill = dot;
+            bool offer = !demo && Updates.Newer(updateState);
+            status.Cursor = offer ? System.Windows.Input.Cursors.Hand : null;
+            if (offer && !statusOpensUpdate) { statusOpensUpdate = true; status.MouseLeftButtonUp += delegate { if (Updates.Newer(updateState)) ShowUpdate(); }; }
         }
         private void Render() {
             if (quitting) return;
