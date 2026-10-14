@@ -9,7 +9,7 @@ const P = {
   codex: { name: 'Codex', c: '#63D5E5' }, claude: { name: 'Claude', c: '#E8AB8C' }, cursor: { name: 'Cursor', c: '#80DDAB' },
   antigravity: { name: 'Antigravity', c: '#B8A0F5' }, deepseek: { name: 'DeepSeek', c: '#7FA9FF' }, grok: { name: 'Grok', c: '#D8DEE9' },
   copilot: { name: 'Copilot', c: '#E58FD0' }, kimi: { name: 'Kimi', c: '#F4C95D' }, opencode: { name: 'OpenCode', c: '#A6D96A' },
-  zcode: { name: 'ZCode', c: '#F2874E' }, pi: { name: 'Pi', c: '#A9B4C6' }
+  zcode: { name: 'ZCode', c: '#F2874E' }, devin: { name: 'Devin', c: '#58C9B0' }, pi: { name: 'Pi', c: '#A9B4C6' }
 };
 const IDS = Object.keys(P);
 const cv = id => `var(--p-${id})`;
@@ -92,24 +92,24 @@ Object.assign(zh, {
   instFootPs: '卸载时删除 %LOCALAPPDATA%\\Programs\\codeusagemonit，并从用户 PATH 里去掉它。',
   instSetupIntro: '图形界面安装，适合不常用终端的人。', instSetup1: '下载安装程序', instSetup2: '按向导选择目录和选项', instSetup3: '完成后从开始菜单打开',
   instSetupB1: '默认装到 %LOCALAPPDATA%\\Programs\\codeusagemonit，也可以换目录', instSetupB2: '桌面快捷方式、开机启动和 PATH 都可选',
-  instSetupBtn: '下载 codeusagemonit-setup-1.0.0.exe', instZipLink: '或者下载免安装 zip',
+  instSetupBtn: '下载 codeusagemonit-setup-1.0.1.exe', instZipLink: '或者下载免安装 zip',
   instFootSetup: '设置保存在 %LOCALAPPDATA%\\codeusagemonit，升级保留；在“Windows 设置 → 应用”里卸载，删除设置前会询问。',
   instCliIntro: '装好后终端里直接用 codeusage。点一条命令，右边就运行它。',
   instFootCli: '加上 <code>--json</code> 输出 JSON，接进脚本或状态栏。<code>codeusage help</code> 查看全部命令。',
   cmdStatus: '缓存里的额度与用量，不联网', cmdCost: '每天的费用与 Token，以及各工具的速度', cmdThird: '第三方接口的用量与速度',
-  winScoop: 'Windows PowerShell · Scoop', winPs: 'Windows PowerShell · install.ps1', winSetup: '安装 - codeusagemonit 1.0.0', winCli: 'Windows PowerShell · codeusage',
+  winScoop: 'Windows PowerShell · Scoop', winPs: 'Windows PowerShell · install.ps1', winSetup: '安装 - codeusagemonit 1.0.1', winCli: 'Windows PowerShell · codeusage',
   tipRefresh: '刷新', tipSize: '四种尺寸', tipPin: '置顶', tipSettings: '设置', tipClose: '收起到托盘',
   toastRefreshed: '已刷新 · 所有平台刚刚更新', toastPinOn: '已置顶：会盖在其他窗口上面', toastPinOff: '已取消置顶', toastGrok: 'Grok 已连接（演示）',
   toastSize: '右键窗口也能切换小 / 中 / 大 / 完整', toastAuto: '失焦自动收起：{s}', on: '开', off: '关'
 });
 const en = {
   skip: 'Skip to content', navProviders: 'Providers', navConsole: 'Quotas & usage', navSizes: 'Sizes', navInstall: 'Install', navTrust: 'Privacy & FAQ', navDownload: 'Download',
-  chip: 'Release 1.0 · multi-device sync, English and Chinese', heroA: 'Every AI quota,', heroB: 'at a glance.',
-  heroLead: 'Remaining quota, reset times, token usage and output speed for Codex, Claude, Cursor and 8 more AI coding tools, in one small window in your Windows tray.',
+  chip: '1.0.1 · Devin added, Claude / Grok sign-ins renew themselves', heroA: 'Every AI quota,', heroB: 'at a glance.',
+  heroLead: 'Remaining quota, reset times, token usage and output speed for Codex, Claude, Cursor and 9 more AI coding tools, in one small window in your Windows tray.',
   download: 'Download installer', termInstall: 'Install from the terminal', factWin: 'Windows', factLocal: 'Counted on your PC only', factSource: 'View source',
   demoTag: 'Demo', demoFoot: 'Demo data · no account read', trayBack: 'In the tray · click to open',
   stageHint: 'Everything here is clickable: tools, quotas, periods, bars and the buttons at the top right',
-  eyProviders: 'Providers', pA: '11 coding tools supported,', pB: 'plus your own endpoint', pLead: 'Reuses the sign-in each tool already has: CLI login, editor session or API key. No browser cookies, no stored passwords.',
+  eyProviders: 'Providers', pA: '12 coding tools supported,', pB: 'plus your own endpoint', pLead: 'Reuses the sign-in each tool already has: CLI login, editor session or API key. No browser cookies, no stored passwords.',
   eyConsole: 'Quotas · usage · pricing', bA: 'What’s left, what it cost, how fast it ran,', bB: 'in one panel',
   bLead: 'Quotas in segments, with your pace read against the reset; usage straight from local session logs, every request priced at the official API rate, and the price table synced daily.',
   pToday: 'Today', p7: '7 days', p30: '30 days', colQuota: 'Quotas · left / reset / pace', boardHint: 'Click a quota for details · the tick marks an even pace to the reset', colUsage: 'Usage · local logs',
@@ -134,10 +134,10 @@ const en = {
   fq1: 'How do I install it? What does it need?', fa1: 'Download the installer (choose a folder and a Start menu shortcut; desktop, startup and PATH are optional; uninstall from Windows Settings → Apps), or use Scoop, the PowerShell one-liner, or the zip extracted into a writable folder. The default needs no admin rights. No Node.js; the .NET Framework 4.8 that ships with Windows is enough.',
   fq7: 'How do I update or uninstall?', fa7: 'Installer: run the new installer; settings stay in %LOCALAPPDATA%\\codeusagemonit. Uninstall from Windows Settings → Apps, which asks before deleting settings. Scoop: scoop update codeusagemonit / scoop uninstall codeusagemonit; data lives in Scoop’s persist folder. PowerShell script: run it again to update; to uninstall, delete %LOCALAPPDATA%\\Programs\\codeusagemonit and remove it from your user PATH.',
   fq2: 'Edge says the file “isn’t commonly downloaded”, or Windows says it “protected your PC”?', fa2: 'That is Windows’ reputation check for new files, not a virus alert: the installer is not code-signed yet, and a newly released version with few downloads gets these prompts in Edge and SmartScreen. It is built from the open source, and the release page has SHA256SUMS.txt to check it. In Edge, open “…” on the download → Keep → Show more → Keep anyway; when running it, click “More info → Run anyway”. Installing with Scoop or the PowerShell one-liner usually avoids these prompts.',
-  fq3: 'Do I have to sign in to every account again?', fa3: 'No. Codex, Claude Code, Cursor, Antigravity and Grok reuse the sign-in already on your PC; DeepSeek shows local usage from DeepSeek Harness without a key (add an API key for the balance); Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.',
+  fq3: 'Do I have to sign in to every account again?', fa3: 'No. Codex, Claude Code, Cursor, Antigravity, Grok and Devin reuse the sign-in already on your PC; DeepSeek shows local usage from DeepSeek Harness without a key (add an API key for the balance); Kimi, OpenCode and ZCode take an API key; Copilot uses GitHub device login.',
   fq9: 'Can I see two computers’ usage together?', fa9: 'Yes. In Settings › Data, export one computer’s usage as SQL and import it on the other: it is added to what is there, and importing twice, or the same logs already present, is de-duplicated automatically. Or point several computers at one WebDAV folder (Nextcloud, Jianguoyun…) to sync. Only tokens, requests, costs and durations travel, never conversations or keys.',
   fq8: 'How does the price table stay in sync with official prices?', fa8: 'The repository’s pricing.json is rebuilt every day by GitHub Actions from LiteLLM and models.dev, which track the API prices each vendor publishes. The app checks every 24 hours, downloads and validates a newer table and recalculates with it; if the download fails or you turn it off in settings, it keeps the built-in prices.',
-  dlTitle: 'Join in now!', dlMeta: 'Completely free · for Windows · Version 1.0.0', dlBtn: 'Download the latest installer', feedback: 'Feedback', notices: 'Notices',
+  dlTitle: 'Join in now!', dlMeta: 'Completely free · for Windows · Version 1.0.1', dlBtn: 'Download the latest installer', feedback: 'Feedback', notices: 'Notices',
   footerNote: 'An independent open-source project, not affiliated with OpenAI, Anthropic, Cursor or any other provider. Names and logos belong to their owners.',
   copied: 'Copied', copyFailed: 'Copy failed — select it manually', copyLabel: 'Copy',
   tipCost: 'Cost', tipTokens: 'Tokens', tipReq: 'Requests', tipSpeed: 'Output speed',
@@ -162,24 +162,24 @@ const en = {
   instFootPs: 'To uninstall, delete %LOCALAPPDATA%\\Programs\\codeusagemonit and remove it from your user PATH.',
   instSetupIntro: 'A graphical installer, for when you’d rather not use a terminal.', instSetup1: 'Download the installer', instSetup2: 'Pick a folder and options in the wizard', instSetup3: 'Open it from the Start menu',
   instSetupB1: 'Installs to %LOCALAPPDATA%\\Programs\\codeusagemonit by default; any folder works', instSetupB2: 'Desktop shortcut, start with Windows and PATH are optional',
-  instSetupBtn: 'Download codeusagemonit-setup-1.0.0.exe', instZipLink: 'or get the portable zip',
+  instSetupBtn: 'Download codeusagemonit-setup-1.0.1.exe', instZipLink: 'or get the portable zip',
   instFootSetup: 'Settings stay in %LOCALAPPDATA%\\codeusagemonit across updates; uninstall from Windows Settings → Apps, which asks before deleting them.',
   instCliIntro: 'Once installed, use codeusage in any terminal. Click a command to run it on the right.',
   instFootCli: 'Add <code>--json</code> for scripts or a status bar. <code>codeusage help</code> lists every command.',
   cmdStatus: 'Quotas and usage from the cache, offline', cmdCost: 'Daily cost and tokens, plus each tool’s speed', cmdThird: 'Usage and speed of third-party endpoints',
-  winScoop: 'Windows PowerShell · Scoop', winPs: 'Windows PowerShell · install.ps1', winSetup: 'Setup - codeusagemonit 1.0.0', winCli: 'Windows PowerShell · codeusage',
+  winScoop: 'Windows PowerShell · Scoop', winPs: 'Windows PowerShell · install.ps1', winSetup: 'Setup - codeusagemonit 1.0.1', winCli: 'Windows PowerShell · codeusage',
   tipRefresh: 'Refresh', tipSize: 'Four sizes', tipPin: 'Keep on top', tipSettings: 'Settings', tipClose: 'Hide to tray',
   toastRefreshed: '已刷新 · 所有平台刚刚更新', toastPinOn: '已置顶：会盖在其他窗口上面', toastPinOff: '已取消置顶', toastGrok: 'Grok 已连接（演示）',
   toastSize: '右键窗口也能切换小 / 中 / 大 / 完整', toastAuto: '失焦自动收起：{s}', on: '开', off: '关'
 };
 const ja = {
   skip: '本文へ移動', navProviders: 'サービス', navConsole: '利用枠と使用量', navSizes: 'サイズ', navInstall: 'インストール', navTrust: 'プライバシーと FAQ', navDownload: 'ダウンロード',
-  chip: '正式版 · 複数 PC の同期と中英の画面', heroA: '残りの利用枠が', heroB: 'ひと目でわかる',
-  heroLead: 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を、Windows のトレイにある小さなウィンドウひとつで。',
+  chip: '1.0.1 · Devin に対応、Claude / Grok のログインを自動更新', heroA: '残りの利用枠が', heroB: 'ひと目でわかる',
+  heroLead: 'Codex、Claude、Cursor など 12 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を、Windows のトレイにある小さなウィンドウひとつで。',
   download: 'インストーラーをダウンロード', termInstall: 'ターミナルからインストール', factWin: 'Windows', factLocal: '集計は PC 内だけ', factSource: 'ソースを見る',
   demoTag: 'デモ', demoFoot: 'デモデータ · アカウントは読みません', trayBack: 'トレイにあります · クリックで開く',
   stageHint: 'すべて操作できます：ツール、利用枠、期間、グラフ、右上のボタン',
-  eyProviders: '対応サービス', pA: '11 のコーディングツールに対応', pB: 'あなた自身の API も', pLead: '各ツールの既存のログインを利用：CLI、エディターのセッション、API キー。ブラウザーの Cookie は読まず、パスワードも保存しません。',
+  eyProviders: '対応サービス', pA: '12 のコーディングツールに対応', pB: 'あなた自身の API も', pLead: '各ツールの既存のログインを利用：CLI、エディターのセッション、API キー。ブラウザーの Cookie は読まず、パスワードも保存しません。',
   eyConsole: '利用枠 · 使用量 · 料金', bA: '残り、費用、速度を', bB: 'ひとつのパネルで',
   bLead: '利用枠はセグメントで表示し、今のペースから使い方を分析。使用量は PC 内のセッションログを直接読み、費用はリクエストごとに公式 API 単価で計算、料金表は毎日同期します。',
   pToday: '今日', p7: '7 日間', p30: '30 日間', colQuota: '利用枠 · 残り / リセット / ペース', boardHint: '利用枠をクリックで詳細 · 縦線は均等に使った場合の位置', colUsage: '使用量 · ローカルログ',
@@ -204,10 +204,10 @@ const ja = {
   fq1: 'インストール方法と必要な環境は？', fa1: 'インストーラー（インストール先とスタートメニュー、任意のデスクトップ・ログオン時起動・PATH。アンインストールは Windows の設定 → アプリ）、Scoop、PowerShell の 1 行、または zip を書き込み可能なフォルダーに展開して実行できます。既定では管理者権限は不要です。Node.js は不要。Windows 標準の .NET Framework 4.8 で動きます。',
   fq7: '更新とアンインストールは？', fa7: 'インストーラー：新しいインストーラーを実行すれば更新。設定は %LOCALAPPDATA%\\codeusagemonit に残り、アンインストール時に削除するか確認します。Scoop：scoop update codeusagemonit / scoop uninstall codeusagemonit。PowerShell：もう一度実行すれば更新。アンインストールは %LOCALAPPDATA%\\Programs\\codeusagemonit を削除し、ユーザー PATH から外します。',
   fq2: 'ダウンロード時に「一般的にダウンロードされていません」、実行時に「Windows によって PC が保護されました」と出るのは？', fa2: '新しいファイルに対する Windows の評判チェックで、ウイルス警告ではありません。インストーラーはまだコード署名されておらず、公開直後でダウンロード数が少ない版では Edge と SmartScreen がこう表示します。ソースから自動ビルドされ、リリースページの SHA256SUMS.txt で確認できます。Edge ではダウンロード項目の「…」→ 保存 → 詳細表示 → 保持する、実行時は「詳細情報 → 実行」を選んでください。Scoop や PowerShell の 1 行コマンドでインストールすると、通常これらの表示は出ません。',
-  fq3: 'すべてのアカウントに再ログインが必要ですか？', fa3: 'いいえ。Codex、Claude Code、Cursor、Antigravity、Grok は PC 上の既存のログインを利用します。DeepSeek は DeepSeek Harness を使っていればキーなしでローカル使用量を表示します（残高には API キー）。Kimi、OpenCode、ZCode は API キー、Copilot は GitHub のデバイスログインです。',
+  fq3: 'すべてのアカウントに再ログインが必要ですか？', fa3: 'いいえ。Codex、Claude Code、Cursor、Antigravity、Grok、Devin は PC 上の既存のログインを利用します。DeepSeek は DeepSeek Harness を使っていればキーなしでローカル使用量を表示します（残高には API キー）。Kimi、OpenCode、ZCode は API キー、Copilot は GitHub のデバイスログインです。',
   fq9: '2 台の PC の使用量をまとめて見られますか？', fa9: 'はい。設定 › データで片方の使用量を SQL に書き出し、もう片方で読み込むと既存のデータに加算されます。同じファイルの再読み込みや、同じログがすでにある場合は自動で重複を除きます。複数の PC で同じ WebDAV フォルダを指定して同期することもできます。送られるのはトークン数・リクエスト数・費用・所要時間だけで、会話やキーは含みません。',
   fq8: '料金表はどうやって公式と同期していますか？', fa8: 'リポジトリの pricing.json は、GitHub Actions が毎日 LiteLLM と models.dev から作り直しています。アプリは 24 時間ごとに確認し、新しい料金表があればダウンロード・検証して再計算します。取得に失敗した場合や設定でオフにした場合は、内蔵の料金表を使い続けます。',
-  dlTitle: '今すぐ始めよう！', dlMeta: '完全無料 · Windows 用 · バージョン 1.0.0', dlBtn: '最新版のインストーラーをダウンロード', feedback: 'フィードバック', notices: 'サードパーティ表記',
+  dlTitle: '今すぐ始めよう！', dlMeta: '完全無料 · Windows 用 · バージョン 1.0.1', dlBtn: '最新版のインストーラーをダウンロード', feedback: 'フィードバック', notices: 'サードパーティ表記',
   footerNote: '独立したオープンソースプロジェクトであり、OpenAI、Anthropic、Cursor などのサービスとは関係ありません。名称とロゴは各所有者に帰属します。',
   copied: 'コピーしました', copyFailed: 'コピーできませんでした。手動で選択してください', copyLabel: 'コピー',
   tipCost: '費用', tipTokens: 'トークン', tipReq: 'リクエスト', tipSpeed: '出力速度',
@@ -232,12 +232,12 @@ const ja = {
   instFootPs: 'アンインストールは %LOCALAPPDATA%\\Programs\\codeusagemonit を削除し、ユーザー PATH から外します。',
   instSetupIntro: 'ターミナルを使わない方のためのグラフィカルなインストーラー。', instSetup1: 'インストーラーをダウンロード', instSetup2: 'ウィザードでフォルダーとオプションを選択', instSetup3: 'スタートメニューから起動',
   instSetupB1: '既定は %LOCALAPPDATA%\\Programs\\codeusagemonit。別のフォルダーも選べます', instSetupB2: 'デスクトップ、ログオン時起動、PATH は任意',
-  instSetupBtn: 'codeusagemonit-setup-1.0.0.exe をダウンロード', instZipLink: 'またはインストール不要の zip',
+  instSetupBtn: 'codeusagemonit-setup-1.0.1.exe をダウンロード', instZipLink: 'またはインストール不要の zip',
   instFootSetup: '設定は %LOCALAPPDATA%\\codeusagemonit に残り、更新しても保持。アンインストールは Windows の設定 → アプリから（削除前に確認）。',
   instCliIntro: 'インストール後はターミナルで codeusage を使えます。コマンドをクリックすると右側で実行します。',
   instFootCli: '<code>--json</code> を付けると JSON になり、スクリプトやステータスバーに渡せます。<code>codeusage help</code> で全コマンドを表示。',
   cmdStatus: 'キャッシュの利用枠と使用量（オフライン）', cmdCost: '日別の費用とトークン、ツールごとの速度', cmdThird: 'サードパーティ API の使用量と速度',
-  winScoop: 'Windows PowerShell · Scoop', winPs: 'Windows PowerShell · install.ps1', winSetup: 'セットアップ - codeusagemonit 1.0.0', winCli: 'Windows PowerShell · codeusage',
+  winScoop: 'Windows PowerShell · Scoop', winPs: 'Windows PowerShell · install.ps1', winSetup: 'セットアップ - codeusagemonit 1.0.1', winCli: 'Windows PowerShell · codeusage',
   tipRefresh: '更新', tipSize: '4 つのサイズ', tipPin: '最前面に固定', tipSettings: '設定', tipClose: 'トレイにしまう',
   toastRefreshed: '已刷新 · 所有平台刚刚更新', toastPinOn: '已置顶：会盖在其他窗口上面', toastPinOff: '已取消置顶', toastGrok: 'Grok 已连接（演示）',
   toastSize: '右键窗口也能切换小 / 中 / 大 / 完整', toastAuto: '失焦自动收起：{s}', on: '开', off: '关'
@@ -259,6 +259,7 @@ const PROV_INFO = {
   kimi: { kind: ['API Key', 'API key', 'API キー'], connect: ['Kimi Code API Key，可选国内或国际', 'Kimi Code API key, China or international', 'Kimi Code の API キー（中国版 / 国際版）'], quota: ['5 小时、每周、每月', '5-hour, weekly, monthly', '5 時間・週・月'], caps: [1, 2, 2] },
   opencode: { kind: ['API Key', 'API key', 'API キー'], connect: ['OpenCode Go 的 API Key', 'OpenCode Go API key', 'OpenCode Go の API キー'], quota: ['5 小时、每周、每月', '5-hour, weekly, monthly', '5 時間・週・月'], caps: [1, 2, 2] },
   zcode: { kind: ['API Key', 'API key', 'API キー'], connect: ['智谱 / Z.ai API Key（GLM 编码套餐）', 'Zhipu / Z.ai API key (GLM Coding Plan)', 'Zhipu / Z.ai の API キー（GLM Coding Plan）'], quota: ['5 小时、每周、MCP 工具调用', '5-hour, weekly, MCP tool calls', '5 時間・週・MCP ツール呼び出し'], caps: [1, 1, 1] },
+  devin: { kind: ['桌面应用', 'Desktop app', 'デスクトップ'], connect: ['读取正在运行的 Devin Desktop（原 Windsurf），其次它的本机缓存', 'Reads the running Devin Desktop (formerly Windsurf), then its local cache', '起動中の Devin Desktop（旧 Windsurf）、次にローカルキャッシュを読み取り'], quota: ['每日、每周额度', 'Daily and weekly quotas', '日・週の利用枠'], caps: [1, 0, 0] },
   pi: { kind: ['本机日志', 'Local logs', 'ローカルログ'], connect: ['无需登录', 'No sign-in needed', 'ログイン不要'], quota: ['没有账户额度，只统计本机用量', 'No account quota; local usage only', 'アカウントの利用枠はなく、ローカル使用量のみ'], caps: [0, 1, 1] },
   custom: { kind: ['JSON 接口', 'JSON endpoint', 'JSON API'], connect: ['任意返回 JSON 的 GET 接口，密钥 DPAPI 加密', 'Any GET endpoint returning JSON; key encrypted with DPAPI', 'JSON を返す任意の GET API（キーは DPAPI で暗号化）'], quota: ['最多 6 个额度窗口，或余额', 'Up to 6 quota windows, or a balance', '最大 6 つの利用枠、または残高'], caps: [1, 0, 0] }
 };
@@ -266,7 +267,7 @@ const AUTH = {
   codex: ['OAuth', 'OAuth', 'OAuth'], claude: ['OAuth', 'OAuth', 'OAuth'], cursor: ['本地会话 · Cookie', 'Local session · Cookie', 'ローカルセッション · Cookie'],
   antigravity: ['本地服务 · OAuth', 'Local service · OAuth', 'ローカルサービス · OAuth'], deepseek: ['Harness · API Key', 'Harness · API key', 'Harness · API キー'], grok: ['CLI 会话', 'CLI session', 'CLI セッション'],
   copilot: ['OAuth 设备流', 'OAuth device flow', 'OAuth デバイスフロー'], kimi: ['API Key', 'API key', 'API キー'], opencode: ['API Key', 'API key', 'API キー'],
-  zcode: ['API Key', 'API key', 'API キー'], pi: ['本地文件', 'Local files', 'ローカルファイル'], custom: ['API Key · 自定义', 'API key · Custom', 'API キー · カスタム']
+  zcode: ['API Key', 'API key', 'API キー'], devin: ['本地服务 · 本机缓存', 'Local service · cache', 'ローカルサービス · キャッシュ'], pi: ['本地文件', 'Local files', 'ローカルファイル'], custom: ['API Key · 自定义', 'API key · Custom', 'API キー · カスタム']
 };
 
 // ── Demo data (consistent with the app's --demo mode) ─────────────────
@@ -332,6 +333,7 @@ const QUOTAS = {
   kimi: { plan: 'Moderato', windows: [{ label: '5 小时', rem: 45, reset: '3小时 2分', len: '5 小时', pace: -6, empty: '约 1小时 50分后用尽' }, { label: '每周', rem: 76, reset: '4天 9小时', len: '7 天', pace: 14 }] },
   opencode: { plan: 'Go', windows: [{ label: '5 小时', rem: 88, reset: '4小时 1分', len: '5 小时', pace: 8 }, { label: '每周', rem: 91, reset: '5天 1小时', len: '7 天', pace: 20 }] },
   zcode: { plan: 'GLM Pro', windows: [{ label: '5 小时', rem: 69, reset: '2小时 44分', len: '5 小时', pace: 14 }, { label: '每周', rem: 83, reset: '4天 20小时', len: '7 天', pace: 12 }, { label: 'MCP 调用', rem: 90, reset: '10天 23小时', len: '30 天', pace: 53 }] },
+  devin: { plan: 'Devin Pro', windows: [{ label: '每日', rem: 54, reset: '7小时 29分', len: '1 天', pace: 23 }, { label: '每周', rem: 80, reset: '3天 4小时', len: '7 天', pace: 34 }], noLocal: true },
   pi: { local: true }
 };
 const GROK_CONNECTED = { plan: 'SuperGrok', windows: [{ label: '账期额度', rem: 83, reset: '9天 7小时', len: '30 天', pace: 21 }] };
@@ -347,7 +349,8 @@ const MODELS = {
   antigravity: [['gemini-3.1-pro-preview', 74, 58.2], ['claude-sonnet-5-5', 26, 69.5]],
   copilot: [['gpt-6-sol', 55, 41.7], ['claude-sonnet-5-5', 45, 66.3]],
   opencode: [['kimi-k2.7-code', 60, 34.9], ['glm-5.2', 40, 44.1]],
-  grok: []
+  grok: [],
+  devin: []
 };
 const meter = (rem, id, cls = '', mark = null) => {
   const on = Math.round(Math.max(0, Math.min(100, rem)) / 100 * 24); let s = '';
@@ -440,6 +443,7 @@ function overviewHtml() {
 function detailHtml(id) {
   const q = QUOTAS[id], per = periodOf(id), rows = rowsFor(id, per);
   const quota = `<div class="app-card" style="--i:0;--c:${cv(id)}"><div class="card-head">${icon(id)}<b>${P[id].name}</b>${q.plan ? `<span class="plan">${q.plan}</span>` : ''}<span class="faint" style="margin-left:auto" data-fresh>刚刚更新</span></div>${quotaLines(id, true)}</div>`;
+  if (q.noLocal) return quota + `<div class="app-card" style="--i:1"><b style="font-size:13px">本机用量</b><p class="dim" style="margin:8px 0 0">本机暂未发现该平台的 Token 历史。账户额度来自服务商接口，本机用量来自本地会话日志，两者相互独立。</p></div>`;
   const c = sum(rows, 'cost'), tk = sum(rows, 'tokens'), rq = sum(rows, 'req'), sp = speedOfRows(rows, id);
   const usage = `<div class="app-card" style="--i:1"><div class="row"><b style="font-size:13px">本机用量</b><button type="button" class="a-chip" data-act="period" data-scope="${id}">${PERIOD_ZH[per]}${CHEV}</button></div>
     <div class="figs4">${[['费用', c, 'usd'], ['Token', tk, 'compact'], ['请求', rq, 'int'], ['速度', sp, 'tps']].map(([k, v, f]) => `<div><div class="faint">${k}</div><div class="num" data-to="${v}" data-fmt="${f}">${FMT[f](v)}</div></div>`).join('')}</div>
@@ -825,8 +829,8 @@ function openFromHash() { const m = /^#size-(small|medium|large|full)$/.exec(loc
 addEventListener('hashchange', openFromHash);
 
 // ── 04 Install: the tab on the left drives the window on the right ────
-const SETUP_URL = REPO + '/releases/download/v1.0.0/codeusagemonit-setup-1.0.0.exe';
-const ZIP_URL = REPO + '/releases/download/v1.0.0/codeusagemonit-1.0.0-win-x64.zip';
+const SETUP_URL = REPO + '/releases/download/v1.0.1/codeusagemonit-setup-1.0.1.exe';
+const ZIP_URL = REPO + '/releases/download/v1.0.1/codeusagemonit-1.0.1-win-x64.zip';
 const CMD = {
   bucket: 'scoop bucket add codeusagemonit ' + REPO, scoop: 'scoop install codeusagemonit', update: 'scoop update codeusagemonit',
   ps: 'irm https://raw.githubusercontent.com/fanchengliu/codeusagemonit/main/install.ps1 | iex'
@@ -879,7 +883,7 @@ function costLines() {
   return lines;
 }
 const COMMANDS = {
-  status: () => [bold('codeusagemonit') + dim(` V1.0.0 · ${stamp()} · 缓存 · 2 分钟前`), '', ...quotaBlock('claude'), '', ...quotaBlock('zcode')],
+  status: () => [bold('codeusagemonit') + dim(` V1.0 · ${stamp()} · 缓存 · 2 分钟前`), '', ...quotaBlock('claude'), '', ...quotaBlock('zcode')],
   cost: costLines,
   thirdparty: () => [bold('第三方 API 用量') + dim('（本机日志；服务商的周/月限额无法得知）'), '',
     `<span style="color:${P.claude.c};font-weight:600">示例中转 A</span>` + col('  使用中', '#5CC8E0') + '  ' + dim('Claude Code · relay-a.example.com'),
@@ -892,13 +896,13 @@ const LOCAL = 'C:\\Users\\you\\AppData\\Local\\Programs\\codeusagemonit';
 function scriptFor(kind) {
   if (kind === 'scoop') return [
     { cmd: CMD.bucket, step: 0 }, { out: ['Checking repo... OK', 'The codeusagemonit bucket was added successfully.'] },
-    { cmd: CMD.scoop, step: 1 }, { out: [`Installing 'codeusagemonit' (1.0.0) [64bit] from 'codeusagemonit' bucket`] },
-    { bar: 'codeusagemonit-1.0.0-win-x64.zip (950.8 KB)' },
-    { out: ['Checking hash of codeusagemonit-1.0.0-win-x64.zip ... ok.', 'Extracting codeusagemonit-1.0.0-win-x64.zip ... done.', 'Linking ~\\scoop\\apps\\codeusagemonit\\current => ~\\scoop\\apps\\codeusagemonit\\1.0.0', `Creating shim for 'codeusage'.`, 'Creating shortcut for codeusagemonit (codeusagemonit.exe)', 'Persisting data', green(`'codeusagemonit' (1.0.0) was installed successfully!`), '', 'Notes', '-----', 'Start codeusagemonit from the Start menu; the CLI is `codeusage`.'], raw: [6] }
+    { cmd: CMD.scoop, step: 1 }, { out: [`Installing 'codeusagemonit' (1.0.1) [64bit] from 'codeusagemonit' bucket`] },
+    { bar: 'codeusagemonit-1.0.1-win-x64.zip (950.8 KB)' },
+    { out: ['Checking hash of codeusagemonit-1.0.1-win-x64.zip ... ok.', 'Extracting codeusagemonit-1.0.1-win-x64.zip ... done.', 'Linking ~\\scoop\\apps\\codeusagemonit\\current => ~\\scoop\\apps\\codeusagemonit\\1.0.1', `Creating shim for 'codeusage'.`, 'Creating shortcut for codeusagemonit (codeusagemonit.exe)', 'Persisting data', green(`'codeusagemonit' (1.0.1) was installed successfully!`), '', 'Notes', '-----', 'Start codeusagemonit from the Start menu; the CLI is `codeusage`.'], raw: [6] }
   ];
   if (kind === 'ps') return [
     { cmd: CMD.ps, step: 0 },
-    { out: ['codeusagemonit: looking up the release...', 'codeusagemonit: downloading codeusagemonit-1.0.0-win-x64.zip (0.93 MB)...', 'codeusagemonit: SHA-256 verified (ef2c9412…4093bda).', `codeusagemonit: added ${LOCAL} to your user PATH (new terminals pick it up).`, '', green(`codeusagemonit v1.0.0 installed to ${LOCAL}`), '  Start it from the Start menu, or run: codeusagemonit', '  Terminal: codeusage status, codeusage cost --days 7', '  Update: run this command again.'], raw: [5] }
+    { out: ['codeusagemonit: looking up the release...', 'codeusagemonit: downloading codeusagemonit-1.0.1-win-x64.zip (0.93 MB)...', 'codeusagemonit: SHA-256 verified (ef2c9412…4093bda).', `codeusagemonit: added ${LOCAL} to your user PATH (new terminals pick it up).`, '', green(`codeusagemonit v1.0.1 installed to ${LOCAL}`), '  Start it from the Start menu, or run: codeusagemonit', '  Terminal: codeusage status, codeusage cost --days 7', '  Update: run this command again.'], raw: [5] }
   ];
   const u = USAGE.find(x => x.id === termCmd);
   return [{ cmd: u.cmd, step: USAGE.indexOf(u) }, { out: COMMANDS[termCmd](), html: true }];
@@ -937,13 +941,13 @@ async function runWin() {
 }
 async function runWizard(alive) {
   const L = lang;
-  const T = L === 'en' ? { next: 'Next >', cancel: 'Cancel', install: 'Install', finish: 'Finish', browse: 'Browse…', welcome: 'Welcome to the codeusagemonit Setup Wizard', welcomeText: 'This will install codeusagemonit 1.0.0 on your computer. Close other applications before continuing.', dir: 'Select Destination Location', dirText: 'Setup will install codeusagemonit into the following folder.', tasks: 'Select Additional Tasks', tasksText: 'Select the additional tasks you would like Setup to perform.', desk: 'Create a desktop shortcut', auto: 'Start with Windows (tray only)', path: 'Add codeusage to your user PATH (new terminals can run it)', installing: 'Installing', installingText: 'Please wait while Setup installs codeusagemonit on your computer.', done: 'Completing the codeusagemonit Setup Wizard', doneText: 'Setup has finished installing codeusagemonit on your computer.', launch: 'Launch codeusagemonit' }
-    : { next: '下一步(N) >', cancel: '取消', install: '安装(I)', finish: '完成(F)', browse: '浏览(R)…', welcome: '欢迎使用 codeusagemonit 安装向导', welcomeText: '现在将安装 codeusagemonit 1.0.0 到你的电脑中。建议在继续之前关闭所有其他应用程序。', dir: '选择目标位置', dirText: '安装程序将把 codeusagemonit 安装到以下文件夹中。', tasks: '选择附加任务', tasksText: '请选择在安装 codeusagemonit 期间安装程序要执行的附加任务。', desk: '创建桌面快捷方式', auto: '登录 Windows 后自动启动（只驻留托盘）', path: '将 codeusage 加入当前用户的 PATH（新开的终端可直接运行）', installing: '正在安装', installingText: '安装程序正在安装 codeusagemonit 到你的电脑中，请稍候。', done: 'codeusagemonit 安装完成', doneText: '安装程序已在你的电脑中安装了 codeusagemonit。', launch: '运行 codeusagemonit' };
+  const T = L === 'en' ? { next: 'Next >', cancel: 'Cancel', install: 'Install', finish: 'Finish', browse: 'Browse…', welcome: 'Welcome to the codeusagemonit Setup Wizard', welcomeText: 'This will install codeusagemonit 1.0.1 on your computer. Close other applications before continuing.', dir: 'Select Destination Location', dirText: 'Setup will install codeusagemonit into the following folder.', tasks: 'Select Additional Tasks', tasksText: 'Select the additional tasks you would like Setup to perform.', desk: 'Create a desktop shortcut', auto: 'Start with Windows (tray only)', path: 'Add codeusage to your user PATH (new terminals can run it)', installing: 'Installing', installingText: 'Please wait while Setup installs codeusagemonit on your computer.', done: 'Completing the codeusagemonit Setup Wizard', doneText: 'Setup has finished installing codeusagemonit on your computer.', launch: 'Launch codeusagemonit' }
+    : { next: '下一步(N) >', cancel: '取消', install: '安装(I)', finish: '完成(F)', browse: '浏览(R)…', welcome: '欢迎使用 codeusagemonit 安装向导', welcomeText: '现在将安装 codeusagemonit 1.0.1 到你的电脑中。建议在继续之前关闭所有其他应用程序。', dir: '选择目标位置', dirText: '安装程序将把 codeusagemonit 安装到以下文件夹中。', tasks: '选择附加任务', tasksText: '请选择在安装 codeusagemonit 期间安装程序要执行的附加任务。', desk: '创建桌面快捷方式', auto: '登录 Windows 后自动启动（只驻留托盘）', path: '将 codeusage 加入当前用户的 PATH（新开的终端可直接运行）', installing: '正在安装', installingText: '安装程序正在安装 codeusagemonit 到你的电脑中，请稍候。', done: 'codeusagemonit 安装完成', doneText: '安装程序已在你的电脑中安装了 codeusagemonit。', launch: '运行 codeusagemonit' };
   const top = (b, s) => `<div class="wz-top"><div><b>${esc(b)}</b><span>${esc(s)}</span></div><img src="favicon.svg" alt="" style="margin-left:auto"></div>`;
   const foot = (pri, back = true) => `<div class="wz-foot">${back ? '<span>&lt; ' + (L === 'en' ? 'Back' : '上一步(B)') + '</span>' : ''}<span class="pri">${esc(pri)}</span><span>${esc(T.cancel)}</span></div>`;
   const check = (on, text) => `<div class="wz-check"><i class="${on ? 'on' : ''}"></i><span>${esc(text)}</span></div>`;
   const pages = [
-    () => top(T.welcome, 'codeusagemonit 1.0.0') + `<div class="wz-main"><p>${esc(T.welcomeText)}</p></div>` + foot(T.next, false),
+    () => top(T.welcome, 'codeusagemonit 1.0.1') + `<div class="wz-main"><p>${esc(T.welcomeText)}</p></div>` + foot(T.next, false),
     () => top(T.dir, T.dirText) + `<div class="wz-main"><p>${esc(T.dirText)}</p><div class="wz-path"><span>${esc(LOCAL)}</span><i>${esc(T.browse)}</i></div></div>` + foot(T.next),
     () => top(T.tasks, T.tasksText) + `<div class="wz-main">${check(false, T.desk)}${check(false, T.auto)}${check(true, T.path)}</div>` + foot(T.install)
   ];
@@ -1009,8 +1013,8 @@ new IntersectionObserver(([entry]) => { if (entry.isIntersecting && !dlTimer) { 
 // ── Language ──────────────────────────────────────────────────────────
 const META = {
   zh: ['codeusagemonit — Windows 上的 AI 编程额度与用量监控', document.querySelector('meta[name="description"]').content],
-  en: ['codeusagemonit — AI coding quotas and usage on Windows', 'A Windows tray app for the remaining quota, reset times, local token usage and output speed of Codex, Claude, Cursor and 8 more AI coding tools. Priced at official API rates, synced daily. Open source; data stays on your PC.'],
-  ja: ['codeusagemonit — Windows で AI コーディングの利用枠と使用量を確認', 'Codex、Claude、Cursor など 11 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を Windows のトレイで。公式 API 単価で計算し、料金表は毎日同期。オープンソースで、データは PC 内で集計します。']
+  en: ['codeusagemonit — AI coding quotas and usage on Windows', 'A Windows tray app for the remaining quota, reset times, local token usage and output speed of Codex, Claude, Cursor and 9 more AI coding tools. Priced at official API rates, synced daily. Open source; data stays on your PC.'],
+  ja: ['codeusagemonit — Windows で AI コーディングの利用枠と使用量を確認', 'Codex、Claude、Cursor など 12 の AI コーディングツールの残り利用枠、リセット時刻、トークン使用量、出力速度を Windows のトレイで。公式 API 単価で計算し、料金表は毎日同期。オープンソースで、データは PC 内で集計します。']
 };
 let jaFont = false;
 function setLang(value) {

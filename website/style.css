@@ -43,7 +43,7 @@
   --app-tip: #23262D; --app-shine: rgba(255, 255, 255, .06);
   --cell: rgba(255, 255, 255, .1);
   --p-codex: #63D5E5; --p-claude: #E8AB8C; --p-cursor: #80DDAB; --p-antigravity: #B8A0F5; --p-deepseek: #7FA9FF; --p-grok: #D8DEE9;
-  --p-copilot: #E58FD0; --p-kimi: #F4C95D; --p-opencode: #A6D96A; --p-zcode: #F2874E; --p-pi: #A9B4C6; --p-custom: #A9B4C6;
+  --p-copilot: #E58FD0; --p-kimi: #F4C95D; --p-opencode: #A6D96A; --p-zcode: #F2874E; --p-devin: #58C9B0; --p-pi: #A9B4C6; --p-custom: #A9B4C6;
   --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Inter", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Inter", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
   --mono: "SF Mono", ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, "PingFang SC", "Noto Sans SC", monospace;
@@ -89,7 +89,7 @@
   --app-tip: #FFFFFF; --app-shine: rgba(255, 255, 255, .85);
   --cell: rgba(21, 23, 27, .12);
   --p-codex: #0E9FB5; --p-claude: #D0784F; --p-cursor: #1E9A60; --p-antigravity: #7755DC; --p-deepseek: #3B6CE0; --p-grok: #3F4756;
-  --p-copilot: #BF4AA2; --p-kimi: #C28C0E; --p-opencode: #5A9A1C; --p-zcode: #DA601C; --p-pi: #66748A; --p-custom: #66748A;
+  --p-copilot: #BF4AA2; --p-kimi: #C28C0E; --p-opencode: #5A9A1C; --p-zcode: #DA601C; --p-devin: #1F9B80; --p-pi: #66748A; --p-custom: #66748A;
 }
 :lang(ja) { --display: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Inter", "Noto Sans JP", "Noto Sans SC", "Yu Gothic UI", sans-serif; --sans: var(--display); }
 
