@@ -192,6 +192,7 @@
 "gpt-5.5":{"src":"litellm:gpt-5.5","in":5,"out":30,"cr":0.5},
 "gpt-5.5-2026-04-23":{"src":"litellm:gpt-5.5-2026-04-23","in":5,"out":30,"cr":0.5},
 "gpt-5.5-cyber":{"src":"litellm:gpt-5.5-cyber","in":12.5,"out":75,"cr":1.25},
+"gpt-5.5-cyber-preview":{"src":"litellm:gpt-5.5-cyber-preview","in":12.5,"out":75,"cr":1.25},
 "gpt-5.5-pro":{"src":"litellm:gpt-5.5-pro","in":30,"out":180},
 "gpt-5.5-pro-2026-04-23":{"src":"litellm:gpt-5.5-pro-2026-04-23","in":30,"out":180},
 "gpt-5.6":{"src":"litellm:gpt-5.6","in":4,"out":20,"cr":0.4,"cw":5},
