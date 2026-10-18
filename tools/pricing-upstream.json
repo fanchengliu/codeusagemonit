@@ -349,7 +349,7 @@
 "zai/glm-4.5-x":{"src":"litellm:zai/glm-4.5-x","in":2.2,"out":8.9},
 "zai/glm-4.5v":{"src":"litellm:zai/glm-4.5v","in":0.6,"out":1.8},
 "zai/glm-4.6":{"src":"litellm:zai/glm-4.6","in":0.6,"out":2.2,"cr":0.11,"cw":0},
-"zai/glm-4.6v":{"src":"modelsdev:zai","in":0.3,"out":0.9},
+"zai/glm-4.6v":{"src":"modelsdev:zai","in":0.3,"out":0.9,"cr":0.05},
 "zai/glm-4.6v-flash":{"src":"modelsdev:zai","in":0,"out":0,"cr":0,"cw":0},
 "zai/glm-4.7":{"src":"litellm:zai/glm-4.7","in":0.6,"out":2.2,"cr":0.11,"cw":0},
 "zai/glm-4.7-flash":{"src":"litellm:zai/glm-4.7-flash","in":0,"out":0,"cr":0,"cw":0},
