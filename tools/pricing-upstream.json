@@ -267,7 +267,6 @@
 "qwen3-235b-a22b":{"src":"modelsdev:alibaba","in":0.7,"out":2.8},
 "qwen3-32b":{"src":"modelsdev:alibaba","in":0.7,"out":2.8},
 "qwen3-8b":{"src":"modelsdev:alibaba","in":0.18,"out":0.7},
-"qwen3-asr-flash":{"src":"modelsdev:alibaba","in":0.035,"out":0.035},
 "qwen3-coder-30b-a3b-instruct":{"src":"modelsdev:alibaba","in":0.45,"out":2.25},
 "qwen3-coder-480b-a35b-instruct":{"src":"modelsdev:alibaba","in":1.5,"out":7.5},
 "qwen3-coder-flash":{"src":"modelsdev:alibaba","in":0.3,"out":1.5},
