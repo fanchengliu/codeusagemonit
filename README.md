@@ -6,7 +6,7 @@
 
 **Windows 的 AI 编程额度与用量监控**
 
-Codex、Claude、Cursor 等 12 款编程工具的剩余额度和重置时间，连同本机 Token 用量和输出速度，放在一个小窗口里。
+Codex、Claude、Cursor 等 17 款编程工具的剩余额度和重置时间，连同本机 Token 用量和输出速度，放在一个小窗口里。
 
 [![Release](https://img.shields.io/github/v/release/fanchengliu/codeusagemonit?style=flat-square&color=38bdf8)](https://github.com/fanchengliu/codeusagemonit/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/fanchengliu/codeusagemonit/total?style=flat-square&color=818cf8)](https://github.com/fanchengliu/codeusagemonit/releases)
