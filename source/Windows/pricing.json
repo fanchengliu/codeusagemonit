@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-27T07:49Z",
+  "updated": "2026-10-29T08:26Z",
   "unit": "USD per 1M tokens",
   "sources": ["https://github.com/BerriAI/litellm (model_prices_and_context_window.json)","https://models.dev (context tiers)"],
   "models": {
@@ -230,6 +230,7 @@
     "moonshot/kimi-k2.6": {"in":0.95,"out":4,"cr":0.16},
     "moonshot/kimi-k2.7-code": {"in":0.95,"out":4,"cr":0.19},
     "moonshot/kimi-k3": {"in":3,"out":15,"cr":0.3},
+    "moonshot/kimi-k3.1-pro": {"in":2,"out":10,"cr":0.2,"cw":2},
     "moonshot/moonshot-v1-128k": {"in":2,"out":5},
     "moonshot/moonshot-v1-128k-vision-preview": {"in":2,"out":5},
     "moonshot/moonshot-v1-32k": {"in":1,"out":3},
