@@ -1,5 +1,6 @@
 {"claude-fable-5":{"src":"litellm:claude-fable-5","in":10,"out":50,"cr":1,"cw":12.5},
 "claude-fable-5-1":{"src":"litellm:claude-fable-5-1","in":10,"out":50,"cr":0.25,"cw":12.5},
+"claude-fable-5-2":{"src":"litellm:claude-fable-5-2","in":8,"out":40,"cr":0.2,"cw":10},
 "claude-haiku-4-5":{"src":"litellm:claude-haiku-4-5","in":1,"out":5,"cr":0.1,"cw":1.25},
 "claude-haiku-4-5-20251001":{"src":"litellm:claude-haiku-4-5-20251001","in":1,"out":5,"cr":0.1,"cw":1.25},
 "claude-haiku-5-5":{"src":"litellm:claude-haiku-5-5","in":0.1,"out":0.5,"cr":0.01,"cw":0.125},
