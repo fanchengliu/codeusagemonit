@@ -224,7 +224,6 @@
 "gpt-audio-mini-2025-12-15":{"src":"litellm:gpt-audio-mini-2025-12-15","in":0.6,"out":2.4},
 "gpt-daybreak-blue-latest":{"src":"litellm:gpt-daybreak-blue-latest","in":4,"out":20,"cr":0.4,"cw":5},
 "gpt-daybreak-red-latest":{"src":"litellm:gpt-daybreak-red-latest","in":12.5,"out":75,"cr":1.25,"cw":15.625},
-"gpt-image-2":{"src":"litellm:gpt-image-2"},
 "gpt-realtime-2.1":{"src":"litellm:gpt-realtime-2.1","in":4,"out":24,"cr":0.4},
 "gpt-rosalind-discovery":{"src":"litellm:gpt-rosalind-discovery","in":5,"out":25,"cr":0.5},
 "gpt-rosalind-research":{"src":"litellm:gpt-rosalind-research","in":5,"out":25,"cr":0.5},
