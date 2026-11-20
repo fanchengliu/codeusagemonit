@@ -54,7 +54,7 @@ function sourcesFor(key) {
   const b = bare(key), list = [];
   for (const c of [key, b, 'gemini/' + b, 'xai/' + b, 'deepseek/' + b, 'moonshot/' + b, 'dashscope/' + b, 'zai/' + b, 'anthropic/' + b, 'openai/' + b]) if (litellm[c]?.input_cost_per_token != null) list.push('litellm:' + c);
   for (const p of OFFICIAL) if (modelsdev[p]?.models?.[b]?.cost) list.push('modelsdev:' + p);
-  return [...new Set(list)];
+  return [...new Set(list)].filter(source => fromSource(source, key) !== null);
 }
 // The source a key follows: kept from the last run; otherwise the first whose base
 // prices equal ours (that is where the value came from); otherwise the first available.
