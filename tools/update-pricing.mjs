@@ -42,7 +42,13 @@ function fromSource(src, key) {
   const out = {};
   if (kind === 'litellm') { const e = litellm[ref]; if (!e || e.input_cost_per_token == null || e.output_cost_per_token == null) return null; for (const [f, l] of FIELDS) if (e[l] != null) out[f] = round(e[l] * 1e6); return out; }
   const m = modelsdev[ref]?.models?.[bare(key)]; if (!m?.cost || m.cost.input == null || m.cost.output == null) return null;
-  for (const [f, , d] of FIELDS) if (m.cost[d] != null) out[f] = round(m.cost[d]); return out;
+  for (const [f, , d] of FIELDS) {
+    // models.dev may report text output here for a model that also outputs images.
+    // Keep the curated output rate until pricing tracks output modalities separately.
+    if (f === 'out' && m.modalities?.output?.includes('image')) continue;
+    if (m.cost[d] != null) out[f] = round(m.cost[d]);
+  }
+  return out;
 }
 function sourcesFor(key) {
   const b = bare(key), list = [];
