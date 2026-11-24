@@ -186,7 +186,6 @@
 "gpt-5.2-pro-2025-12-11":{"src":"litellm:gpt-5.2-pro-2025-12-11","in":21,"out":168},
 "gpt-5.3-chat-latest":{"src":"litellm:gpt-5.3-chat-latest","in":1.75,"out":14,"cr":0.175},
 "gpt-5.3-codex":{"src":"litellm:gpt-5.3-codex","in":1.75,"out":14,"cr":0.175},
-"gpt-5.3-codex-spark":{"src":"modelsdev:openai","in":1.75,"out":14,"cr":0.175},
 "gpt-5.4":{"src":"litellm:gpt-5.4","in":2.5,"out":15,"cr":0.25},
 "gpt-5.4-2026-03-05":{"src":"litellm:gpt-5.4-2026-03-05","in":2.5,"out":15,"cr":0.25},
 "gpt-5.4-mini":{"src":"litellm:gpt-5.4-mini","in":0.75,"out":4.5,"cr":0.075},
