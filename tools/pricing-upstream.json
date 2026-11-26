@@ -68,7 +68,7 @@
 "deepseek/deepseek-v4-pro":{"src":"litellm:deepseek/deepseek-v4-pro","in":1.32,"out":3.96,"cr":0.044,"cw":0},
 "gemini-2.5-computer-use-preview-10-2025":{"src":"litellm:gemini-2.5-computer-use-preview-10-2025","in":1.25,"out":10},
 "gemini-2.5-flash":{"src":"litellm:gemini-2.5-flash","in":0.3,"out":2.5,"cr":0.03},
-"gemini-2.5-flash-image":{"src":"modelsdev:google","in":0.3,"cr":0.075},
+"gemini-2.5-flash-image":{"src":"modelsdev:google","in":0.3},
 "gemini-2.5-flash-lite":{"src":"litellm:gemini-2.5-flash-lite","in":0.1,"out":0.4,"cr":0.01},
 "gemini-2.5-flash-lite-preview-09-2025":{"src":"litellm:gemini-2.5-flash-lite-preview-09-2025","in":0.1,"out":0.4,"cr":0.01},
 "gemini-2.5-flash-preview-09-2025":{"src":"litellm:gemini-2.5-flash-preview-09-2025","in":0.3,"out":2.5,"cr":0.03},
